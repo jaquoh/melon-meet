@@ -1,0 +1,46 @@
+{
+  "name": "melon-meet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "vite --config apps/web/vite.config.ts",
+    "dev:api": "wrangler dev --config wrangler.jsonc",
+    "build": "npm run build:web",
+    "build:web": "vite build --config apps/web/vite.config.ts",
+    "preview": "vite preview --config apps/web/vite.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply melon-meet --local --config wrangler.jsonc",
+    "db:seed:local": "wrangler d1 execute melon-meet --local --file=./apps/api/migrations/0002_seed.sql --config wrangler.jsonc"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.3",
+    "@tanstack/react-query": "^5.74.4",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "hono": "^4.7.7",
+    "maplibre-gl": "^5.3.0",
+    "preline": "^3.2.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.5.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250402.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/vite": "^4.1.4",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "vitest": "^3.1.1",
+    "wrangler": "^4.10.0"
+  }
+}

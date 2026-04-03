@@ -1,0 +1,322 @@
+INSERT OR REPLACE INTO venues (
+  id,
+  name,
+  address,
+  description,
+  pricing,
+  latitude,
+  longitude,
+  source_url,
+  created_at
+) VALUES
+  (
+    'venue-beachmitte',
+    'BeachMitte',
+    'Caroline-Michaelis-Str. 8, 10115 Berlin',
+    'Large central beach volleyball venue near Nordbahnhof with many outdoor courts.',
+    'paid',
+    52.5360,
+    13.3924,
+    'https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-beach61',
+    'Beach61',
+    'Park am Gleisdreieck, 10963 Berlin',
+    'Busy beach volleyball spot in Gleisdreieck with a social after-game atmosphere.',
+    'paid',
+    52.4988,
+    13.3740,
+    'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-east61',
+    'East61',
+    'Wilhelm-Kabus-Str. 42, 10829 Berlin',
+    'South-west Berlin courts for casual games, club sessions, and training blocks.',
+    'paid',
+    52.4818,
+    13.3669,
+    'https://berlin-beachvolleyball.de/beachvolleyball-berlin/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-beachzone',
+    'BeachZone Lichtenberg',
+    'Allee der Kosmonauten 190, 12683 Berlin',
+    'Lichtenberg beach volleyball location with outdoor courts and bookable time slots.',
+    'paid',
+    52.5409,
+    13.5702,
+    'https://beach-zone.de/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-volkspark-friedrichshain',
+    'Volkspark Friedrichshain Sandbox',
+    'Paul-Heyse-Str. 1, 10407 Berlin',
+    'Free public sand courts inside Volkspark Friedrichshain. Bring your own setup.',
+    'free',
+    52.5297,
+    13.4415,
+    'https://berlin-beachvolleyball.de/en/volkspark-friedrichshain-6-courts-free-but-only-with-your-own-equipment/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-monbijoupark',
+    'Monbijoupark Courts',
+    'Monbijouplatz, 10178 Berlin',
+    'Popular free city courts with a scenic Mitte backdrop and quick pick-up games.',
+    'free',
+    52.5233,
+    13.3994,
+    'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'venue-strandbad-tegel',
+    'Strandbad Tegel',
+    'Schwarzer Weg 95, 13505 Berlin',
+    'Beach volleyball courts inside the lakeside bath complex with seasonal entry.',
+    'paid',
+    52.5864,
+    13.2531,
+    'https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187',
+    '2026-04-03T00:00:00.000Z'
+  );
+
+INSERT OR REPLACE INTO users (
+  id,
+  email,
+  password_hash,
+  display_name,
+  bio,
+  home_area,
+  avatar_url,
+  created_at,
+  updated_at
+) VALUES (
+  '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+  'demo@melonmeet.local',
+  'pbkdf2$210000$Q3-MvetF2mKTwrmSDqSQRg$xwqyjaDE65Ko4B3SySaWG4W7Vi8HH2RSVmFFAfXgoLQ',
+  'Melon Demo',
+  'Weekend organiser for beach volleyball and mixed outdoor game sessions.',
+  'Berlin Mitte',
+  NULL,
+  '2026-04-03T00:00:00.000Z',
+  '2026-04-03T00:00:00.000Z'
+);
+
+INSERT OR REPLACE INTO app_groups (
+  id,
+  owner_user_id,
+  name,
+  slug,
+  description,
+  visibility,
+  activity_label,
+  created_at,
+  updated_at
+) VALUES
+  (
+    'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'Berlin Sunset Volley',
+    'berlin-sunset-volley',
+    'Open beach volleyball meetups around central Berlin courts with a friendly drop-in vibe.',
+    'public',
+    'Beach volleyball',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    '8f96eb6d-918a-4f72-a50c-476fdc8c8325',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'Morning Sand Crew',
+    'morning-sand-crew',
+    'Private early-morning crew that rotates through quieter Berlin sand courts.',
+    'private',
+    'Beach volleyball',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  );
+
+INSERT OR REPLACE INTO app_group_members (
+  id,
+  group_id,
+  user_id,
+  role,
+  created_at
+) VALUES
+  (
+    'd6bf1a5f-4185-4dd8-a6a4-df72462c1b85',
+    'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'owner',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    '13477945-bb69-44aa-bd0b-149c21a6bd23',
+    '8f96eb6d-918a-4f72-a50c-476fdc8c8325',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'owner',
+    '2026-04-03T00:00:00.000Z'
+  );
+
+INSERT OR REPLACE INTO group_posts (
+  id,
+  group_id,
+  author_user_id,
+  content,
+  created_at
+) VALUES
+  (
+    'b95b0558-7e8f-48f1-95e7-8773f1b6335a',
+    'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'Demo group is ready. Feel free to sign in with demo@melonmeet.local / demo12345 and explore the flows.',
+    '2026-04-03T00:00:00.000Z'
+  );
+
+INSERT OR REPLACE INTO meeting_series (
+  id,
+  group_id,
+  owner_user_id,
+  title,
+  description,
+  activity_label,
+  venue_id,
+  location_name,
+  location_address,
+  latitude,
+  longitude,
+  pricing,
+  capacity,
+  timezone,
+  weekday,
+  start_time_local,
+  duration_minutes,
+  start_date,
+  until_date,
+  status,
+  created_at,
+  updated_at
+) VALUES (
+  '327968c9-f264-4f16-83b9-a6759c3f4a83',
+  'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
+  '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+  'Thursday Sunset Rally',
+  'Weekly open-play evening focused on casual 4v4 beach volleyball.',
+  'Beach volleyball',
+  'venue-beachmitte',
+  'BeachMitte',
+  'Caroline-Michaelis-Str. 8, 10115 Berlin',
+  52.5360,
+  13.3924,
+  'paid',
+  12,
+  'Europe/Berlin',
+  4,
+  '18:30',
+  90,
+  '2026-04-09',
+  '2026-07-30',
+  'active',
+  '2026-04-03T00:00:00.000Z',
+  '2026-04-03T00:00:00.000Z'
+);
+
+INSERT OR REPLACE INTO meetings (
+  id,
+  group_id,
+  owner_user_id,
+  series_id,
+  title,
+  description,
+  activity_label,
+  venue_id,
+  location_name,
+  location_address,
+  latitude,
+  longitude,
+  pricing,
+  capacity,
+  starts_at,
+  ends_at,
+  occurrence_date,
+  status,
+  created_at,
+  updated_at
+) VALUES
+  (
+    '9ed4bd47-af0b-4f54-a061-7eb5af6fef87',
+    'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    NULL,
+    'Sunday Free Courts Warmup',
+    'Open warm-up session at the free Friedrichshain sandbox courts.',
+    'Beach volleyball',
+    'venue-volkspark-friedrichshain',
+    'Volkspark Friedrichshain Sandbox',
+    'Paul-Heyse-Str. 1, 10407 Berlin',
+    52.5297,
+    13.4415,
+    'free',
+    8,
+    '2026-04-12T09:30:00.000Z',
+    '2026-04-12T11:00:00.000Z',
+    '2026-04-12',
+    'active',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'f7c5fd75-4521-48c8-b794-61e1de7caad1',
+    '8f96eb6d-918a-4f72-a50c-476fdc8c8325',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    NULL,
+    'Private sunrise reps',
+    'Invite-only morning practice slot for the private crew.',
+    'Beach volleyball',
+    'venue-monbijoupark',
+    'Monbijoupark Courts',
+    'Monbijouplatz, 10178 Berlin',
+    52.5233,
+    13.3994,
+    'free',
+    6,
+    '2026-04-14T05:30:00.000Z',
+    '2026-04-14T07:00:00.000Z',
+    '2026-04-14',
+    'active',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  );
+
+INSERT OR REPLACE INTO meeting_claims (
+  id,
+  meeting_id,
+  user_id,
+  created_at
+) VALUES (
+  'df11fc18-0bb6-4248-a2ce-8228c29457e1',
+  '9ed4bd47-af0b-4f54-a061-7eb5af6fef87',
+  '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+  '2026-04-03T00:00:00.000Z'
+);
+
+INSERT OR REPLACE INTO meeting_posts (
+  id,
+  meeting_id,
+  author_user_id,
+  content,
+  created_at
+) VALUES (
+  '4d1b72d0-34ce-420b-96f1-4bdfc88718f3',
+  '9ed4bd47-af0b-4f54-a061-7eb5af6fef87',
+  '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+  'Bring layers. It can still be chilly in the morning even when the sand looks inviting.',
+  '2026-04-03T00:00:00.000Z'
+);

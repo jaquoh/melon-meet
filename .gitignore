@@ -1,0 +1,14 @@
+node_modules/
+.wrangler/
+.idea/
+
+dist/
+apps/web/dist/
+
+.DS_Store
+coverage/
+*.log
+
+.env
+.env.*
+!.env.example

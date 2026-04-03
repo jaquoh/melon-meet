@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "melon-meet",
+  "main": "apps/api/src/index.ts",
+  "compatibility_date": "2026-04-03",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./apps/web/dist"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "melon-meet",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "./apps/api/migrations"
+    }
+  ],
+  "vars": {
+    "APP_NAME": "Melon Meet",
+    "DEFAULT_TIMEZONE": "Europe/Berlin"
+  }
+}

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+@import "preline/variants.css";
+
+@source "../../../node_modules/preline/dist/*.js";
+@plugin "@tailwindcss/forms";
+
+:root {
+  color: #292524;
+  font-family: "Satoshi", "Plus Jakarta Sans", "Avenir Next", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.nav-pill {
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  color: #57534e;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.nav-pill:hover {
+  color: #1c1917;
+  transform: translateY(-1px);
+}
+
+.nav-pill.active {
+  background: #1c1917;
+  color: white;
+}
+
+.map-shell .maplibregl-canvas {
+  border-radius: 32px;
+}
+
+.map-shell .maplibregl-ctrl-group {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 50px -28px rgba(15, 23, 42, 0.45);
+}
