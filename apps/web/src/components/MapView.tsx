@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import maplibregl, { Marker } from "maplibre-gl";
 import type { MeetingSummary, VenueSummary } from "../../../../packages/shared/src";
 
@@ -21,10 +21,52 @@ interface MapViewProps {
   onDraftLocationChange: (location: DraftLocation) => void;
   onMeetingSelect: (meeting: MeetingSummary) => void;
   onVenueSelect: (venue: VenueSummary) => void;
+  venueMeetingsById?: Record<string, MeetingSummary[]>;
   venues: VenueSummary[];
 }
 
 const BERLIN_CENTER: [number, number] = [13.405, 52.52];
+
+function popupMarkup(title: string, lines: string[], tag?: string) {
+  return `
+    <div class="map-popup">
+      ${tag ? `<span class="map-popup__tag">${tag}</span>` : ""}
+      <p class="map-popup__title">${title}</p>
+      ${lines.map((line) => `<p class="map-popup__meta">${line}</p>`).join("")}
+    </div>
+  `;
+}
+
+function wireHoverPopup(marker: Marker, popup: maplibregl.Popup, button: HTMLButtonElement) {
+  let hoverTimer: number | null = null;
+
+  const openPopup = () => {
+    if (hoverTimer) {
+      window.clearTimeout(hoverTimer);
+      hoverTimer = null;
+    }
+    if (!popup.isOpen()) {
+      marker.togglePopup();
+    }
+  };
+
+  const closePopup = () => {
+    hoverTimer = window.setTimeout(() => {
+      if (popup.isOpen()) {
+        popup.remove();
+      }
+    }, 90);
+  };
+
+  button.addEventListener("mouseenter", openPopup);
+  button.addEventListener("mouseleave", closePopup);
+
+  popup.on("open", () => {
+    const popupElement = popup.getElement();
+    popupElement?.addEventListener("mouseenter", openPopup);
+    popupElement?.addEventListener("mouseleave", closePopup);
+  });
+}
 
 export function MapView({
   draftLocation,
@@ -33,6 +75,7 @@ export function MapView({
   onDraftLocationChange,
   onMeetingSelect,
   onVenueSelect,
+  venueMeetingsById = {},
   venues,
 }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +83,11 @@ export function MapView({
   const venueMarkersRef = useRef<Marker[]>([]);
   const meetingMarkersRef = useRef<Marker[]>([]);
   const draftMarkerRef = useRef<Marker | null>(null);
+
+  const emitBoundsChange = useEffectEvent(onBoundsChange);
+  const emitDraftLocationChange = useEffectEvent(onDraftLocationChange);
+  const emitMeetingSelect = useEffectEvent(onMeetingSelect);
+  const emitVenueSelect = useEffectEvent(onVenueSelect);
 
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) {
@@ -50,99 +98,122 @@ export function MapView({
       attributionControl: { compact: false },
       center: BERLIN_CENTER,
       container: mapContainerRef.current,
-      style:
-        import.meta.env.VITE_MAP_STYLE_URL ??
-        "https://tiles.openfreemap.org/styles/liberty",
+      style: import.meta.env.VITE_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty",
       zoom: 10.9,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.on("load", () => {
+
+    const syncBounds = () => {
       const bounds = map.getBounds();
-      onBoundsChange({
+      emitBoundsChange({
         east: bounds.getEast(),
         north: bounds.getNorth(),
         south: bounds.getSouth(),
         west: bounds.getWest(),
       });
-    });
+    };
 
-    map.on("moveend", () => {
-      const bounds = map.getBounds();
-      onBoundsChange({
-        east: bounds.getEast(),
-        north: bounds.getNorth(),
-        south: bounds.getSouth(),
-        west: bounds.getWest(),
-      });
-    });
-
+    map.on("load", syncBounds);
+    map.on("moveend", syncBounds);
     map.on("click", (event) => {
-      onDraftLocationChange({
+      emitDraftLocationChange({
         latitude: Number(event.lngLat.lat.toFixed(6)),
         longitude: Number(event.lngLat.lng.toFixed(6)),
       });
     });
 
     mapRef.current = map;
+
     return () => {
+      venueMarkersRef.current.forEach((marker) => marker.remove());
+      meetingMarkersRef.current.forEach((marker) => marker.remove());
+      draftMarkerRef.current?.remove();
+      venueMarkersRef.current = [];
+      meetingMarkersRef.current = [];
+      draftMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
-  }, [onBoundsChange, onDraftLocationChange]);
+  }, []);
 
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
     venueMarkersRef.current.forEach((marker) => marker.remove());
     venueMarkersRef.current = venues.map((venue) => {
       const button = document.createElement("button");
-      button.className = `flex h-11 w-11 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-lg ${
-        venue.pricing === "free" ? "bg-teal-500" : "bg-orange-500"
-      }`;
+      button.className = "map-pin map-pin--venue";
       button.type = "button";
-      button.textContent = venue.pricing === "free" ? "F" : "€";
-      button.addEventListener("click", () => onVenueSelect(venue));
+      const venueMeetings = venueMeetingsById[venue.id] ?? [];
+      const nextMeeting = venueMeetings[0];
+      button.textContent = venueMeetings.length > 0 ? String(venueMeetings.length) : venue.pricing === "free" ? "FREE" : "PAID";
+      button.addEventListener("click", () => emitVenueSelect(venue));
 
-      const popup = new maplibregl.Popup({ offset: 18 }).setHTML(
-        `<div class="min-w-[180px]">
-          <p style="font-weight:700;margin:0 0 4px">${venue.name}</p>
-          <p style="margin:0;color:#57534e;font-size:12px">${venue.address}</p>
-        </div>`,
+      const popup = new maplibregl.Popup({ closeButton: false, offset: 16 }).setHTML(
+        popupMarkup(
+          venue.name,
+          [
+            venue.address,
+            nextMeeting ? `Next: ${formatMeetingWindow(nextMeeting)}` : "No scheduled meetings",
+            nextMeeting ? nextMeeting.title : venue.pricing,
+          ],
+          venueMeetings.length > 0 ? `${venueMeetings.length} events` : undefined,
+        ),
       );
 
-      return new maplibregl.Marker({ element: button })
+      const marker = new maplibregl.Marker({ element: button })
         .setLngLat([venue.longitude, venue.latitude])
         .setPopup(popup)
-        .addTo(mapRef.current!);
+        .addTo(map);
+
+      wireHoverPopup(marker, popup, button);
+      return marker;
     });
-  }, [onVenueSelect, venues]);
+  }, [emitVenueSelect, venueMeetingsById, venues]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
     meetingMarkersRef.current.forEach((marker) => marker.remove());
     meetingMarkersRef.current = meetings.map((meeting) => {
       const button = document.createElement("button");
-      button.className =
-        "min-w-16 rounded-full border border-white/80 bg-stone-900/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg";
+      button.className = `map-pin map-pin--meeting ${meeting.viewerHasClaimed ? "map-pin--claimed" : ""}`.trim();
       button.type = "button";
-      button.textContent = `${meeting.claimedSpots}/${meeting.capacity}`;
-      button.addEventListener("click", () => onMeetingSelect(meeting));
+      button.textContent = meeting.viewerHasClaimed ? "YOU" : `${meeting.claimedSpots}/${meeting.capacity}`;
+      button.addEventListener("click", () => emitMeetingSelect(meeting));
 
-      const popup = new maplibregl.Popup({ offset: 18 }).setHTML(
-        `<div class="min-w-[220px]">
-          <p style="font-weight:700;margin:0 0 4px">${meeting.title}</p>
-          <p style="margin:0;color:#57534e;font-size:12px">${meeting.groupName}</p>
-          <p style="margin:4px 0 0;color:#57534e;font-size:12px">${meeting.claimedSpots}/${meeting.capacity} spots claimed</p>
-        </div>`,
+      const popup = new maplibregl.Popup({ closeButton: false, offset: 16 }).setHTML(
+        popupMarkup(
+          meeting.title,
+          [
+            meeting.groupName,
+            formatMeetingWindow(meeting),
+            `${meeting.claimedSpots}/${meeting.capacity} spots claimed`,
+          ],
+          meeting.viewerHasClaimed ? "You're attending" : undefined,
+        ),
       );
 
-      return new maplibregl.Marker({ element: button })
+      const marker = new maplibregl.Marker({ element: button })
         .setLngLat([meeting.longitude, meeting.latitude])
         .setPopup(popup)
-        .addTo(mapRef.current!);
+        .addTo(map);
+
+      wireHoverPopup(marker, popup, button);
+      return marker;
     });
-  }, [meetings, onMeetingSelect]);
+  }, [emitMeetingSelect, meetings]);
 
   useEffect(() => {
-    if (!mapRef.current) {
+    const map = mapRef.current;
+    if (!map) {
       return;
     }
 
@@ -152,26 +223,43 @@ export function MapView({
       return;
     }
 
-    const marker =
-      draftMarkerRef.current ??
-      new maplibregl.Marker({
-        color: "#0f172a",
+    if (!draftMarkerRef.current) {
+      const draftElement = document.createElement("div");
+      draftElement.className = "map-pin map-pin--draft";
+
+      const marker = new maplibregl.Marker({
         draggable: true,
+        element: draftElement,
       })
         .setLngLat([draftLocation.longitude, draftLocation.latitude])
-        .addTo(mapRef.current);
+        .addTo(map);
 
-    marker.setLngLat([draftLocation.longitude, draftLocation.latitude]);
-    marker.on("dragend", () => {
-      const lngLat = marker.getLngLat();
-      onDraftLocationChange({
-        latitude: Number(lngLat.lat.toFixed(6)),
-        longitude: Number(lngLat.lng.toFixed(6)),
+      marker.on("dragend", () => {
+        const lngLat = marker.getLngLat();
+        emitDraftLocationChange({
+          latitude: Number(lngLat.lat.toFixed(6)),
+          longitude: Number(lngLat.lng.toFixed(6)),
+        });
       });
-    });
 
-    draftMarkerRef.current = marker;
-  }, [draftLocation, onDraftLocationChange]);
+      draftMarkerRef.current = marker;
+    }
 
-  return <div className="map-shell min-h-[70vh] w-full overflow-hidden rounded-[32px]" ref={mapContainerRef} />;
+    draftMarkerRef.current.setLngLat([draftLocation.longitude, draftLocation.latitude]);
+  }, [draftLocation, emitDraftLocationChange]);
+
+  return <div className="map-shell" ref={mapContainerRef} />;
+}
+
+function formatMeetingWindow(meeting: MeetingSummary) {
+  const date = new Date(meeting.startsAt);
+  const dateLabel = date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+  const timeLabel = date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${dateLabel} · ${timeLabel}`;
 }

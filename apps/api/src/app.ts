@@ -202,6 +202,7 @@ async function listAccessibleMeetings(
     endAt?: string;
     groupId?: string;
     meetingId?: string;
+    venueId?: string;
     north?: number;
     openOnly?: boolean;
     pricing?: "all" | "free" | "paid";
@@ -246,6 +247,7 @@ async function listAccessibleMeetings(
      WHERE m.status = 'active'
        AND (? IS NULL OR m.id = ?)
        AND (? IS NULL OR m.group_id = ?)
+       AND (? IS NULL OR m.venue_id = ?)
        AND (? IS NULL OR m.starts_at >= ?)
        AND (? IS NULL OR m.starts_at <= ?)
        AND (? IS NULL OR m.longitude >= ?)
@@ -271,6 +273,8 @@ async function listAccessibleMeetings(
     options?.meetingId ?? null,
     options?.groupId ?? null,
     options?.groupId ?? null,
+    options?.venueId ?? null,
+    options?.venueId ?? null,
     options?.startAt ?? null,
     options?.startAt ?? null,
     options?.endAt ?? null,
@@ -944,6 +948,47 @@ export function createApp() {
         pricing: venue.pricing,
         sourceUrl: venue.source_url,
       })),
+    });
+  });
+
+  app.get("/api/venues/:id", async (c) => {
+    await ensureSeriesCoverage(c.env.DB);
+    const viewerId = c.get("viewer")?.id ?? null;
+
+    const venue = await firstRow<{
+      address: string;
+      description: string;
+      id: string;
+      latitude: number;
+      longitude: number;
+      name: string;
+      pricing: "free" | "paid";
+      source_url: string | null;
+    }>(
+      c.env.DB,
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url
+       FROM venues
+       WHERE id = ?`,
+      c.req.param("id"),
+    );
+    assertOrThrow(venue, 404, "Venue not found.");
+
+    const meetings = await listAccessibleMeetings(c.env.DB, viewerId, {
+      venueId: venue.id,
+    });
+
+    return c.json({
+      meetings,
+      venue: {
+        address: venue.address,
+        description: venue.description,
+        id: venue.id,
+        latitude: Number(venue.latitude),
+        longitude: Number(venue.longitude),
+        name: venue.name,
+        pricing: venue.pricing,
+        sourceUrl: venue.source_url,
+      },
     });
   });
 

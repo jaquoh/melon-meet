@@ -141,6 +141,17 @@ INSERT OR REPLACE INTO app_groups (
     'Beach volleyball',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'Open City Sand Sessions',
+    'open-city-sand-sessions',
+    'Public pick-up group for weekday evening sessions across free and paid Berlin courts.',
+    'public',
+    'Mixed play',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
   );
 
 INSERT OR REPLACE INTO app_group_members (
@@ -163,6 +174,13 @@ INSERT OR REPLACE INTO app_group_members (
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     'owner',
     '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'e89760d3-62c6-495b-b7f3-ea6fcb80b2a2',
+    '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'owner',
+    '2026-04-03T00:00:00.000Z'
   );
 
 INSERT OR REPLACE INTO group_posts (
@@ -177,6 +195,13 @@ INSERT OR REPLACE INTO group_posts (
     'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     'Demo group is ready. Feel free to sign in with demo@melonmeet.local / demo12345 and explore the flows.',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    'f8941d82-12b8-4db8-b5b8-dce25fb16306',
+    '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    'Added a second public mock group so the timeline stays lively even before you join anything.',
     '2026-04-03T00:00:00.000Z'
   );
 
@@ -290,6 +315,50 @@ INSERT OR REPLACE INTO meetings (
     '2026-04-14T05:30:00.000Z',
     '2026-04-14T07:00:00.000Z',
     '2026-04-14',
+    'active',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    '4eb628df-dc51-49b4-b54d-2fcb85fef4ec',
+    '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    NULL,
+    'Tuesday City Courts Open Play',
+    'Public evening rotations with flexible teams and extra space for walk-ins.',
+    'Mixed play',
+    'venue-monbijoupark',
+    'Monbijoupark Courts',
+    'Monbijouplatz, 10178 Berlin',
+    52.5233,
+    13.3994,
+    'free',
+    10,
+    '2026-04-21T16:30:00.000Z',
+    '2026-04-21T18:30:00.000Z',
+    '2026-04-21',
+    'active',
+    '2026-04-03T00:00:00.000Z',
+    '2026-04-03T00:00:00.000Z'
+  ),
+  (
+    '5db32cc0-7662-4a04-8b3e-c1435f2d640f',
+    '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
+    '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+    NULL,
+    'Friday Afterwork Ladder',
+    'Open ladder night with mixed levels and easy drop-in for new players.',
+    'Mixed play',
+    'venue-beach61',
+    'Beach61',
+    'Park am Gleisdreieck, 10963 Berlin',
+    52.4988,
+    13.3740,
+    'paid',
+    14,
+    '2026-04-24T17:00:00.000Z',
+    '2026-04-24T19:00:00.000Z',
+    '2026-04-24',
     'active',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'

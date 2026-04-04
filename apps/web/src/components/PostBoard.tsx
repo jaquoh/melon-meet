@@ -40,43 +40,41 @@ export function PostBoard({
   }
 
   return (
-    <PanelCard>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-            Pinboard
-          </p>
-          <h3 className="mt-1 text-xl font-semibold text-stone-900">{title}</h3>
-        </div>
+    <PanelCard className="stack-md">
+      <div>
+        <p className="eyebrow">Pinboard</p>
+        <h3 className="detail-title">{title}</h3>
       </div>
 
       {canPost ? (
-        <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+        <form className="stack-sm" onSubmit={handleSubmit}>
           <textarea
-            className="block min-h-28 w-full rounded-3xl border-stone-200 bg-stone-50/90 px-4 py-3 text-sm"
+            className="field-area"
             onChange={(event) => setContent(event.target.value)}
             placeholder="Share a quick update, game note, or meetup detail..."
             value={content}
           />
-          <button className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={submitting}>
-            {submitting ? "Sending..." : buttonLabel}
-          </button>
+          <div className="form-actions">
+            <button className="button-primary" disabled={submitting}>
+              {submitting ? "Sending" : buttonLabel}
+            </button>
+          </div>
         </form>
       ) : null}
 
-      <div className="mt-5 space-y-3">
+      <div className="stack-sm">
         {posts.length === 0 ? (
-          <p className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-4 py-5 text-sm text-stone-500">
-            {emptyLabel}
-          </p>
+          <p className="empty-state">{emptyLabel}</p>
         ) : (
           posts.map((post) => (
-            <article className="rounded-3xl border border-stone-200/80 bg-stone-50/80 px-4 py-4" key={post.id}>
-              <div className="flex items-center justify-between gap-4">
-                <p className="font-medium text-stone-900">{post.author.displayName}</p>
-                <p className="text-xs text-stone-500">{formatDateTime(post.createdAt)}</p>
+            <article className="terminal-item" key={post.id}>
+              <div className="terminal-item__row">
+                <p className="terminal-item__title">{post.author.displayName}</p>
+                <p className="terminal-item__meta">{formatDateTime(post.createdAt)}</p>
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-stone-600">{post.content}</p>
+              <p className="muted-copy" style={{ whiteSpace: "pre-wrap" }}>
+                {post.content}
+              </p>
             </article>
           ))
         )}

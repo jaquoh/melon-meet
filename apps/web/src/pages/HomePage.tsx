@@ -1,12 +1,14 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
+import { EventTimeline } from "../components/EventTimeline";
 import { MapView } from "../components/MapView";
 import { MeetingForm } from "../components/MeetingForm";
 import { PanelCard } from "../components/PanelCard";
-import { claimMeeting, createMeeting, getGroups, getMap, unclaimMeeting } from "../lib/api";
+import { claimMeeting, createMeeting, getGroups, getMap, getMe, unclaimMeeting } from "../lib/api";
 import { formatDateTime } from "../lib/format";
+import { createNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
 const INITIAL_BOUNDS = {
@@ -18,6 +20,16 @@ const INITIAL_BOUNDS = {
   south: 52.3383,
   startAt: "",
   west: 13.0884,
+};
+
+const DISCOVERY_BOUNDS = {
+  east: 180,
+  north: 90,
+  openOnly: false,
+  pricing: "all" as const,
+  south: -90,
+  startAt: new Date().toISOString(),
+  west: -180,
 };
 
 interface HomeFilters {
@@ -32,12 +44,20 @@ interface HomeFilters {
 }
 
 export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
+  const location = useLocation();
   const [filters, setFilters] = useState<HomeFilters>(INITIAL_BOUNDS);
   const [selectedVenue, setSelectedVenue] = useState<VenueSummary | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingSummary | null>(null);
   const [draftLocation, setDraftLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showClaimedOnly, setShowClaimedOnly] = useState(false);
+  const [mapLayer, setMapLayer] = useState<"meetings" | "venues">("meetings");
   const deferredFilters = useDeferredValue(filters);
+
+  const meQuery = useQuery({
+    queryFn: getMe,
+    queryKey: ["me"],
+  });
 
   const groupsQuery = useQuery({
     queryFn: getGroups,
@@ -59,15 +79,18 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
     queryKey: ["map", deferredFilters],
   });
 
+  const nextEventsQuery = useQuery({
+    queryFn: () => getMap(DISCOVERY_BOUNDS),
+    queryKey: ["map", "member-upcoming"],
+  });
+
   const claimMutation = useMutation({
-    mutationFn: async (meeting: MeetingSummary) =>
-      meeting.viewerHasClaimed
-        ? unclaimMeeting(meeting.id)
-        : claimMeeting(meeting.id),
+    mutationFn: async (meeting: MeetingSummary) => (meeting.viewerHasClaimed ? unclaimMeeting(meeting.id) : claimMeeting(meeting.id)),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["map"] }),
         queryClient.invalidateQueries({ queryKey: ["meeting"] }),
+        queryClient.invalidateQueries({ queryKey: ["map", "member-upcoming"] }),
       ]);
     },
   });
@@ -79,53 +102,100 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["map"] }),
         queryClient.invalidateQueries({ queryKey: ["groups"] }),
+        queryClient.invalidateQueries({ queryKey: ["map", "member-upcoming"] }),
       ]);
     },
   });
 
+  const myGroupIds = new Set((meQuery.data?.groups ?? []).map((group) => group.id));
+  const upcomingTimelineMeetings = useMemo(() => {
+    const meetings = nextEventsQuery.data?.meetings ?? [];
+
+    return [...meetings]
+      .filter((meeting) => (viewer ? true : meeting.groupVisibility === "public"))
+      .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
+      .slice(0, 10);
+  }, [nextEventsQuery.data?.meetings, viewer]);
+
+  const visibleUpcomingMeetings = useMemo(
+    () =>
+      showClaimedOnly
+        ? upcomingTimelineMeetings.filter((meeting) => meeting.viewerHasClaimed)
+        : upcomingTimelineMeetings,
+    [showClaimedOnly, upcomingTimelineMeetings],
+  );
+
+  const myMeetingsCount = (nextEventsQuery.data?.meetings ?? []).filter((meeting) => meeting.viewerHasClaimed).length;
+  const venueMeetingsById = useMemo(() => {
+    return (nextEventsQuery.data?.meetings ?? []).reduce<Record<string, MeetingSummary[]>>((accumulator, meeting) => {
+      if (!meeting.venueId) {
+        return accumulator;
+      }
+
+      const current = accumulator[meeting.venueId] ?? [];
+      accumulator[meeting.venueId] = [...current, meeting];
+      return accumulator;
+    }, {});
+  }, [nextEventsQuery.data?.meetings]);
+  const selectedVenueMeetings = selectedVenue ? venueMeetingsById[selectedVenue.id] ?? [] : [];
+  const nextVenueMeeting = selectedVenueMeetings[0] ?? null;
+  const homeNavigationState = createNavigationState(location, "Map board");
+  const mapMeetings = mapLayer === "meetings" ? mapQuery.data?.meetings ?? [] : [];
+  const mapVenues = mapLayer === "venues" ? mapQuery.data?.venues ?? [] : [];
+
   const selectedCard = useMemo(() => {
     if (selectedMeeting) {
       return (
-        <PanelCard className="space-y-4">
-          <div className="flex items-start justify-between gap-4">
+        <PanelCard className={`stack-sm ${selectedMeeting.viewerHasClaimed ? "panel-card--attending" : ""}`}>
+          <div className="terminal-item__row">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                Meeting
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-stone-900">{selectedMeeting.title}</h2>
+              <p className="eyebrow">Meeting detail</p>
+              <h2 className="section-title">{selectedMeeting.title}</h2>
             </div>
-            <span className="rounded-full bg-stone-900 px-3 py-1 text-xs font-medium text-white">
-              {selectedMeeting.claimedSpots}/{selectedMeeting.capacity}
-            </span>
+            <div className="compact-badges">
+              {selectedMeeting.viewerHasClaimed ? <span className="badge-accent">Attending</span> : null}
+              <span className="badge-invert">
+                {selectedMeeting.claimedSpots}/{selectedMeeting.capacity}
+              </span>
+            </div>
           </div>
-          <p className="text-sm leading-7 text-stone-600">
-            {selectedMeeting.description || "No description yet."}
-          </p>
-          <dl className="grid gap-3 text-sm text-stone-600">
-            <div>
-              <dt className="font-medium text-stone-900">When</dt>
-              <dd>{formatDateTime(selectedMeeting.startsAt)}</dd>
+
+          <p className="muted-copy">{selectedMeeting.description || "No description yet."}</p>
+
+          <div className="detail-grid detail-grid--two">
+            <div className="terminal-item">
+              <p className="terminal-item__meta">When</p>
+              <p className="terminal-item__title">{formatDateTime(selectedMeeting.startsAt)}</p>
             </div>
-            <div>
-              <dt className="font-medium text-stone-900">Where</dt>
-              <dd>{selectedMeeting.locationName}</dd>
+            <div className="terminal-item">
+              <p className="terminal-item__meta">Where</p>
+              <p className="terminal-item__title">{selectedMeeting.locationName}</p>
             </div>
-            <div>
-              <dt className="font-medium text-stone-900">Group</dt>
-              <dd>{selectedMeeting.groupName}</dd>
+            <div className="terminal-item">
+              <p className="terminal-item__meta">Group</p>
+              <p className="terminal-item__title">{selectedMeeting.groupName}</p>
             </div>
-            <div>
-              <dt className="font-medium text-stone-900">Open spots</dt>
-              <dd>{selectedMeeting.openSpots}</dd>
+            <div className="terminal-item">
+              <p className="terminal-item__meta">Open spots</p>
+              <p className="terminal-item__title">{selectedMeeting.openSpots}</p>
             </div>
-          </dl>
-          <div className="flex flex-wrap gap-3">
-            <Link className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-900" to={`/meetings/${selectedMeeting.id}`}>
+          </div>
+
+          <div className="form-actions form-actions--start">
+            <Link className="button-secondary" state={homeNavigationState} to={`/meetings/${selectedMeeting.id}`}>
               View meeting
             </Link>
+            <Link className="button-secondary" state={homeNavigationState} to={`/groups/${selectedMeeting.groupId}`}>
+              Open group
+            </Link>
+            {selectedMeeting.venueId ? (
+              <Link className="button-secondary" state={homeNavigationState} to={`/venues/${selectedMeeting.venueId}`}>
+                Open venue
+              </Link>
+            ) : null}
             {viewer ? (
               <button
-                className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className={selectedMeeting.viewerHasClaimed ? "button-accent" : "button-primary"}
                 disabled={claimMutation.isPending}
                 onClick={() => claimMutation.mutate(selectedMeeting)}
                 type="button"
@@ -133,7 +203,7 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
                 {selectedMeeting.viewerHasClaimed ? "Release spot" : "Claim spot"}
               </button>
             ) : (
-              <Link className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700" to="/auth">
+              <Link className="button-primary" to="/auth">
                 Sign in to join
               </Link>
             )}
@@ -144,26 +214,67 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
 
     if (selectedVenue) {
       return (
-        <PanelCard className="space-y-4">
-          <div className="flex items-start justify-between gap-4">
+        <PanelCard className="stack-sm">
+          <div className="terminal-item__row">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-500">
-                Venue
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-stone-900">{selectedVenue.name}</h2>
+              <p className="eyebrow">Venue detail</p>
+              <h2 className="section-title">{selectedVenue.name}</h2>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-medium ${selectedVenue.pricing === "free" ? "bg-teal-100 text-teal-700" : "bg-orange-100 text-orange-700"}`}>
-              {selectedVenue.pricing}
-            </span>
+            <span className="badge-outline">{selectedVenue.pricing}</span>
           </div>
-          <p className="text-sm leading-7 text-stone-600">{selectedVenue.description}</p>
-          <div className="rounded-3xl bg-stone-50 px-4 py-4 text-sm text-stone-600">
-            <p className="font-medium text-stone-900">Address</p>
-            <p className="mt-1">{selectedVenue.address}</p>
+
+          <p className="muted-copy">{selectedVenue.description}</p>
+
+          <div className="terminal-item">
+            <p className="terminal-item__meta">Address</p>
+            <p className="terminal-item__title">{selectedVenue.address}</p>
           </div>
-          <div className="flex flex-wrap gap-3">
+
+          {nextVenueMeeting ? (
+            <div className="terminal-item">
+              <p className="terminal-item__meta">Next meeting here</p>
+              <div className="stack-sm">
+                <p className="terminal-item__title">{nextVenueMeeting.title}</p>
+                <p className="terminal-item__meta">{formatDateTime(nextVenueMeeting.startsAt)}</p>
+                <p className="terminal-item__meta">{nextVenueMeeting.groupName}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="empty-state">No scheduled meetings at this venue yet.</p>
+          )}
+
+          {selectedVenueMeetings.length > 0 ? (
+            <div className="stack-sm">
+              <div className="editorial-topline">
+                <p className="eyebrow">Venue schedule</p>
+                <span className="editorial-tag">{selectedVenueMeetings.length} events</span>
+              </div>
+              <div className="stack-sm">
+                {selectedVenueMeetings.slice(0, 4).map((meeting) => (
+                  <Link
+                    className="terminal-item terminal-item--link"
+                    key={meeting.id}
+                    state={homeNavigationState}
+                    to={`/meetings/${meeting.id}`}
+                  >
+                    <div className="terminal-item__row">
+                      <div>
+                        <p className="terminal-item__title">{meeting.title}</p>
+                        <p className="terminal-item__meta">{formatDateTime(meeting.startsAt)}</p>
+                      </div>
+                      <span className={meeting.viewerHasClaimed ? "badge-accent" : "badge-outline"}>
+                        {meeting.groupName}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="form-actions form-actions--start">
             <button
-              className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+              className="button-primary"
               onClick={() => {
                 setShowCreateForm(true);
                 setDraftLocation({
@@ -175,8 +286,11 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
             >
               Meet here
             </button>
+            <Link className="button-secondary" state={homeNavigationState} to={`/venues/${selectedVenue.id}`}>
+              Open venue
+            </Link>
             {selectedVenue.sourceUrl ? (
-              <a className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-900" href={selectedVenue.sourceUrl} rel="noreferrer" target="_blank">
+              <a className="button-secondary" href={selectedVenue.sourceUrl} rel="noreferrer" target="_blank">
                 Venue source
               </a>
             ) : null}
@@ -186,87 +300,231 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
     }
 
     return (
-      <PanelCard className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-          Berlin map
-        </p>
-        <h2 className="text-2xl font-semibold text-stone-900">
-          Tap a court or a meeting marker to inspect the details here.
-        </h2>
-        <p className="text-sm leading-7 text-stone-600">
-          The map keeps the venue layer visible for public browsing, while meeting markers react to your time, pricing, and open-spot filters.
-        </p>
+      <PanelCard className="stack-sm panel-card--editorial">
+        <div className="editorial-topline">
+          <p className="eyebrow">Selection</p>
+          <span className="editorial-tag">meeting or venue</span>
+        </div>
+        <h2 className="section-title">Select a venue or meeting marker to inspect details here.</h2>
+        <div className="editorial-note">
+          <span className="editorial-index">///</span>
+          <p className="muted-copy">Switch the board between venues and meetings, then open the right-side detail card without leaving the current map context.</p>
+        </div>
       </PanelCard>
     );
-  }, [claimMutation, selectedMeeting, selectedVenue, viewer]);
+  }, [
+    claimMutation,
+    homeNavigationState,
+    nextVenueMeeting,
+    selectedMeeting,
+    selectedVenue,
+    selectedVenueMeetings,
+    viewer,
+  ]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="grid gap-5 xl:grid-cols-[1.45fr,0.55fr]">
-        <section className="space-y-5">
-          <PanelCard className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-500">
-                  Map filters
-                </p>
-                <h1 className="mt-1 text-3xl font-semibold text-stone-900 sm:text-4xl">
-                  Find courts, open spots, and the next game outside.
-                </h1>
+    <div className="page-wrap page-wrap--workspace">
+      <section className="home-main-shell">
+        <aside className="timeline-rail">
+          <EventTimeline
+            actions={
+              viewer ? (
+                <button
+                  className={showClaimedOnly ? "button-accent" : "button-secondary"}
+                  onClick={() => setShowClaimedOnly((value) => !value)}
+                  type="button"
+                >
+                  {showClaimedOnly ? "Show all" : "Only claimed"}
+                </button>
+              ) : null
+            }
+            contextLabel="Map board"
+            emptyAction={
+              !viewer ? (
+                <div className="form-actions form-actions--start">
+                  <Link className="button-primary button-inline" to="/auth">
+                    Sign in
+                  </Link>
+                </div>
+              ) : null
+            }
+            emptyLabel={
+              viewer ? "No upcoming public or member-group meetings yet." : "No public events are scheduled right now."
+            }
+            heading="Next events"
+            meetings={visibleUpcomingMeetings}
+            memberGroupIds={myGroupIds}
+            secondaryMeta="group-and-location"
+          />
+        </aside>
+
+        <div className="workspace-main">
+          <PanelCard className="home-toolbar">
+            <div className="home-toolbar__lead">
+              <div className="stack-sm">
+                <p className="eyebrow">Map board</p>
+                <h2 className="section-title typewriter-title">Live courts, sessions, and open spots</h2>
               </div>
-              <button
-                className="rounded-full bg-gradient-to-r from-orange-500 to-teal-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 transition hover:scale-[1.01]"
-                onClick={() => setShowCreateForm((value) => !value)}
-                type="button"
-              >
-                {showCreateForm ? "Hide create form" : "Create meeting"}
-              </button>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-stone-600">Pricing</span>
-                <select className="block w-full rounded-2xl border-stone-200 bg-stone-50 px-4 py-3 text-sm" onChange={(event) => setFilters((current) => ({ ...current, pricing: event.target.value as "all" | "free" | "paid" }))} value={filters.pricing}>
-                  <option value="all">All</option>
-                  <option value="free">Free</option>
-                  <option value="paid">Paid</option>
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-stone-600">Starts after</span>
-                <input className="block w-full rounded-2xl border-stone-200 bg-stone-50 px-4 py-3 text-sm" onChange={(event) => setFilters((current) => ({ ...current, startAt: event.target.value ? new Date(event.target.value).toISOString() : "" }))} type="datetime-local" />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-stone-600">Starts before</span>
-                <input className="block w-full rounded-2xl border-stone-200 bg-stone-50 px-4 py-3 text-sm" onChange={(event) => setFilters((current) => ({ ...current, endAt: event.target.value ? new Date(event.target.value).toISOString() : "" }))} type="datetime-local" />
-              </label>
-
-              <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
-                <input checked={filters.openOnly} onChange={(event) => setFilters((current) => ({ ...current, openOnly: event.target.checked }))} type="checkbox" />
-                Only show meetings with open spots
-              </label>
-
-              <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-500">
-                Map location filter is driven by the current viewport. Pan or zoom Berlin to narrow results.
+              <div className="home-toolbar__actions">
+                <div className="mode-switch mode-switch--compact">
+                  <button
+                    className={`mode-switch__button ${mapLayer === "meetings" ? "is-active" : ""}`}
+                    onClick={() => {
+                      setMapLayer("meetings");
+                      setSelectedVenue(null);
+                    }}
+                    type="button"
+                  >
+                    Meetings
+                  </button>
+                  <button
+                    className={`mode-switch__button ${mapLayer === "venues" ? "is-active" : ""}`}
+                    onClick={() => {
+                      setMapLayer("venues");
+                      setSelectedMeeting(null);
+                    }}
+                    type="button"
+                  >
+                    Venues
+                  </button>
+                </div>
+                <button className="button-primary" onClick={() => setShowCreateForm((value) => !value)} type="button">
+                  {showCreateForm ? "Hide create form" : "Create meeting"}
+                </button>
+                <div className="compact-badges">
+                  <span className="badge">{mapQuery.data?.meetings.length ?? 0} meetings</span>
+                  <span className="badge">{mapQuery.data?.venues.length ?? 0} venues</span>
+                  {viewer ? <span className="badge-accent">{myMeetingsCount} claimed</span> : null}
+                </div>
               </div>
             </div>
           </PanelCard>
 
+          <div className="map-workspace">
+            <aside className="map-sidebar map-sidebar--filters">
+              <PanelCard className="stack-sm">
+                <div className="editorial-topline">
+                  <p className="eyebrow">Filters</p>
+                  <span className="editorial-tag">viewport aware</span>
+                </div>
+
+                <div className="filter-stack">
+                  <label className="field-stack">
+                    <span className="field-label">Pricing</span>
+                    <select
+                      className="field-select"
+                      onChange={(event) =>
+                        setFilters((current) => ({
+                          ...current,
+                          pricing: event.target.value as "all" | "free" | "paid",
+                        }))
+                      }
+                      value={filters.pricing}
+                    >
+                      <option value="all">All</option>
+                      <option value="free">Free</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </label>
+
+                  <label className="field-stack">
+                    <span className="field-label">Starts after</span>
+                    <input
+                      className="field-input"
+                      onChange={(event) =>
+                        setFilters((current) => ({
+                          ...current,
+                          startAt: event.target.value ? new Date(event.target.value).toISOString() : "",
+                        }))
+                      }
+                      type="datetime-local"
+                    />
+                  </label>
+
+                  <label className="field-stack">
+                    <span className="field-label">Starts before</span>
+                    <input
+                      className="field-input"
+                      onChange={(event) =>
+                        setFilters((current) => ({
+                          ...current,
+                          endAt: event.target.value ? new Date(event.target.value).toISOString() : "",
+                        }))
+                      }
+                      type="datetime-local"
+                    />
+                  </label>
+
+                  <label className="field-check">
+                    <input
+                      checked={filters.openOnly}
+                      onChange={(event) => setFilters((current) => ({ ...current, openOnly: event.target.checked }))}
+                      type="checkbox"
+                    />
+                    Only open spots
+                  </label>
+                </div>
+
+                <div className="metrics-grid">
+                  <div className="metric-box">
+                    <p className="metric-box__value">{mapQuery.data?.venues.length ?? 0}</p>
+                    <p className="metric-box__label">Venues in view</p>
+                  </div>
+                  <div className="metric-box">
+                    <p className="metric-box__value">{mapQuery.data?.meetings.length ?? 0}</p>
+                    <p className="metric-box__label">Meetings in view</p>
+                  </div>
+                </div>
+              </PanelCard>
+            </aside>
+
+            <div className="map-stage map-stage--workspace">
+              <div className="map-stage__frame">
+                <MapView
+                  draftLocation={draftLocation}
+                  meetings={mapMeetings}
+                  onBoundsChange={(bounds) => setFilters((current) => ({ ...current, ...bounds }))}
+                  onDraftLocationChange={setDraftLocation}
+                  onMeetingSelect={(meeting) => {
+                    setSelectedVenue(null);
+                    setSelectedMeeting(meeting);
+                  }}
+                  onVenueSelect={(venue) => {
+                    setSelectedMeeting(null);
+                    setSelectedVenue(venue);
+                  }}
+                  venueMeetingsById={venueMeetingsById}
+                  venues={mapVenues}
+                />
+              </div>
+            </div>
+
+            <aside className="map-sidebar map-sidebar--details">
+              <div className="stack-sm">
+                {selectedCard}
+                {viewer ? (
+                  <PanelCard className="stack-sm">
+                    <div className="editorial-note editorial-note--compact">
+                      <span className="editorial-index">02</span>
+                      <p className="muted-copy">Claimed meetings use the clearest accent on the map and in the timeline while staying in time order.</p>
+                    </div>
+                  </PanelCard>
+                ) : null}
+              </div>
+            </aside>
+          </div>
+
           {showCreateForm ? (
-            <PanelCard>
-              <div className="mb-4 flex items-start justify-between gap-4">
+            <PanelCard className="stack-sm">
+              <div className="terminal-item__row">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                    Create meeting
-                  </p>
-                  <h2 className="mt-1 text-2xl font-semibold text-stone-900">
-                    {selectedVenue ? `New meetup at ${selectedVenue.name}` : "Create from the map or by exact coordinates"}
+                  <p className="eyebrow">Create meeting</p>
+                  <h2 className="section-title">
+                    {selectedVenue ? `New meetup at ${selectedVenue.name}` : "Create from the map or exact coordinates"}
                   </h2>
                 </div>
                 {viewer ? null : (
-                  <Link className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700" to="/auth">
+                  <Link className="button-secondary" to="/auth">
                     Sign in first
                   </Link>
                 )}
@@ -278,20 +536,20 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
                   initialLocation={
                     selectedVenue
                       ? {
-                        latitude: selectedVenue.latitude,
-                        locationAddress: selectedVenue.address,
-                        locationName: selectedVenue.name,
-                        longitude: selectedVenue.longitude,
-                        venueId: selectedVenue.id,
-                      }
+                          latitude: selectedVenue.latitude,
+                          locationAddress: selectedVenue.address,
+                          locationName: selectedVenue.name,
+                          longitude: selectedVenue.longitude,
+                          venueId: selectedVenue.id,
+                        }
                       : draftLocation
                         ? {
-                          latitude: draftLocation.latitude,
-                          locationAddress: `Dropped pin at ${draftLocation.latitude}, ${draftLocation.longitude}`,
-                          locationName: "Custom map location",
-                          longitude: draftLocation.longitude,
-                          venueId: null,
-                        }
+                            latitude: draftLocation.latitude,
+                            locationAddress: `Dropped pin at ${draftLocation.latitude}, ${draftLocation.longitude}`,
+                            locationName: "Custom map location",
+                            longitude: draftLocation.longitude,
+                            venueId: null,
+                          }
                         : null
                   }
                   onSubmit={async (payload) => {
@@ -299,60 +557,12 @@ export function HomePage({ viewer }: { viewer: ViewerSummary | null }) {
                   }}
                 />
               ) : (
-                <p className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-4 py-5 text-sm text-stone-500">
-                  Public browsing stays open, but meeting creation requires an account.
-                </p>
+                <p className="empty-state">Public browsing stays open, but meeting creation requires an account.</p>
               )}
             </PanelCard>
           ) : null}
-
-          <MapView
-            draftLocation={draftLocation}
-            meetings={mapQuery.data?.meetings ?? []}
-            onBoundsChange={(bounds) => setFilters((current) => ({ ...current, ...bounds }))}
-            onDraftLocationChange={setDraftLocation}
-            onMeetingSelect={(meeting) => {
-              setSelectedVenue(null);
-              setSelectedMeeting(meeting);
-            }}
-            onVenueSelect={(venue) => {
-              setSelectedMeeting(null);
-              setSelectedVenue(venue);
-            }}
-            venues={mapQuery.data?.venues ?? []}
-          />
-        </section>
-
-        <aside className="space-y-5">
-          {selectedCard}
-
-          <PanelCard>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-500">
-                  Live counts
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-stone-900">What the map is showing</h2>
-              </div>
-              {mapQuery.isFetching ? (
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-500">
-                  refreshing
-                </span>
-              ) : null}
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-3xl font-semibold text-stone-900">{mapQuery.data?.venues.length ?? 0}</p>
-                <p className="mt-1 text-sm text-stone-500">Berlin venues in view</p>
-              </div>
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-3xl font-semibold text-stone-900">{mapQuery.data?.meetings.length ?? 0}</p>
-                <p className="mt-1 text-sm text-stone-500">Public or member-visible meetings</p>
-              </div>
-            </div>
-          </PanelCard>
-        </aside>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

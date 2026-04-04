@@ -58,11 +58,11 @@ export function ProfilePage({ viewer }: { viewer: ViewerSummary | null }) {
   });
 
   if (profileQuery.isLoading) {
-    return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">Loading profile...</div>;
+    return <div className="loading-shell">Loading profile...</div>;
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return <div className="mx-auto max-w-7xl px-4 py-10 text-red-600 sm:px-6 lg:px-8">{profileQuery.error?.message ?? "Profile not found."}</div>;
+    return <div className="error-shell">{profileQuery.error?.message ?? "Profile not found."}</div>;
   }
 
   const ownProfile = viewer?.id === profileId;
@@ -71,56 +71,95 @@ export function ProfilePage({ viewer }: { viewer: ViewerSummary | null }) {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="grid gap-5 xl:grid-cols-[1.05fr,0.95fr]">
-        <section className="space-y-5">
-          <PanelCard className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                  Player profile
-                </p>
-                <h1 className="mt-1 text-4xl font-semibold text-stone-900">
-                  {profileQuery.data.profile.displayName}
-                </h1>
+    <div className="page-wrap">
+      <div className="profile-grid">
+        <section className="stack-md">
+          <PanelCard className="panel-card--highlight stack-md">
+            <div className="terminal-item__row">
+              <div className="stack-sm">
+                <p className="eyebrow">Player profile</p>
+                <h1 className="display-title">{profileQuery.data.profile.displayName}</h1>
               </div>
               {profileQuery.data.profile.avatarUrl ? (
                 <img
                   alt={profileQuery.data.profile.displayName}
-                  className="h-20 w-20 rounded-3xl object-cover"
+                  className="profile-avatar"
                   src={profileQuery.data.profile.avatarUrl}
                 />
               ) : null}
             </div>
-            <p className="text-sm leading-7 text-stone-600">
-              {profileQuery.data.profile.bio || "No bio yet."}
-            </p>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-stone-600">
-                {profileQuery.data.profile.homeArea || "Berlin"}
-              </span>
+
+            <p className="muted-copy">{profileQuery.data.profile.bio || "No bio yet."}</p>
+
+            <div className="form-actions form-actions--start">
+              <span className="badge">{profileQuery.data.profile.homeArea || "Berlin"}</span>
+              {ownProfile ? <span className="badge-outline">{profileQuery.data.profile.email}</span> : null}
+            </div>
+          </PanelCard>
+
+          {ownProfile ? (
+            <PanelCard className="stack-md">
+              <div>
+                <p className="eyebrow">Edit profile</p>
+                <h2 className="section-title">Keep your player card current</h2>
+              </div>
+              <ProfileForm
+                onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
+                profile={profileQuery.data.profile}
+              />
+            </PanelCard>
+          ) : null}
+        </section>
+
+        <aside className="stack-md">
+          <PanelCard className="stack-md">
+            <div>
+              <p className="eyebrow">Profile details</p>
+              <h2 className="detail-title">Snapshot</h2>
+            </div>
+
+            <div className="detail-grid detail-grid--two">
+              <div className="terminal-item">
+                <p className="terminal-item__meta">Home area</p>
+                <p className="terminal-item__title">{profileQuery.data.profile.homeArea || "Berlin"}</p>
+              </div>
+              <div className="terminal-item">
+                <p className="terminal-item__meta">Connection</p>
+                <p className="terminal-item__title">
+                  {profileQuery.data.friendship
+                    ? `${profileQuery.data.friendship.status} link`
+                    : ownProfile
+                      ? "Your account"
+                      : "No friend link"}
+                </p>
+              </div>
               {ownProfile ? (
-                <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-stone-600">
-                  {profileQuery.data.profile.email}
-                </span>
+                <div className="terminal-item field-full">
+                  <p className="terminal-item__meta">Email</p>
+                  <p className="terminal-item__title">{profileQuery.data.profile.email}</p>
+                </div>
               ) : null}
             </div>
 
             {!ownProfile && viewer ? (
-              <div className="flex flex-wrap gap-3">
+              <div className="form-actions form-actions--start">
                 {profileQuery.data.friendship ? (
                   <>
                     {incomingRequest ? (
-                      <button className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white" onClick={() => acceptMutation.mutate(incomingRequest.id)} type="button">
+                      <button className="button-primary" onClick={() => acceptMutation.mutate(incomingRequest.id)} type="button">
                         Accept request
                       </button>
                     ) : null}
-                    <button className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700" onClick={() => deleteMutation.mutate(profileQuery.data.friendship!.id)} type="button">
+                    <button
+                      className="button-secondary"
+                      onClick={() => deleteMutation.mutate(profileQuery.data.friendship!.id)}
+                      type="button"
+                    >
                       Remove friend link
                     </button>
                   </>
                 ) : (
-                  <button className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white" onClick={() => friendMutation.mutate()} type="button">
+                  <button className="button-primary" onClick={() => friendMutation.mutate()} type="button">
                     Add friend
                   </button>
                 )}
@@ -129,48 +168,31 @@ export function ProfilePage({ viewer }: { viewer: ViewerSummary | null }) {
           </PanelCard>
 
           {ownProfile ? (
-            <PanelCard>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                Edit profile
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-stone-900">Keep your player card current</h2>
-              <div className="mt-4">
-                <ProfileForm
-                  onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
-                  profile={profileQuery.data.profile}
-                />
+            <PanelCard className="stack-md">
+              <div>
+                <p className="eyebrow">Friends</p>
+                <h2 className="detail-title">Connections</h2>
               </div>
-            </PanelCard>
-          ) : null}
-        </section>
 
-        <aside className="space-y-5">
-          {ownProfile ? (
-            <PanelCard>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-500">
-                Friends
-              </p>
-              <div className="mt-4 space-y-3">
+              <div className="stack-sm">
                 {(meQuery.data?.friends ?? []).length === 0 ? (
-                  <p className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-4 py-5 text-sm text-stone-500">
-                    No friend links yet.
-                  </p>
+                  <p className="empty-state">No friend links yet.</p>
                 ) : (
                   meQuery.data?.friends.map((friend) => (
-                    <div className="rounded-3xl border border-stone-200/80 bg-stone-50/80 px-4 py-4" key={friend.id}>
-                      <div className="flex items-center justify-between gap-4">
+                    <div className="terminal-item" key={friend.id}>
+                      <div className="terminal-item__row">
                         <div>
-                          <p className="font-medium text-stone-900">{friend.user.displayName}</p>
-                          <p className="text-sm text-stone-500">
+                          <p className="terminal-item__title">{friend.user.displayName}</p>
+                          <p className="terminal-item__meta">
                             {friend.status} · {friend.direction}
                           </p>
                         </div>
                         {friend.status === "pending" && friend.direction === "incoming" ? (
-                          <button className="rounded-full bg-stone-900 px-3 py-2 text-xs font-medium text-white" onClick={() => acceptMutation.mutate(friend.id)} type="button">
+                          <button className="button-primary" onClick={() => acceptMutation.mutate(friend.id)} type="button">
                             Accept
                           </button>
                         ) : (
-                          <button className="rounded-full border border-stone-300 px-3 py-2 text-xs font-medium text-stone-700" onClick={() => deleteMutation.mutate(friend.id)} type="button">
+                          <button className="button-secondary" onClick={() => deleteMutation.mutate(friend.id)} type="button">
                             Remove
                           </button>
                         )}

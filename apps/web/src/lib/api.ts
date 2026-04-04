@@ -64,6 +64,11 @@ export interface MapResponse {
   venues: VenueSummary[];
 }
 
+export interface VenueDetailResponse {
+  meetings: MeetingSummary[];
+  venue: VenueSummary;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     credentials: "include",
@@ -189,6 +194,10 @@ export function getMap(params: {
   if (params.startAt) search.set("startAt", params.startAt);
   if (params.endAt) search.set("endAt", params.endAt);
   return request<MapResponse>(`/api/map?${search.toString()}`);
+}
+
+export function getVenue(venueId: string) {
+  return request<VenueDetailResponse>(`/api/venues/${venueId}`);
 }
 
 export function createMeeting(payload: Record<string, unknown>) {

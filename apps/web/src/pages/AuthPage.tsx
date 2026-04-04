@@ -2,9 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import { PanelCard } from "../components/PanelCard";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
-import { PanelCard } from "../components/PanelCard";
 
 export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -13,8 +13,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   const navigate = useNavigate();
 
   const authMutation = useMutation({
-    mutationFn: async () =>
-      mode === "login" ? logIn(email, password) : signUp(email, password),
+    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       navigate("/");
@@ -26,59 +25,100 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-81px)] max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid w-full gap-8 lg:grid-cols-[1.05fr,0.95fr]">
-        <PanelCard className="overflow-hidden bg-gradient-to-br from-orange-400 via-amber-300 to-teal-300 text-stone-950">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-white/80">
-            Melon Meet Access
+    <div className="page-wrap">
+      <div className="section-grid section-grid--split" style={{ alignItems: "center", minHeight: "calc(100vh - 9rem)" }}>
+        <PanelCard className="panel-card--highlight stack-md">
+          <div className="hero-grid">
+            <div className="stack-sm">
+              <p className="eyebrow">Access node</p>
+              <h1 className="display-title">
+                Claim spots.
+                <br />
+                Manage crews.
+                <br />
+                <span className="script-copy">keep the board in sync.</span>
+              </h1>
+            </div>
+            <div className="note-box">
+              Demo login:
+              <br />
+              demo@melonmeet.local
+              <br />
+              demo12345
+            </div>
+          </div>
+
+          <p className="muted-copy">
+            Public map browsing stays open, but account access unlocks private groups, recurring sessions,
+            claims, and role-aware editing.
           </p>
-          <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight sm:text-5xl">
-            Sign in to claim spots, run private groups, and post updates for your next outdoor game.
-          </h1>
-          <p className="mt-4 max-w-lg text-base leading-7 text-stone-900/70">
-            Public map browsing stays open, but account access unlocks group membership, recurring meetings, and role-aware editing.
-          </p>
+
+          <div className="info-grid">
+            <div className="metric-box">
+              <p className="metric-box__value">01</p>
+              <p className="metric-box__label">Map-first meetup creation</p>
+            </div>
+            <div className="metric-box">
+              <p className="metric-box__value">02</p>
+              <p className="metric-box__label">Public and private crew control</p>
+            </div>
+          </div>
         </PanelCard>
 
-        <PanelCard className="max-w-xl justify-self-end">
-          <div className="flex gap-2 rounded-full bg-stone-100 p-1">
-            <button className={`flex-1 rounded-full px-4 py-2 text-sm font-medium ${mode === "login" ? "bg-white shadow-sm" : "text-stone-500"}`} onClick={() => setMode("login")} type="button">
+        <PanelCard className="stack-md">
+          <div>
+            <p className="eyebrow">Identity</p>
+            <h2 className="section-title">Enter the system</h2>
+          </div>
+
+          <div className="mode-switch">
+            <button
+              className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
+              onClick={() => setMode("login")}
+              type="button"
+            >
               Log in
             </button>
-            <button className={`flex-1 rounded-full px-4 py-2 text-sm font-medium ${mode === "signup" ? "bg-white shadow-sm" : "text-stone-500"}`} onClick={() => setMode("signup")} type="button">
+            <button
+              className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
+              onClick={() => setMode("signup")}
+              type="button"
+            >
               Sign up
             </button>
           </div>
 
           <form
-            className="mt-6 space-y-4"
+            className="form-grid"
             onSubmit={(event) => {
               event.preventDefault();
               authMutation.mutate();
             }}
           >
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-600">Email</span>
-              <input className="block w-full rounded-2xl border-stone-200 bg-stone-50 px-4 py-3 text-sm" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+            <label className="field-stack">
+              <span className="field-label">Email</span>
+              <input className="field-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
             </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-600">Password</span>
-              <input className="block w-full rounded-2xl border-stone-200 bg-stone-50 px-4 py-3 text-sm" minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+
+            <label className="field-stack">
+              <span className="field-label">Password</span>
+              <input className="field-input" minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
             </label>
 
             {authMutation.error ? (
-              <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
+              <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
                 {authMutation.error.message}
               </p>
             ) : null}
 
-            <button className="w-full rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={authMutation.isPending}>
-              {authMutation.isPending
-                ? "Working..."
-                : mode === "login"
-                  ? "Log in"
-                  : "Create account"}
-            </button>
+            <div className="form-actions" style={{ justifyContent: "space-between" }}>
+              <p className="muted-copy" style={{ fontSize: "0.78rem", maxWidth: "20rem" }}>
+                {mode === "login" ? "Use an existing account to join and manage sessions." : "Create a new player account to unlock posting and meeting creation."}
+              </p>
+              <button className="button-primary" disabled={authMutation.isPending}>
+                {authMutation.isPending ? "Working" : mode === "login" ? "Log in" : "Create account"}
+              </button>
+            </div>
           </form>
         </PanelCard>
       </div>

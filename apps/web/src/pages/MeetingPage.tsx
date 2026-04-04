@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import { EventTimeline } from "../components/EventTimeline";
 import { MeetingForm } from "../components/MeetingForm";
 import { PanelCard } from "../components/PanelCard";
 import { PostBoard } from "../components/PostBoard";
@@ -8,16 +9,20 @@ import {
   cancelMeeting,
   claimMeeting,
   createMeetingPost,
+  getGroup,
   getGroups,
   getMeeting,
+  getVenue,
   unclaimMeeting,
   updateMeeting,
 } from "../lib/api";
 import { formatDateTime } from "../lib/format";
+import { resolveNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
 export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
   const { meetingId = "" } = useParams();
+  const location = useLocation();
   const meetingQuery = useQuery({
     queryFn: () => getMeeting(meetingId),
     queryKey: ["meeting", meetingId],
@@ -25,6 +30,17 @@ export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
   const groupsQuery = useQuery({
     queryFn: getGroups,
     queryKey: ["groups"],
+  });
+
+  const groupTimelineQuery = useQuery({
+    enabled: Boolean(meetingQuery.data?.meeting.groupId),
+    queryFn: () => getGroup(meetingQuery.data!.meeting.groupId),
+    queryKey: ["group", meetingQuery.data?.meeting.groupId, "timeline"],
+  });
+  const venueQuery = useQuery({
+    enabled: Boolean(meetingQuery.data?.meeting.venueId),
+    queryFn: () => getVenue(meetingQuery.data!.meeting.venueId!),
+    queryKey: ["venue", meetingQuery.data?.meeting.venueId, "related"],
   });
 
   const claimMutation = useMutation({
@@ -65,123 +81,147 @@ export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
   });
 
   if (meetingQuery.isLoading) {
-    return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">Loading meeting...</div>;
+    return <div className="loading-shell">Loading meeting...</div>;
   }
 
   if (meetingQuery.isError || !meetingQuery.data) {
-    return <div className="mx-auto max-w-7xl px-4 py-10 text-red-600 sm:px-6 lg:px-8">{meetingQuery.error?.message ?? "Meeting not found."}</div>;
+    return <div className="error-shell">{meetingQuery.error?.message ?? "Meeting not found."}</div>;
   }
 
   const { claims, meeting, posts } = meetingQuery.data;
+  const relatedMeetings =
+    venueQuery.data?.meetings.length && meeting.venueId
+      ? venueQuery.data.meetings
+      : groupTimelineQuery.data?.meetings ?? [];
+  const timelineHeading = venueQuery.data?.meetings.length && meeting.venueId ? "Venue events" : "Group events";
+  const timelineMeta = venueQuery.data?.meetings.length && meeting.venueId ? "group" : "location";
+  const backTarget = resolveNavigationState(location.state, "/", "Map board");
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="grid gap-5 xl:grid-cols-[1.05fr,0.95fr]">
-        <section className="space-y-5">
-          <PanelCard className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                  {meeting.groupName}
-                </p>
-                <h1 className="mt-1 text-4xl font-semibold text-stone-900">{meeting.title}</h1>
-              </div>
-              <span className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white">
-                {meeting.claimedSpots}/{meeting.capacity} occupied
-              </span>
-            </div>
-            <p className="text-sm leading-7 text-stone-600">
-              {meeting.description || "No description yet."}
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-sm font-medium text-stone-900">When</p>
-                <p className="mt-1 text-sm text-stone-500">{formatDateTime(meeting.startsAt)}</p>
-              </div>
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-sm font-medium text-stone-900">Where</p>
-                <p className="mt-1 text-sm text-stone-500">{meeting.locationName}</p>
-              </div>
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-sm font-medium text-stone-900">Pricing</p>
-                <p className="mt-1 text-sm text-stone-500">{meeting.pricing}</p>
-              </div>
-              <div className="rounded-3xl bg-stone-50 px-4 py-4">
-                <p className="text-sm font-medium text-stone-900">Open spots</p>
-                <p className="mt-1 text-sm text-stone-500">{meeting.openSpots}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {viewer ? (
-                <button
-                  className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
-                  onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)}
-                  type="button"
-                >
-                  {meeting.viewerHasClaimed ? "Release my spot" : "Claim a spot"}
-                </button>
-              ) : null}
-              {meeting.viewerCanEdit ? (
-                <button
-                  className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:border-red-500"
-                  onClick={() => cancelMutation.mutate()}
-                  type="button"
-                >
-                  Cancel meeting
-                </button>
-              ) : null}
-            </div>
-          </PanelCard>
-
-          {meeting.viewerCanEdit ? (
-            <PanelCard>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-                Edit meeting
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-stone-900">Adjust details and capacity</h2>
-              <div className="mt-4">
-                <MeetingForm
-                  groups={groupsQuery.data?.groups ?? []}
-                  initialMeeting={meeting}
-                  onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
-                />
-              </div>
-            </PanelCard>
-          ) : null}
-
-          <PostBoard
-            buttonLabel="Post to meeting"
-            canPost={Boolean(viewer)}
-            emptyLabel="No meeting updates yet."
-            onSubmit={async (content) => postMutation.mutateAsync(content)}
-            posts={posts}
-            title="Meeting board"
+    <div className="page-wrap page-wrap--workspace">
+      <section className="home-main-shell">
+        <aside className="timeline-rail">
+          <EventTimeline
+            contextLabel={meeting.title}
+            emptyLabel="No related meetings found."
+            heading={timelineHeading}
+            meetings={relatedMeetings}
+            secondaryMeta={timelineMeta}
+            showGroupLabel={timelineMeta !== "location"}
           />
-        </section>
+        </aside>
 
-        <aside className="space-y-5">
-          <PanelCard>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-500">
-              Claimed players
-            </p>
-            <div className="mt-4 space-y-3">
-              {claims.length === 0 ? (
-                <p className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-4 py-5 text-sm text-stone-500">
-                  Nobody has claimed a spot yet.
-                </p>
-              ) : (
-                claims.map((claim) => (
-                  <div className="rounded-3xl border border-stone-200/80 bg-stone-50/80 px-4 py-4" key={claim.id}>
-                    <p className="font-medium text-stone-900">{claim.displayName}</p>
-                    <p className="mt-1 text-sm text-stone-500">{claim.homeArea || claim.bio || "Ready to play"}</p>
-                  </div>
-                ))
-              )}
+        <div className="workspace-main workspace-main--detail">
+          <PanelCard className="detail-header">
+            <div className="detail-header__nav">
+              <Link className="button-secondary button-inline" to={backTarget.fromPath}>
+                Back to {backTarget.fromLabel}
+              </Link>
+            </div>
+
+            <div className="terminal-item__row">
+              <div className="stack-sm">
+                <p className="eyebrow">{meeting.groupName}</p>
+                <h1 className="display-title">Session: {meeting.title}</h1>
+                <p className="muted-copy">{meeting.description || "No description yet."}</p>
+              </div>
+              <div className="compact-badges">
+                <span className="badge-invert">
+                  {meeting.claimedSpots}/{meeting.capacity} occupied
+                </span>
+                {meeting.viewerHasClaimed ? <span className="badge-accent">Attending</span> : null}
+              </div>
             </div>
           </PanelCard>
-        </aside>
-      </div>
+
+          <div className="detail-shell">
+            <section className="stack-md">
+              <PanelCard className="panel-card--highlight stack-md">
+                <div className="info-grid">
+                  <div className="terminal-item">
+                    <p className="terminal-item__meta">When</p>
+                    <p className="terminal-item__title">{formatDateTime(meeting.startsAt)}</p>
+                  </div>
+                  <div className="terminal-item">
+                    <p className="terminal-item__meta">Where</p>
+                    <p className="terminal-item__title">{meeting.locationName}</p>
+                  </div>
+                  <div className="terminal-item">
+                    <p className="terminal-item__meta">Pricing</p>
+                    <p className="terminal-item__title">{meeting.pricing}</p>
+                  </div>
+                  <div className="terminal-item">
+                    <p className="terminal-item__meta">Open spots</p>
+                    <p className="terminal-item__title">{meeting.openSpots}</p>
+                  </div>
+                </div>
+
+                <div className="form-actions form-actions--start">
+                  {viewer ? (
+                    <button
+                      className={meeting.viewerHasClaimed ? "button-accent" : "button-primary"}
+                      onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)}
+                      type="button"
+                    >
+                      {meeting.viewerHasClaimed ? "Release my spot" : "Claim a spot"}
+                    </button>
+                  ) : null}
+                  {meeting.viewerCanEdit ? (
+                    <button className="button-danger" onClick={() => cancelMutation.mutate()} type="button">
+                      Cancel meeting
+                    </button>
+                  ) : null}
+                </div>
+              </PanelCard>
+
+              {meeting.viewerCanEdit ? (
+                <PanelCard className="stack-md">
+                  <div>
+                    <p className="eyebrow">Edit meeting</p>
+                    <h2 className="section-title">Adjust details and capacity</h2>
+                  </div>
+                  <MeetingForm
+                    groups={groupsQuery.data?.groups ?? []}
+                    initialMeeting={meeting}
+                    onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
+                  />
+                </PanelCard>
+              ) : null}
+
+              <PostBoard
+                buttonLabel="Post to meeting"
+                canPost={Boolean(viewer)}
+                emptyLabel="No meeting updates yet."
+                onSubmit={async (content) => postMutation.mutateAsync(content)}
+                posts={posts}
+                title="Meeting board"
+              />
+            </section>
+
+            <aside className="stack-md">
+              <PanelCard className="stack-md">
+                <div>
+                  <p className="eyebrow">Claimed players</p>
+                  <h2 className="detail-title">Session roster</h2>
+                </div>
+                <div className="stack-sm">
+                  {claims.length === 0 ? (
+                    <p className="empty-state">Nobody has claimed a spot yet.</p>
+                  ) : (
+                    claims.map((claim) => (
+                      <div className="terminal-item" key={claim.id}>
+                        <p className="terminal-item__title">{claim.displayName}</p>
+                        <p className="terminal-item__meta">{claim.homeArea || claim.bio || "Ready to play"}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PanelCard>
+
+            </aside>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
