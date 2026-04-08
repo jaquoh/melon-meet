@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import watermelonMark from "./assets/watermelon-mark.svg";
 import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
@@ -8,6 +9,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { GroupPage } from "./pages/GroupPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { HomePage } from "./pages/HomePage";
+import { LandingPage } from "./pages/LandingPage";
 import { MeetingPage } from "./pages/MeetingPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { VenuePage } from "./pages/VenuePage";
@@ -29,6 +31,8 @@ function getInitialTheme(): ThemeMode {
 
 function AppShell() {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
   const meQuery = useQuery({
     queryFn: getMe,
@@ -48,50 +52,92 @@ function AppShell() {
     window.localStorage.setItem("melon-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   const viewer = meQuery.data?.viewer ?? null;
+  const mapSectionActive =
+    location.pathname === "/map" || location.pathname.startsWith("/meetings/") || location.pathname.startsWith("/venues/");
+  const groupsSectionActive = location.pathname === "/groups" || location.pathname.startsWith("/groups/");
 
   return (
     <div>
       <header className="shell-header">
-        <div className="shell-header__inner">
+        <div className="shell-header__inner shell-header__inner--fresh">
           <Link className="shell-brand" to="/">
-            <div className="shell-brand__mark">M</div>
+            <img alt="Melon Meet" className="shell-brand__fruit" src={watermelonMark} />
             <div>
-              <div className="shell-brand__eyebrow">Berlin court terminal</div>
+              <div className="shell-brand__eyebrow">Berlin volleyball meetups</div>
               <p className="shell-brand__title">Melon Meet</p>
             </div>
           </Link>
 
+          <nav className="app-nav app-nav--header">
+            <Link className={`nav-pill ${mapSectionActive ? "active" : ""}`} to="/map">
+              Map
+            </Link>
+            <Link className={`nav-pill ${groupsSectionActive ? "active" : ""}`} to="/groups">
+              Groups
+            </Link>
+          </nav>
+
           <div className="shell-actions">
-            <nav className="app-nav">
-              <NavLink className="nav-pill" to="/">
-                Map
-              </NavLink>
-              <NavLink className="nav-pill" to="/groups">
-                Groups
-              </NavLink>
-              {viewer ? (
-                <NavLink className="nav-pill" to={`/profile/${viewer.id}`}>
-                  Profile
-                </NavLink>
-              ) : (
-                <NavLink className="nav-pill" to="/auth">
-                  Access
-                </NavLink>
-              )}
-            </nav>
+            {viewer ? (
+              <Link className="button-secondary button-secondary--soft shell-access" to={`/profile/${viewer.id}`}>
+                Profile
+              </Link>
+            ) : (
+              <Link className="button-secondary button-secondary--soft shell-access" to="/auth">
+                Log in
+              </Link>
+            )}
 
             <button
               className="button-secondary theme-toggle"
               onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
               type="button"
             >
-              Theme: {theme}
+              {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
+
+            <button
+              aria-expanded={menuOpen}
+              className="button-ghost shell-menu-toggle"
+              onClick={() => setMenuOpen((current) => !current)}
+              type="button"
+            >
+              {menuOpen ? "Close" : "Menu"}
+            </button>
+          </div>
+        </div>
+
+        {menuOpen ? (
+          <div className="shell-menu">
+            <nav className="shell-menu__nav">
+              <NavLink className="shell-menu__link" to="/">
+                Home
+              </NavLink>
+              <NavLink className="shell-menu__link" to="/map">
+                Map
+              </NavLink>
+              <NavLink className="shell-menu__link" to="/groups">
+                Groups
+              </NavLink>
+              {viewer ? (
+                <NavLink className="shell-menu__link" to={`/profile/${viewer.id}`}>
+                  Profile
+                </NavLink>
+              ) : (
+                <NavLink className="shell-menu__link" to="/auth">
+                  Access
+                </NavLink>
+              )}
+            </nav>
 
             {viewer ? (
               <button
-                className="button-ghost"
+                className="button-ghost shell-menu__signout"
                 disabled={logoutMutation.isPending}
                 onClick={() => logoutMutation.mutate()}
                 type="button"
@@ -100,12 +146,13 @@ function AppShell() {
               </button>
             ) : null}
           </div>
-        </div>
+        ) : null}
       </header>
 
       <main>
         <Routes>
-          <Route path="/" element={<HomePage viewer={viewer} />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/map" element={<HomePage viewer={viewer} />} />
           <Route path="/auth" element={<AuthPage viewer={viewer} />} />
           <Route path="/groups" element={<GroupsPage viewer={viewer} />} />
           <Route path="/groups/:groupId" element={<GroupPage viewer={viewer} />} />

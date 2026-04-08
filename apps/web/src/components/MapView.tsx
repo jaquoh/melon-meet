@@ -14,11 +14,25 @@ interface DraftLocation {
   longitude: number;
 }
 
+interface GroupPin {
+  activityLabel: string | null;
+  description: string;
+  id: string;
+  latitude: number;
+  longitude: number;
+  memberCount: number;
+  name: string;
+  nextMeeting: MeetingSummary;
+  publicSessionCount: number;
+}
+
 interface MapViewProps {
   draftLocation: DraftLocation | null;
+  groupPins?: GroupPin[];
   meetings: MeetingSummary[];
   onBoundsChange: (bounds: BoundsValue) => void;
   onDraftLocationChange: (location: DraftLocation) => void;
+  onGroupSelect?: (group: GroupPin) => void;
   onMeetingSelect: (meeting: MeetingSummary) => void;
   onVenueSelect: (venue: VenueSummary) => void;
   venueMeetingsById?: Record<string, MeetingSummary[]>;
@@ -70,9 +84,11 @@ function wireHoverPopup(marker: Marker, popup: maplibregl.Popup, button: HTMLBut
 
 export function MapView({
   draftLocation,
+  groupPins = [],
   meetings,
   onBoundsChange,
   onDraftLocationChange,
+  onGroupSelect,
   onMeetingSelect,
   onVenueSelect,
   venueMeetingsById = {},
@@ -80,12 +96,14 @@ export function MapView({
 }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const groupMarkersRef = useRef<Marker[]>([]);
   const venueMarkersRef = useRef<Marker[]>([]);
   const meetingMarkersRef = useRef<Marker[]>([]);
   const draftMarkerRef = useRef<Marker | null>(null);
 
   const emitBoundsChange = useEffectEvent(onBoundsChange);
   const emitDraftLocationChange = useEffectEvent(onDraftLocationChange);
+  const emitGroupSelect = useEffectEvent(onGroupSelect ?? (() => undefined));
   const emitMeetingSelect = useEffectEvent(onMeetingSelect);
   const emitVenueSelect = useEffectEvent(onVenueSelect);
 
@@ -116,19 +134,15 @@ export function MapView({
 
     map.on("load", syncBounds);
     map.on("moveend", syncBounds);
-    map.on("click", (event) => {
-      emitDraftLocationChange({
-        latitude: Number(event.lngLat.lat.toFixed(6)),
-        longitude: Number(event.lngLat.lng.toFixed(6)),
-      });
-    });
 
     mapRef.current = map;
 
     return () => {
+      groupMarkersRef.current.forEach((marker) => marker.remove());
       venueMarkersRef.current.forEach((marker) => marker.remove());
       meetingMarkersRef.current.forEach((marker) => marker.remove());
       draftMarkerRef.current?.remove();
+      groupMarkersRef.current = [];
       venueMarkersRef.current = [];
       meetingMarkersRef.current = [];
       draftMarkerRef.current = null;
@@ -136,6 +150,42 @@ export function MapView({
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    groupMarkersRef.current.forEach((marker) => marker.remove());
+    groupMarkersRef.current = groupPins.map((group) => {
+      const button = document.createElement("button");
+      button.className = "map-pin map-pin--group";
+      button.type = "button";
+      button.textContent = group.publicSessionCount > 0 ? String(group.publicSessionCount) : "GROUP";
+      button.addEventListener("click", () => emitGroupSelect(group));
+
+      const popup = new maplibregl.Popup({ closeButton: false, offset: 16 }).setHTML(
+        popupMarkup(
+          group.name,
+          [
+            group.activityLabel ?? "Public group",
+            group.nextMeeting ? `Next: ${formatMeetingWindow(group.nextMeeting)}` : "No public sessions",
+            `${group.memberCount} members`,
+          ],
+          group.publicSessionCount > 0 ? `${group.publicSessionCount} sessions` : undefined,
+        ),
+      );
+
+      const marker = new maplibregl.Marker({ element: button })
+        .setLngLat([group.longitude, group.latitude])
+        .setPopup(popup)
+        .addTo(map);
+
+      wireHoverPopup(marker, popup, button);
+      return marker;
+    });
+  }, [emitGroupSelect, groupPins]);
 
   useEffect(() => {
     const map = mapRef.current;

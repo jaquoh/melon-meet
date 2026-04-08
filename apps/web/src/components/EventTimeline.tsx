@@ -13,8 +13,11 @@ interface EventTimelineProps {
   heading: string;
   memberGroupIds?: Set<string>;
   meetings: MeetingSummary[];
+  onSelectMeeting?: (meeting: MeetingSummary) => void;
   secondaryMeta: "group" | "group-and-location" | "location";
+  showHeader?: boolean;
   showGroupLabel?: boolean;
+  variant?: "card" | "embedded";
 }
 
 function formatTimelineDate(startsAt: string) {
@@ -44,20 +47,27 @@ export function EventTimeline({
   heading,
   memberGroupIds,
   meetings,
+  onSelectMeeting,
   secondaryMeta,
+  showHeader = true,
   showGroupLabel = true,
+  variant = "card",
 }: EventTimelineProps) {
   const location = useLocation();
 
-  return (
-    <PanelCard className="timeline-panel">
-      <div className="timeline-panel__header">
-        <div>
-          <p className="eyebrow">Timeline</p>
-          <h1 className="section-title typewriter-title">{heading}</h1>
+  const content = (
+    <>
+      {showHeader ? (
+        <div className="timeline-panel__header">
+          <div>
+            <p className="eyebrow">{variant === "embedded" ? "Sessions" : "Timeline"}</p>
+            <h2 className="section-title typewriter-title">{heading}</h2>
+          </div>
+          {actions}
         </div>
-        {actions}
-      </div>
+      ) : actions ? (
+        <div className="timeline-panel__header timeline-panel__header--actions-only">{actions}</div>
+      ) : null}
 
       {meetings.length === 0 ? (
         <div className="stack-sm">
@@ -97,23 +107,43 @@ export function EventTimeline({
                   <span className={`timeline-dot ${meeting.viewerHasClaimed ? "timeline-dot--claimed" : "timeline-dot--toned"}`} />
                 </div>
                 <div className="hs-tooltip timeline-entry">
-                  <Link
-                    className={`hs-tooltip-toggle timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""}`}
-                    state={createNavigationState(location, contextLabel)}
-                    to={`/meetings/${meeting.id}`}
-                  >
-                    <div className="timeline-card__top">
-                      {showGroupLabel ? <p className="timeline-card__group">{meeting.groupName}</p> : <span />}
-                      <div className="timeline-card__tags">
-                        {meeting.seriesId ? <span className="badge-outline">Series</span> : null}
-                        <span className={meeting.viewerHasClaimed ? "badge-accent" : "badge"}>
-                          {statusLabel}
-                        </span>
+                  {onSelectMeeting ? (
+                    <button
+                      className={`hs-tooltip-toggle timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""}`}
+                      onClick={() => onSelectMeeting(meeting)}
+                      type="button"
+                    >
+                      <div className="timeline-card__top">
+                        {showGroupLabel ? <p className="timeline-card__group">{meeting.groupName}</p> : <span />}
+                        <div className="timeline-card__tags">
+                          {meeting.seriesId ? <span className="badge-outline">Series</span> : null}
+                          <span className={meeting.viewerHasClaimed ? "badge-accent" : "badge"}>
+                            {statusLabel}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <h3 className="timeline-card__title">{meeting.title}</h3>
-                    <p className="timeline-card__meta">{meta}</p>
-                  </Link>
+                      <h3 className="timeline-card__title">{meeting.title}</h3>
+                      <p className="timeline-card__meta">{meta}</p>
+                    </button>
+                  ) : (
+                    <Link
+                      className={`hs-tooltip-toggle timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""}`}
+                      state={createNavigationState(location, contextLabel)}
+                      to={`/meetings/${meeting.id}`}
+                    >
+                      <div className="timeline-card__top">
+                        {showGroupLabel ? <p className="timeline-card__group">{meeting.groupName}</p> : <span />}
+                        <div className="timeline-card__tags">
+                          {meeting.seriesId ? <span className="badge-outline">Series</span> : null}
+                          <span className={meeting.viewerHasClaimed ? "badge-accent" : "badge"}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="timeline-card__title">{meeting.title}</h3>
+                      <p className="timeline-card__meta">{meta}</p>
+                    </Link>
+                  )}
                   <div className="hs-tooltip-content timeline-tooltip hidden" role="tooltip">
                     <p className="timeline-tooltip__title">{meeting.title}</p>
                     <p className="timeline-tooltip__meta">{formatDateTime(meeting.startsAt)}</p>
@@ -128,6 +158,12 @@ export function EventTimeline({
           })}
         </div>
       )}
-    </PanelCard>
+    </>
+  );
+
+  return variant === "embedded" ? (
+    <div className="timeline-panel timeline-panel--embedded">{content}</div>
+  ) : (
+    <PanelCard className="timeline-panel">{content}</PanelCard>
   );
 }
