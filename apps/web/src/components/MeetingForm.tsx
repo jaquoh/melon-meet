@@ -7,6 +7,7 @@ import { FilterCheckbox } from "./FilterCheckbox";
 import { fromDateTimeLocalInput, toDateTimeLocalInput } from "../lib/format";
 
 interface MeetingFormProps {
+  formId?: string;
   groups: GroupSummary[];
   initialLocation?: {
     latitude: number;
@@ -28,6 +29,7 @@ function canCreateForGroup(group: GroupSummary) {
 }
 
 export function MeetingForm({
+  formId,
   groups,
   initialLocation,
   initialMeeting,
@@ -206,7 +208,7 @@ export function MeetingForm({
   }
 
   return (
-    <form className="form-grid form-grid--two" onSubmit={handleSubmit}>
+    <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       {!initialMeeting ? (
         <label className="field-stack field-full">
           <span className="field-label">Group</span>
@@ -370,17 +372,6 @@ export function MeetingForm({
         <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
       </label>
 
-      <div className="form-actions field-full">
-        <button className="button-primary" disabled={submitting}>
-          {submitting
-            ? "Saving"
-            : (buildSeries || seriesMode) && seriesDates.length > 0
-              ? "Save all sessions"
-              : initialMeeting
-                ? "Save meeting"
-                : "Create meeting"}
-        </button>
-      </div>
     </form>
   );
 }

@@ -107,6 +107,10 @@ function badgeIconId(theme: "dark" | "light", label: string, accent: string) {
   return `melon-badge-${theme}-${accent.replace(/[^a-z0-9]/gi, "")}-${label.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
 }
 
+function badgeAccent(theme: "dark" | "light", label: string) {
+  return label === "Free" ? "#2c8b61" : theme === "dark" ? "#fff7f5" : "#231d1c";
+}
+
 function badgeSvg(theme: "dark" | "light", label: string, accent: string) {
   const width = Math.max(30, Math.round(label.length * 7.4 + 16));
   const pixelWidth = width * 2;
@@ -153,7 +157,7 @@ async function ensureBadgeAssets(map: maplibregl.Map, features: SimpleFeature[],
     if (!badge) {
       continue;
     }
-    const accent = badge === "Free" ? "#2c8b61" : "#231d1c";
+    const accent = badgeAccent(theme, badge);
     badges.set(badgeIcon, { accent, label: badge });
   }
   await Promise.all(
@@ -211,6 +215,7 @@ function buildFeatureCollection({
     for (const venue of venues) {
       const meetingsAtVenue = venueMeetingsById[venue.id] ?? [];
       const badge = venue.pricing === "free" ? "Free" : "Paid";
+      const accent = badgeAccent(theme, badge);
       const lookupKey = `venue:${venue.id}`;
       lookup.set(lookupKey, {
         kind: "venue",
@@ -227,7 +232,7 @@ function buildFeatureCollection({
         properties: {
           attending: 0,
           badge,
-          badgeIcon: badgeIconId(theme, badge, badge === "Free" ? "#2c8b61" : "#231d1c"),
+          badgeIcon: badgeIconId(theme, badge, accent),
           icon: "melon-icon-venue",
           kind: "venue",
           label: venue.name,
@@ -243,6 +248,7 @@ function buildFeatureCollection({
   if (mode === "groups") {
     for (const pin of groupPins) {
       const badge = pin.group.publicSessionCount > 0 ? `${pin.group.publicSessionCount}x` : "";
+      const accent = badgeAccent(theme, badge);
       const lookupKey = `group:${pin.group.id}`;
       lookup.set(lookupKey, {
         group: pin.group,
@@ -259,7 +265,7 @@ function buildFeatureCollection({
         properties: {
           attending: 0,
           badge,
-          badgeIcon: badgeIconId(theme, badge, "#231d1c"),
+          badgeIcon: badgeIconId(theme, badge, accent),
           icon: "melon-icon-group",
           kind: "group",
           label: pin.group.name,
@@ -290,7 +296,7 @@ function buildFeatureCollection({
       sameLocation.length > 1
         ? `${sameLocation.length}x`
         : formatPriceBadge(representative.pricing, representative.costPerPerson);
-    const accent = sameLocation.length > 1 || representative.pricing !== "free" ? "#231d1c" : "#2c8b61";
+    const accent = badgeAccent(theme, badge);
     const lookupKey =
       sameLocation.length > 1
         ? `session-cluster:${representative.latitude}:${representative.longitude}`

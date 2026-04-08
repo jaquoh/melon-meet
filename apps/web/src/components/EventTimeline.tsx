@@ -113,11 +113,14 @@ export function EventTimeline({
               <div className="timeline-card__top">
                 {showGroupLabel ? <p className="timeline-card__group">{meeting.groupName}</p> : <span />}
                 <div className="timeline-card__side-stack">
+                  {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
                   <span className="badge">{formatSessionPrice(meeting)}</span>
                   <span className="badge-outline">{`${meeting.claimedSpots}/${meeting.capacity}`}</span>
                 </div>
               </div>
-              <h3 className="timeline-card__title">{meeting.shortName || meeting.title}</h3>
+              <h3 className={`timeline-card__title ${meeting.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}>
+                {meeting.shortName || meeting.title}
+              </h3>
               <div className="timeline-card__meta-row">
                 <p className="timeline-card__meta">{meta}</p>
                 <div className="timeline-card__tags timeline-card__tags--bottom-right">

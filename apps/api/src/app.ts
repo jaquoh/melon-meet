@@ -736,9 +736,47 @@ export function createApp() {
       )
       : [];
 
-    const attending = canViewProfile
+    const accessibleMeetings = canViewProfile
       ? await listAccessibleMeetings(c.env.DB, viewer?.id ?? null, {})
       : [];
+
+    const claimedMeetingIds = canViewProfile
+      ? new Set(
+        (
+          await allRows<{ meeting_id: string }>(
+            c.env.DB,
+            `SELECT meeting_id
+             FROM meeting_claims
+             WHERE user_id = ?`,
+            row.id,
+          )
+        ).map((entry) => entry.meeting_id),
+      )
+      : new Set<string>();
+
+    const responsibleMeetingIds = canViewProfile
+      ? new Set(
+        (
+          await allRows<{ id: string }>(
+            c.env.DB,
+            `SELECT DISTINCT m.id
+             FROM meetings m
+             LEFT JOIN app_group_members gm
+               ON gm.group_id = m.group_id
+              AND gm.user_id = ?
+             WHERE m.archived_at IS NULL
+               AND (m.owner_user_id = ? OR gm.role IN ('owner', 'admin'))`,
+            row.id,
+            row.id,
+          )
+        ).map((entry) => entry.id),
+      )
+      : new Set<string>();
+
+    const attending = accessibleMeetings.filter((meeting) => claimedMeetingIds.has(meeting.id));
+    const responsible = accessibleMeetings.filter(
+      (meeting) => responsibleMeetingIds.has(meeting.id) && !claimedMeetingIds.has(meeting.id),
+    );
 
     return c.json({
       friendship,
@@ -763,7 +801,8 @@ export function createApp() {
           homeArea: "",
         },
       profileIsPrivate: !canViewProfile,
-      attending: attending.filter((meeting) => meeting.viewerHasClaimed || meeting.ownerUserId === row.id),
+      attending,
+      responsible,
     });
   });
 

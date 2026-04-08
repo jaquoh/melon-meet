@@ -56,6 +56,7 @@ export interface ProfileResponse {
   memberships: Array<{ id: string; name: string; role: "owner" | "admin" | "member"; slug: string }>;
   profile: ViewerSummary;
   profileIsPrivate: boolean;
+  responsible: MeetingSummary[];
 }
 
 export interface MapResponse {

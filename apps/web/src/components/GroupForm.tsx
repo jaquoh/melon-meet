@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 interface GroupFormProps {
+  formId?: string;
   initialValues?: {
     activityLabel?: string | null;
     description: string;
@@ -21,7 +22,7 @@ interface GroupFormProps {
   }) => Promise<unknown>;
 }
 
-export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
+export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
   const [name, setName] = useState(initialValues?.name ?? "");
   const [slug, setSlug] = useState(initialValues?.slug ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
@@ -52,7 +53,7 @@ export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
   }
 
   return (
-    <form className="form-grid form-grid--two" onSubmit={handleSubmit}>
+    <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">Name</span>
         <input className="field-input" onChange={(event) => setName(event.target.value)} required value={name} />
@@ -97,11 +98,6 @@ export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
         <input className="field-input" onChange={(event) => setMessengerUrl(event.target.value)} placeholder="https://t.me/..." type="url" value={messengerUrl} />
       </label>
 
-      <div className="form-actions field-full">
-        <button className="button-primary" disabled={submitting}>
-          {submitting ? "Saving" : initialValues ? "Save group" : "Create group"}
-        </button>
-      </div>
     </form>
   );
 }

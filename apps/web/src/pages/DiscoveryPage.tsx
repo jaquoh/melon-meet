@@ -236,17 +236,9 @@ export function DiscoveryPage({
       setShowMobileFilters(false);
     }
   };
-  const selectionPanelClose = (
-    <div className="workspace-selection-close">
-      <button className="button-secondary button-inline" onClick={clearSelection} type="button">
-        Close
-      </button>
-    </div>
-  );
 
   const selectionPanel = selectedMeetingCluster ? (
     <div className="stack-panel">
-      {selectionPanelClose}
       <div className="detail-card detail-card--selected">
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
@@ -270,17 +262,17 @@ export function DiscoveryPage({
     </div>
   ) : selectedMeeting ? (
     <div className="stack-panel">
-      {selectionPanelClose}
       <div className="detail-card detail-card--selected">
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
           <span className="panel-caption">Session</span>
         </div>
-        <h3>{selectedMeeting.title}</h3>
+        <h3 className={selectedMeeting.status === "cancelled" ? "session-title--cancelled" : ""}>{selectedMeeting.title}</h3>
         <p>{selectedMeeting.groupName}</p>
         <p>{selectedMeeting.locationName}</p>
         <div className="detail-card__session-tags">
           <div className="detail-card__session-tags-main">
+            {selectedMeeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
             <span className="mini-chip">{formatSessionPrice(selectedMeeting)}</span>
             <span className="mini-chip">{`${selectedMeeting.claimedSpots}/${selectedMeeting.capacity}`}</span>
           </div>
@@ -300,7 +292,6 @@ export function DiscoveryPage({
     </div>
   ) : selectedVenue ? (
     <div className="stack-panel">
-      {selectionPanelClose}
       <div className="detail-card detail-card--selected">
         <div className="detail-card__eyebrow">
           <MapPin size={14} strokeWidth={2} />
@@ -325,7 +316,6 @@ export function DiscoveryPage({
     </div>
   ) : selectedGroup ? (
     <div className="stack-panel">
-      {selectionPanelClose}
       <div className="detail-card detail-card--selected">
         <div className="detail-card__eyebrow">
           <Users size={14} strokeWidth={2} />
@@ -748,7 +738,16 @@ export function DiscoveryPage({
       mobileCollapsePanels
       onLogOut={onLogOut}
       right={selectionPanel}
-      rightHeader={undefined}
+      rightHeader={
+        <div className="workspace-panel-header-row">
+          <span className="panel-caption">Details</span>
+          {hasSelection ? (
+            <button className="button-secondary button-inline" onClick={clearSelection} type="button">
+              Close
+            </button>
+          ) : null}
+        </div>
+      }
       theme={theme}
       title={selectedTitle}
       toggleTheme={toggleTheme}

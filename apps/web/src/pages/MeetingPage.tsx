@@ -154,6 +154,13 @@ export function MeetingPage({
     navigate(closeTarget.fromPath);
   }
 
+  async function handleCancelSession() {
+    if (!window.confirm("Cancel this session? It will stay visible, but marked as cancelled.")) {
+      return;
+    }
+    await cancelMutation.mutateAsync();
+  }
+
   return (
     <WorkspaceShell
       center={
@@ -161,22 +168,31 @@ export function MeetingPage({
           <div className="stack-panel">
           {editing ? (
             <>
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">{editingSeries ? "Edit: Session Series" : "Edit: Session"}</h2>
+              </div>
               <MeetingForm
+                formId="meeting-edit-form"
                 groups={groupsQuery.data?.groups ?? []}
                 initialMeeting={meeting}
                 initialSeriesDates={seriesMeetings.map((entry) => ({ endsAt: entry.endsAt, startsAt: entry.startsAt }))}
                 onSubmit={handleMeetingSave}
                 seriesMode={editingSeries}
               />
-              <div className="workspace-button-row">
+              <div className="editor-action-row">
                 {!editingSeries ? (
-                  <button className="button-danger" onClick={handleDelete} type="button">
+                  <button className="button-danger editor-action-row__danger" onClick={handleDelete} type="button">
                     Delete session
                   </button>
                 ) : null}
-                <button className="button-secondary" onClick={() => setEditingMode(null)} type="button">
-                  Cancel
-                </button>
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={() => setEditingMode(null)} type="button">
+                    Cancel
+                  </button>
+                  <button className="button-primary" form="meeting-edit-form" type="submit">
+                    {editingSeries ? "Save all sessions" : "Save session"}
+                  </button>
+                </div>
               </div>
             </>
           ) : (
@@ -187,6 +203,7 @@ export function MeetingPage({
                 imageUrl={meeting.heroImageUrl}
                 meta={
                   <>
+                    {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
                     <span className="mini-chip">{meeting.shortName}</span>
                     <span className="mini-chip">{formatDateTime(meeting.startsAt)}</span>
                     <span className="mini-chip">
@@ -198,6 +215,7 @@ export function MeetingPage({
                     </span>
                   </>
                 }
+                titleClassName={meeting.status === "cancelled" ? "session-title--cancelled" : undefined}
                 title={meeting.title}
               >
                 <CopyTextButton label="Copy address" value={meeting.locationAddress} />
@@ -308,7 +326,7 @@ export function MeetingPage({
                   {editingMode === "series" ? "Close series edit" : "Edit series"}
                 </button>
               ) : null}
-              <button className="button-danger" onClick={() => cancelMutation.mutate()} type="button">
+              <button className="button-danger" onClick={handleCancelSession} type="button">
                 Cancel session
               </button>
             </>

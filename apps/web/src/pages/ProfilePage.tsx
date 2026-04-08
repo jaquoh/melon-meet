@@ -108,68 +108,99 @@ export function ProfilePage({
             </div>
           ) : editing ? (
             <>
-              <ProfileForm onSubmit={async (payload) => updateMutation.mutateAsync(payload)} profile={profileQuery.data.profile} />
-              <div className="workspace-button-row">
-                <button className="button-danger" onClick={() => deleteMutation.mutate()} type="button">
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">Edit: Profile</h2>
+              </div>
+              <ProfileForm formId="profile-edit-form" onSubmit={async (payload) => updateMutation.mutateAsync(payload)} profile={profileQuery.data.profile} />
+              <div className="editor-action-row">
+                <button className="button-danger editor-action-row__danger" onClick={() => deleteMutation.mutate()} type="button">
                   Delete profile
                 </button>
-                <button className="button-secondary" onClick={() => setEditing(false)} type="button">
-                  Cancel
-                </button>
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={() => setEditing(false)} type="button">
+                    Cancel
+                  </button>
+                  <button className="button-primary" form="profile-edit-form" type="submit">
+                    Save profile
+                  </button>
+                </div>
               </div>
             </>
           ) : composeMode === "group" && ownProfile ? (
             <>
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">Create: Group</h2>
+              </div>
               <GroupForm
+                formId="profile-create-group-form"
                 onSubmit={async (payload) => {
                   const response = await createGroupMutation.mutateAsync(payload);
                   navigate(`/groups/${response.groupId}`);
                 }}
               />
-              <div className="workspace-button-row">
-                <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
-                  Cancel
-                </button>
+              <div className="editor-action-row">
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
+                    Cancel
+                  </button>
+                  <button className="button-primary" form="profile-create-group-form" type="submit">
+                    Create group
+                  </button>
+                </div>
               </div>
             </>
           ) : composeMode === "session" && ownProfile ? (
             <>
-              <MeetingForm groups={groupsQuery.data?.groups ?? []} onSubmit={handleCreateMeeting} />
-              <div className="workspace-button-row">
-                <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
-                  Cancel
-                </button>
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">Create: Session</h2>
+              </div>
+              <MeetingForm formId="profile-create-session-form" groups={groupsQuery.data?.groups ?? []} onSubmit={handleCreateMeeting} />
+              <div className="editor-action-row">
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
+                    Cancel
+                  </button>
+                  <button className="button-primary" form="profile-create-session-form" type="submit">
+                    Create session
+                  </button>
+                </div>
               </div>
             </>
           ) : (
-            <section className="player-card">
-              <div className="player-card__frame">
-                <div className="player-card__art">
-                  {profileQuery.data.profile.avatarUrl ? (
-                    <img alt={profileQuery.data.profile.displayName} className="player-card__avatar" src={profileQuery.data.profile.avatarUrl} />
-                  ) : (
-                    <div className="player-card__avatar player-card__avatar--fallback">
-                      {profileQuery.data.profile.displayName.slice(0, 1)}
-                    </div>
-                  )}
-                </div>
-                <div className="player-card__content">
-                  <div className="player-card__top">
-                    <div>
-                      <p className="eyebrow">Player card</p>
-                      <h1 className="display-title typewriter-title">{profileQuery.data.profile.displayName}</h1>
-                    </div>
-                    <span className="badge-invert">{profileQuery.data.profile.homeArea || "Berlin"}</span>
-                  </div>
-                  <p className="player-card__bio">{profileQuery.data.profile.bio || "No bio yet."}</p>
-                  <div className="mini-meta-row">
-                    {profileQuery.data.profile.email ? <span className="mini-chip">{profileQuery.data.profile.email}</span> : null}
-                    <span className="mini-chip">{profileQuery.data.memberships.length} groups</span>
-                    <span className="mini-chip">{profileQuery.data.attending.length} sessions</span>
-                  </div>
-                </div>
+            <>
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">Profile</h2>
               </div>
-            </section>
+              <section className="player-card">
+                <div className="player-card__frame">
+                  <div className="player-card__art">
+                    {profileQuery.data.profile.avatarUrl ? (
+                      <img alt={profileQuery.data.profile.displayName} className="player-card__avatar" src={profileQuery.data.profile.avatarUrl} />
+                    ) : (
+                      <div className="player-card__avatar player-card__avatar--fallback">
+                        {profileQuery.data.profile.displayName.slice(0, 1)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="player-card__content">
+                    <div className="player-card__top">
+                      <div>
+                        <p className="eyebrow">Player card</p>
+                        <h1 className="display-title typewriter-title">{profileQuery.data.profile.displayName}</h1>
+                      </div>
+                      <span className="badge-invert">{profileQuery.data.profile.homeArea || "Berlin"}</span>
+                    </div>
+                    <p className="player-card__bio">{profileQuery.data.profile.bio || "No bio yet."}</p>
+                    <div className="mini-meta-row">
+                      {profileQuery.data.profile.email ? <span className="mini-chip">{profileQuery.data.profile.email}</span> : null}
+                      <span className="mini-chip">{profileQuery.data.memberships.length} groups</span>
+                      <span className="mini-chip">{profileQuery.data.attending.length} attending</span>
+                      <span className="mini-chip">{profileQuery.data.responsible.length} responsible</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
           </div>
         </div>
@@ -177,14 +208,6 @@ export function ProfilePage({
       detailCloseTo={closeTarget.fromPath}
       left={
         <div className="stack-panel">
-          <Link className="button-secondary" to="/">
-            Home
-          </Link>
-          {profileQuery.data.memberships.map((membership) => (
-            <Link className="mini-link" key={membership.id} to={`/groups/${membership.id}`}>
-              {membership.name} · {membership.role}
-            </Link>
-          ))}
           {ownProfile ? (
             <>
               <button className="button-primary" onClick={() => { setComposeMode(null); setEditing((current) => !current); }} type="button">
@@ -200,17 +223,34 @@ export function ProfilePage({
               </button>
             </>
           ) : null}
+          {profileQuery.data.memberships.length > 0 ? <div className="list-divider" /> : null}
+          <div className="stack-sm">
+            <p className="panel-caption detail-subheading">My Groups</p>
+            {profileQuery.data.memberships.map((membership) => (
+              <Link className="mini-link" key={membership.id} to={`/groups/${membership.id}`}>
+                {membership.name} · {membership.role}
+              </Link>
+            ))}
+          </div>
         </div>
       }
       leftHeader={undefined}
       onLogOut={onLogOut}
       right={
-        <EventTimeline
-          contextLabel={profileQuery.data.profile.displayName}
-          emptyLabel="No attending sessions."
-          heading="Attending sessions"
-          meetings={profileQuery.data.attending}
-        />
+        <div className="stack-panel">
+          <EventTimeline
+            contextLabel={profileQuery.data.profile.displayName}
+            emptyLabel="No attending sessions."
+            heading="Attending sessions"
+            meetings={profileQuery.data.attending}
+          />
+          <EventTimeline
+            contextLabel={profileQuery.data.profile.displayName}
+            emptyLabel="No responsible sessions."
+            heading="Responsible sessions"
+            meetings={profileQuery.data.responsible}
+          />
+        </div>
       }
       rightHeader={undefined}
       theme={theme}

@@ -3,9 +3,11 @@ import type { ViewerSummary } from "../../../../packages/shared/src";
 import { FilterCheckbox } from "./FilterCheckbox";
 
 export function ProfileForm({
+  formId,
   profile,
   onSubmit,
 }: {
+  formId?: string;
   onSubmit: (payload: {
     avatarUrl: string;
     bio: string;
@@ -35,7 +37,7 @@ export function ProfileForm({
   }
 
   return (
-    <form className="form-grid form-grid--two" onSubmit={handleSubmit}>
+    <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">Display name</span>
         <input className="field-input" onChange={(event) => setDisplayName(event.target.value)} required value={displayName} />
@@ -64,11 +66,6 @@ export function ProfileForm({
         <FilterCheckbox checked={showEmailPublicly} label="Show email publicly" onChange={setShowEmailPublicly} />
       </div>
 
-      <div className="form-actions field-full">
-        <button className="button-primary" disabled={submitting}>
-          {submitting ? "Saving" : "Save profile"}
-        </button>
-      </div>
     </form>
   );
 }

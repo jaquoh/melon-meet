@@ -7,6 +7,7 @@ export function DetailHero({
   eyebrow,
   imageUrl,
   meta,
+  titleClassName,
   title,
 }: {
   children?: ReactNode;
@@ -14,6 +15,7 @@ export function DetailHero({
   eyebrow: string;
   imageUrl?: string | null;
   meta?: ReactNode;
+  titleClassName?: string;
   title: string;
 }) {
   return (
@@ -26,7 +28,7 @@ export function DetailHero({
       </div>
       <div className="detail-hero__content">
         <p className="eyebrow">{eyebrow}</p>
-        <h1 className="display-title typewriter-title detail-hero__title">{title}</h1>
+        <h1 className={`display-title typewriter-title detail-hero__title ${titleClassName ?? ""}`.trim()}>{title}</h1>
         {description ? <p className="detail-hero__description">{description}</p> : null}
         {meta ? <div className="detail-hero__meta">{meta}</div> : null}
         {children ? <div className="detail-hero__actions">{children}</div> : null}

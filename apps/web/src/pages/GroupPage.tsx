@@ -109,7 +109,11 @@ export function GroupPage({
           <div className="stack-panel">
           {editing ? (
             <>
+              <div className="screen-heading">
+                <h2 className="screen-heading__title">Edit: Group</h2>
+              </div>
               <GroupForm
+                formId="group-edit-form"
                 initialValues={{
                   activityLabel: group.activityLabel,
                   description: group.description,
@@ -121,13 +125,18 @@ export function GroupPage({
                 }}
                 onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
               />
-              <div className="workspace-button-row">
-                <button className="button-danger" onClick={handleDelete} type="button">
+              <div className="editor-action-row">
+                <button className="button-danger editor-action-row__danger" onClick={handleDelete} type="button">
                   Delete group
                 </button>
-                <button className="button-secondary" onClick={() => setEditing(false)} type="button">
-                  Cancel
-                </button>
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={() => setEditing(false)} type="button">
+                    Cancel
+                  </button>
+                  <button className="button-primary" form="group-edit-form" type="submit">
+                    Save group
+                  </button>
+                </div>
               </div>
             </>
           ) : (
