@@ -1,17 +1,22 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { CircleDollarSign, Clock3, MapPinned, Shield, Users } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
-import { EventTimeline } from "../components/EventTimeline";
+import type { ThemeMode } from "../App";
+import { CopyTextButton } from "../components/CopyTextButton";
+import { DetailHero } from "../components/DetailHero";
 import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
+import { WorkspaceShell } from "../components/WorkspaceShell";
 import {
   cancelMeeting,
   claimMeeting,
   createMeetingPost,
-  getGroup,
+  createMeeting,
+  deleteMeeting,
   getGroups,
   getMeeting,
-  getVenue,
   unclaimMeeting,
   updateMeeting,
 } from "../lib/api";
@@ -19,9 +24,22 @@ import { formatDateTime } from "../lib/format";
 import { resolveNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
-export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
+export function MeetingPage({
+  onLogOut,
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  onLogOut: () => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const { meetingId = "" } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [editingMode, setEditingMode] = useState<"series" | "single" | null>(null);
+
   const meetingQuery = useQuery({
     queryFn: () => getMeeting(meetingId),
     queryKey: ["meeting", meetingId],
@@ -30,48 +48,30 @@ export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
     queryFn: getGroups,
     queryKey: ["groups"],
   });
-
-  const groupTimelineQuery = useQuery({
-    enabled: Boolean(meetingQuery.data?.meeting.groupId),
-    queryFn: () => getGroup(meetingQuery.data!.meeting.groupId),
-    queryKey: ["group", meetingQuery.data?.meeting.groupId, "timeline"],
-  });
-  const venueQuery = useQuery({
-    enabled: Boolean(meetingQuery.data?.meeting.venueId),
-    queryFn: () => getVenue(meetingQuery.data!.meeting.venueId!),
-    queryKey: ["venue", meetingQuery.data?.meeting.venueId, "related"],
-  });
-
   const claimMutation = useMutation({
     mutationFn: (claimed: boolean) => (claimed ? unclaimMeeting(meetingId) : claimMeeting(meetingId)),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] }),
-        queryClient.invalidateQueries({ queryKey: ["map"] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
     },
   });
-
   const cancelMutation = useMutation({
     mutationFn: () => cancelMeeting(meetingId),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] }),
-        queryClient.invalidateQueries({ queryKey: ["map"] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
     },
   });
-
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => updateMeeting(meetingId, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] }),
-        queryClient.invalidateQueries({ queryKey: ["map"] }),
-      ]);
+      setEditingMode(null);
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
     },
   });
-
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteMeeting(meetingId),
+  });
   const postMutation = useMutation({
     mutationFn: (content: string) => createMeetingPost(meetingId, content),
     onSuccess: async () => {
@@ -80,169 +80,268 @@ export function MeetingPage({ viewer }: { viewer: ViewerSummary | null }) {
   });
 
   if (meetingQuery.isLoading) {
-    return <div className="loading-shell">Loading meeting...</div>;
+    return <div className="loading-shell">Loading session...</div>;
   }
 
   if (meetingQuery.isError || !meetingQuery.data) {
-    return <div className="error-shell">{meetingQuery.error?.message ?? "Meeting not found."}</div>;
+    return <div className="error-shell">{meetingQuery.error?.message ?? "Session not found."}</div>;
   }
 
-  const { claims, meeting, posts } = meetingQuery.data;
-  const relatedMeetings =
-    venueQuery.data?.meetings.length && meeting.venueId
-      ? venueQuery.data.meetings
-      : groupTimelineQuery.data?.meetings ?? [];
-  const timelineHeading = venueQuery.data?.meetings.length && meeting.venueId ? "Venue events" : "Group events";
-  const timelineMeta = venueQuery.data?.meetings.length && meeting.venueId ? "group" : "location";
-  const backTarget = resolveNavigationState(location.state, "/map", "Map");
+  const { claims, meeting, posts, seriesMeetings, viewerGroupRole } = meetingQuery.data;
+  const canManage = meeting.viewerCanEdit || viewerGroupRole === "owner" || viewerGroupRole === "admin";
+  const closeTarget = resolveNavigationState(location.state, "/sessions", "Sessions");
+  const editing = editingMode !== null;
+  const editingSeries = editingMode === "series";
+
+  async function handleMeetingSave(payload: Record<string, unknown>) {
+    const { seriesDates, ...basePayload } = payload as Record<string, unknown> & {
+      seriesDates?: Array<{ endsAt: string; startsAt: string }>;
+    };
+
+    if (editingSeries) {
+      await updateMutation.mutateAsync({
+        ...basePayload,
+        applyToSeries: true,
+        seriesDates,
+      });
+      return;
+    }
+
+    if (!seriesDates || seriesDates.length === 0) {
+      await updateMutation.mutateAsync(basePayload);
+      return;
+    }
+
+    const sortedDates = [...seriesDates].sort(
+      (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+    );
+    const [primary, ...rest] = sortedDates;
+    await updateMutation.mutateAsync({
+      ...basePayload,
+      endsAt: primary.endsAt,
+      startsAt: primary.startsAt,
+    });
+
+    for (const slot of rest) {
+      await createMeeting({
+        activityLabel: basePayload.activityLabel,
+        capacity: basePayload.capacity,
+        costPerPerson: basePayload.costPerPerson,
+        description: basePayload.description,
+        endsAt: slot.endsAt,
+        groupId: meeting.groupId,
+        heroImageUrl: basePayload.heroImageUrl,
+        latitude: basePayload.latitude,
+        locationAddress: basePayload.locationAddress,
+        locationName: basePayload.locationName,
+        longitude: basePayload.longitude,
+        pricing: basePayload.pricing,
+        recurrence: { type: "once" },
+        shortName: basePayload.shortName,
+        startsAt: slot.startsAt,
+        title: basePayload.title,
+        venueId: basePayload.venueId,
+      });
+    }
+    await queryClient.invalidateQueries({ queryKey: ["map"] });
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this session? This cannot be undone.")) {
+      return;
+    }
+    await deleteMutation.mutateAsync();
+    navigate(closeTarget.fromPath);
+  }
 
   return (
-    <div className="page-wrap page-wrap--workspace">
-      <section className="workspace-board">
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">{meeting.groupName}</p>
-              <h2 className="section-title typewriter-title">Session: {meeting.title}</h2>
-            </div>
-            <Link className="button-secondary button-inline" to={backTarget.fromPath}>
-              Back
-            </Link>
-          </div>
-
-          <div className="board-column__body">
-            <div className="board-column__section">
-              <div className="compact-badges">
-                <span className="badge-invert">
-                  {meeting.claimedSpots}/{meeting.capacity} occupied
-                </span>
-                {meeting.viewerHasClaimed ? <span className="badge-accent">Attending</span> : null}
-              </div>
-            </div>
-
-            <div className="board-column__section">
-              <div className="board-column__actions">
-                {viewer ? (
-                  <button
-                    className={meeting.viewerHasClaimed ? "button-accent" : "button-primary"}
-                    onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)}
-                    type="button"
-                  >
-                    {meeting.viewerHasClaimed ? "Release my spot" : "Claim a spot"}
+    <WorkspaceShell
+      center={
+        <div className="workspace-detail-scroll">
+          <div className="stack-panel">
+          {editing ? (
+            <>
+              <MeetingForm
+                groups={groupsQuery.data?.groups ?? []}
+                initialMeeting={meeting}
+                initialSeriesDates={seriesMeetings.map((entry) => ({ endsAt: entry.endsAt, startsAt: entry.startsAt }))}
+                onSubmit={handleMeetingSave}
+                seriesMode={editingSeries}
+              />
+              <div className="workspace-button-row">
+                {!editingSeries ? (
+                  <button className="button-danger" onClick={handleDelete} type="button">
+                    Delete session
                   </button>
                 ) : null}
-                {meeting.viewerCanEdit ? (
-                  <button className="button-danger" onClick={() => cancelMutation.mutate()} type="button">
-                    Cancel meeting
-                  </button>
-                ) : null}
+                <button className="button-secondary" onClick={() => setEditingMode(null)} type="button">
+                  Cancel
+                </button>
               </div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Session</p>
-              <h2 className="section-title typewriter-title">Details and updates</h2>
-            </div>
-          </div>
-
-          <div className="board-column__body">
-            <section className="workspace-section stack-md">
-              <div className="workspace-section__header">
-                <div className="stack-sm">
-                  <p className="muted-copy">{meeting.description || "No description yet."}</p>
-                </div>
+            </>
+          ) : (
+            <>
+              <DetailHero
+                description={meeting.description || "No description yet."}
+                eyebrow="Session"
+                imageUrl={meeting.heroImageUrl}
+                meta={
+                  <>
+                    <span className="mini-chip">{meeting.shortName}</span>
+                    <span className="mini-chip">{formatDateTime(meeting.startsAt)}</span>
+                    <span className="mini-chip">
+                      {meeting.pricing === "free"
+                        ? "Free"
+                        : meeting.costPerPerson
+                          ? `${meeting.costPerPerson}€ / person`
+                          : "Shared costs"}
+                    </span>
+                  </>
+                }
+                title={meeting.title}
+              >
+                <CopyTextButton label="Copy address" value={meeting.locationAddress} />
+                <a
+                  className="button-secondary button-inline"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.locationAddress)}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <MapPinned size={14} strokeWidth={2} />
+                  <span>Open maps</span>
+                </a>
+              </DetailHero>
+              <div className="detail-fact-grid">
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Time</span>
+                  <strong>{formatDateTime(meeting.startsAt)}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Venue</span>
+                  <strong>{meeting.locationName}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Access</span>
+                  <strong>
+                    {meeting.pricing === "free"
+                      ? "Free to join"
+                      : meeting.costPerPerson
+                        ? `${meeting.costPerPerson}€ / person`
+                        : "Estimated shared costs"}
+                  </strong>
+                </article>
               </div>
-
-              <div className="info-grid">
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">When</p>
-                  <p className="terminal-item__title">{formatDateTime(meeting.startsAt)}</p>
-                </div>
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">Where</p>
-                  <p className="terminal-item__title">{meeting.locationName}</p>
-                </div>
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">Pricing</p>
-                  <p className="terminal-item__title">{meeting.pricing}</p>
-                </div>
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">Open spots</p>
-                  <p className="terminal-item__title">{meeting.openSpots}</p>
-                </div>
-              </div>
-            </section>
-
-            <section className="workspace-section stack-md">
-              <div>
-                <p className="eyebrow">Claimed players</p>
-                <h2 className="section-title">Session roster</h2>
-              </div>
-              <div className="stack-sm">
-                {claims.length === 0 ? (
-                  <p className="empty-state">Nobody has claimed a spot yet.</p>
-                ) : (
-                  claims.map((claim) => (
-                    <div className="terminal-item" key={claim.id}>
-                      <p className="terminal-item__title">{claim.displayName}</p>
-                      <p className="terminal-item__meta">{claim.homeArea || claim.bio || "Ready to play"}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            {meeting.viewerCanEdit ? (
-              <section className="workspace-section stack-md">
-                <div>
-                  <p className="eyebrow">Edit meeting</p>
-                  <h2 className="section-title">Adjust details and capacity</h2>
-                </div>
-                <MeetingForm
-                  groups={groupsQuery.data?.groups ?? []}
-                  initialMeeting={meeting}
-                  onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
-                />
-              </section>
-            ) : null}
-
-            <PostBoard
-              buttonLabel="Post to meeting"
-              canPost={Boolean(viewer)}
-              emptyLabel="No meeting updates yet."
-              onSubmit={async (content) => postMutation.mutateAsync(content)}
-              posts={posts}
-              title="Meeting board"
-            />
+              <PostBoard
+                buttonLabel="Post update"
+                canPost={Boolean(viewer)}
+                emptyLabel="No updates yet."
+                onSubmit={async (content) => postMutation.mutateAsync(content)}
+                posts={posts}
+                title="Pin board"
+              />
+            </>
+          )}
           </div>
         </div>
-
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Upcoming sessions</p>
-              <h2 className="section-title typewriter-title">{timelineHeading}</h2>
+      }
+      detailCloseTo={closeTarget.fromPath}
+      left={
+        <div className="stack-panel">
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Availability</span>
+            <strong>{meeting.claimedSpots}/{meeting.capacity} occupied</strong>
+            {meeting.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Attending</span> : null}
+          </div>
+          {viewer ? (
+            <button className="button-primary" onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)} type="button">
+              <Users size={14} strokeWidth={2} />
+              {meeting.viewerHasClaimed ? "Release spot" : "Claim spot"}
+            </button>
+          ) : null}
+          <a
+            className="button-secondary"
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.locationAddress)}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <MapPinned size={14} strokeWidth={2} />
+            Open in Google Maps
+          </a>
+          <CopyTextButton label="Copy address" value={meeting.locationAddress} />
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Practical</span>
+            <div className="detail-meta-list">
+              <span><Clock3 size={14} strokeWidth={2} />{meeting.locationName}</span>
+              <span>
+                <CircleDollarSign size={14} strokeWidth={2} />
+                {meeting.pricing === "free"
+                  ? "Free"
+                  : meeting.costPerPerson
+                    ? `${meeting.costPerPerson}€ / person`
+                    : "Shared costs"}
+              </span>
             </div>
           </div>
-
-          <div className="board-column__body">
-            <EventTimeline
-              contextLabel={meeting.title}
-              emptyLabel="No related meetings found."
-              heading={timelineHeading}
-              meetings={relatedMeetings}
-              secondaryMeta={timelineMeta}
-              showHeader={false}
-              showGroupLabel={timelineMeta !== "location"}
-              variant="embedded"
-            />
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Roster</span>
+            <div className="detail-link-list">
+              {claims.map((claim) => (
+                <Link className="mini-link" key={claim.id} to={`/profile/${claim.id}`}>
+                  {claim.displayName}
+                </Link>
+              ))}
+            </div>
           </div>
-        </aside>
-      </section>
-    </div>
+          {canManage ? (
+            <>
+              <button
+                className="button-secondary"
+                onClick={() => setEditingMode((current) => (current === "single" ? null : "single"))}
+                type="button"
+              >
+                <Shield size={14} strokeWidth={2} />
+                {editingMode === "single" ? "Close edit" : "Edit session"}
+              </button>
+              {meeting.seriesId ? (
+                <button className="button-secondary" onClick={() => setEditingMode((current) => (current === "series" ? null : "series"))} type="button">
+                  <Shield size={14} strokeWidth={2} />
+                  {editingMode === "series" ? "Close series edit" : "Edit series"}
+                </button>
+              ) : null}
+              <button className="button-danger" onClick={() => cancelMutation.mutate()} type="button">
+                Cancel session
+              </button>
+            </>
+          ) : null}
+        </div>
+      }
+      leftHeader={undefined}
+      onLogOut={onLogOut}
+      right={
+        <div className="stack-panel">
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Group</span>
+            <strong>{meeting.groupName}</strong>
+            <Link className="mini-link" to={`/groups/${meeting.groupId}`}>
+              Open group
+            </Link>
+          </div>
+          {meeting.venueId ? (
+            <div className="detail-card detail-card--compact">
+              <span className="panel-caption">Venue</span>
+              <strong>{meeting.locationName}</strong>
+              <Link className="mini-link" to={`/venues/${meeting.venueId}`}>
+                Open venue
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      }
+      rightHeader={undefined}
+      theme={theme}
+      title={`Session: ${meeting.title}`}
+      toggleTheme={toggleTheme}
+      viewer={viewer}
+    />
   );
 }

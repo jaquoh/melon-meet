@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
 import type { GroupSummary, MeetingSummary } from "../../../../packages/shared/src";
+import { getVenues } from "../lib/api";
+import { FilterCheckbox } from "./FilterCheckbox";
 import { fromDateTimeLocalInput, toDateTimeLocalInput } from "../lib/format";
 
 interface MeetingFormProps {
@@ -12,7 +16,9 @@ interface MeetingFormProps {
     venueId?: string | null;
   } | null;
   initialMeeting?: MeetingSummary | null;
+  initialSeriesDates?: Array<{ endsAt: string; startsAt: string }>;
   onSubmit: (payload: Record<string, unknown>) => Promise<unknown>;
+  seriesMode?: boolean;
 }
 
 function canCreateForGroup(group: GroupSummary) {
@@ -25,13 +31,23 @@ export function MeetingForm({
   groups,
   initialLocation,
   initialMeeting,
+  initialSeriesDates = [],
   onSubmit,
+  seriesMode = false,
 }: MeetingFormProps) {
   const creatableGroups = groups.filter(canCreateForGroup);
+  const venuesQuery = useQuery({
+    queryFn: getVenues,
+    queryKey: ["venues"],
+  });
+  const venues = venuesQuery.data?.venues ?? [];
   const [groupId, setGroupId] = useState(initialMeeting?.groupId ?? creatableGroups[0]?.id ?? "");
+  const [shortName, setShortName] = useState(initialMeeting?.shortName ?? "");
   const [title, setTitle] = useState(initialMeeting?.title ?? "");
   const [description, setDescription] = useState(initialMeeting?.description ?? "");
   const [activityLabel, setActivityLabel] = useState(initialMeeting?.activityLabel ?? "Beach volleyball");
+  const [heroImageUrl, setHeroImageUrl] = useState(initialMeeting?.heroImageUrl ?? "");
+  const [selectedVenueId, setSelectedVenueId] = useState(initialMeeting?.venueId ?? initialLocation?.venueId ?? "other");
   const [startsAt, setStartsAt] = useState(
     initialMeeting ? toDateTimeLocalInput(initialMeeting.startsAt) : "",
   );
@@ -51,21 +67,74 @@ export function MeetingForm({
     initialMeeting?.longitude ?? initialLocation?.longitude ?? 13.405,
   );
   const [pricing, setPricing] = useState<"free" | "paid">(initialMeeting?.pricing ?? "free");
+  const [costPerPerson, setCostPerPerson] = useState(initialMeeting?.costPerPerson?.toString() ?? "");
   const [capacity, setCapacity] = useState(initialMeeting?.capacity ?? 8);
-  const [recurrenceType, setRecurrenceType] = useState<"once" | "weekly">(
-    initialMeeting?.seriesId ? "weekly" : "once",
+  const [buildSeries, setBuildSeries] = useState(seriesMode);
+  const [seriesDates, setSeriesDates] = useState<Array<{ endsAt: string; startsAt: string }>>(
+    initialSeriesDates.map((entry) => ({
+      endsAt: toDateTimeLocalInput(entry.endsAt),
+      startsAt: toDateTimeLocalInput(entry.startsAt),
+    })),
   );
-  const [untilDate, setUntilDate] = useState("");
-  const [applyToSeries, setApplyToSeries] = useState(false);
+  const [applyToSeries, setApplyToSeries] = useState(seriesMode);
   const [submitting, setSubmitting] = useState(false);
+  const knownVenue = useMemo(
+    () => venues.find((venue) => venue.id === selectedVenueId) ?? null,
+    [selectedVenueId, venues],
+  );
+  const isOtherLocation = selectedVenueId === "other";
 
   useEffect(() => {
     if (!initialLocation) return;
-    setLocationName(initialLocation.locationName);
-    setLocationAddress(initialLocation.locationAddress);
-    setLatitude(initialLocation.latitude);
-    setLongitude(initialLocation.longitude);
+    if (initialLocation.venueId) {
+      setSelectedVenueId(initialLocation.venueId);
+    } else {
+      setSelectedVenueId("other");
+      setLocationName(initialLocation.locationName);
+      setLocationAddress(initialLocation.locationAddress);
+      setLatitude(initialLocation.latitude);
+      setLongitude(initialLocation.longitude);
+    }
   }, [initialLocation]);
+
+  useEffect(() => {
+    if (!knownVenue || isOtherLocation) {
+      return;
+    }
+    setLocationName(knownVenue.name);
+    setLocationAddress(knownVenue.address);
+    setLatitude(knownVenue.latitude);
+    setLongitude(knownVenue.longitude);
+  }, [isOtherLocation, knownVenue]);
+
+  useEffect(() => {
+    if (!seriesMode) {
+      return;
+    }
+    setBuildSeries(true);
+    setApplyToSeries(true);
+    setSeriesDates(
+      initialSeriesDates.map((entry) => ({
+        endsAt: toDateTimeLocalInput(entry.endsAt),
+        startsAt: toDateTimeLocalInput(entry.startsAt),
+      })),
+    );
+  }, [initialSeriesDates, seriesMode]);
+
+  function addSeriesDate() {
+    if (!startsAt || !endsAt) {
+      return;
+    }
+    setSeriesDates((current) =>
+      [...current.filter((entry) => entry.startsAt !== startsAt), { endsAt, startsAt }].sort(
+        (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+      ),
+    );
+  }
+
+  function removeSeriesDate(target: string) {
+    setSeriesDates((current) => current.filter((item) => item.startsAt !== target));
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,18 +144,27 @@ export function MeetingForm({
       const payload = initialMeeting
         ? {
             activityLabel,
-            applyToSeries,
             capacity: Number(capacity),
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
+            heroImageUrl,
             latitude: Number(latitude),
             locationAddress,
             locationName,
             longitude: Number(longitude),
             pricing,
+            costPerPerson: pricing === "paid" ? Number(costPerPerson || 0) : null,
+            seriesDates: buildSeries || seriesMode
+              ? seriesDates.map((entry) => ({
+                  endsAt: fromDateTimeLocalInput(entry.endsAt),
+                  startsAt: fromDateTimeLocalInput(entry.startsAt),
+                }))
+              : [],
+            applyToSeries: seriesMode || applyToSeries,
+            shortName,
             startsAt: fromDateTimeLocalInput(startsAt),
             title,
-            venueId: initialLocation?.venueId ?? initialMeeting.venueId,
+            venueId: isOtherLocation ? null : selectedVenueId,
           }
         : {
             activityLabel,
@@ -94,18 +172,24 @@ export function MeetingForm({
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
             groupId,
+            heroImageUrl,
             latitude: Number(latitude),
             locationAddress,
             locationName,
             longitude: Number(longitude),
             pricing,
-            recurrence:
-              recurrenceType === "weekly"
-                ? { type: "weekly", timezone: "Europe/Berlin", untilDate: untilDate || null }
-                : { type: "once" },
+            costPerPerson: pricing === "paid" ? Number(costPerPerson || 0) : null,
+            recurrence: { type: "once" },
+            seriesDates: buildSeries
+              ? seriesDates.map((entry) => ({
+                  endsAt: fromDateTimeLocalInput(entry.endsAt),
+                  startsAt: fromDateTimeLocalInput(entry.startsAt),
+                }))
+              : [],
+            shortName,
             startsAt: fromDateTimeLocalInput(startsAt),
             title,
-            venueId: initialLocation?.venueId ?? null,
+            venueId: isOtherLocation ? null : selectedVenueId,
           };
       await onSubmit(payload);
     } finally {
@@ -137,6 +221,11 @@ export function MeetingForm({
       ) : null}
 
       <label className="field-stack field-full">
+        <span className="field-label">Short name</span>
+        <input className="field-input" maxLength={24} onChange={(event) => setShortName(event.target.value)} required value={shortName} />
+      </label>
+
+      <label className="field-stack field-full">
         <span className="field-label">Title</span>
         <input className="field-input" onChange={(event) => setTitle(event.target.value)} required value={title} />
       </label>
@@ -144,6 +233,11 @@ export function MeetingForm({
       <label className="field-stack field-full">
         <span className="field-label">Description</span>
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} value={description} />
+      </label>
+
+      <label className="field-stack field-full">
+        <span className="field-label">Hero image URL</span>
+        <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
       </label>
 
       <label className="field-stack">
@@ -156,6 +250,46 @@ export function MeetingForm({
         <input className="field-input" onChange={(event) => setEndsAt(event.target.value)} required type="datetime-local" value={endsAt} />
       </label>
 
+      <div className="field-full stack-sm">
+        {seriesMode ? (
+          <p className="muted-copy">Editing the whole session series. Add or remove dates to update every session in it.</p>
+        ) : (
+          <FilterCheckbox checked={buildSeries} label="Build a session series from multiple dates" onChange={setBuildSeries} />
+        )}
+        <div className="form-actions">
+          <button className="button-secondary button-inline" disabled={!(buildSeries || seriesMode)} onClick={addSeriesDate} type="button">
+            <Plus size={14} strokeWidth={2} />
+            <span>Add session</span>
+          </button>
+        </div>
+      </div>
+
+      {buildSeries || seriesMode ? (
+        <div className="detail-card detail-card--compact field-full">
+          <span className="panel-caption">Session dates</span>
+          {seriesDates.length === 0 ? (
+            <p className="muted-copy">Use the add session button next to the start time to build the series.</p>
+          ) : (
+            <div className="series-slot-list">
+              {seriesDates.map((entry) => (
+                <div className="series-slot-item" key={entry.startsAt}>
+                  <div>
+                    <strong>{new Date(entry.startsAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</strong>
+                    <p className="muted-copy">
+                      {Math.round((new Date(entry.endsAt).getTime() - new Date(entry.startsAt).getTime()) / 60000)} min
+                    </p>
+                  </div>
+                  <button className="button-secondary button-inline" onClick={() => removeSeriesDate(entry.startsAt)} type="button">
+                    <Trash2 size={14} strokeWidth={2} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
       <label className="field-stack">
         <span className="field-label">Activity</span>
         <input className="field-input" onChange={(event) => setActivityLabel(event.target.value)} value={activityLabel} />
@@ -166,61 +300,85 @@ export function MeetingForm({
         <input className="field-input" min={2} onChange={(event) => setCapacity(Number(event.target.value))} required type="number" value={capacity} />
       </label>
 
-      <label className="field-stack">
+      <div className="field-stack">
         <span className="field-label">Pricing</span>
-        <select className="field-select" onChange={(event) => setPricing(event.target.value as "free" | "paid")} value={pricing}>
-          <option value="free">Free</option>
-          <option value="paid">Paid</option>
-        </select>
-      </label>
+        <div className="meeting-pricing-row">
+          <div className="workspace-segmented workspace-segmented--fit">
+            <button className={pricing === "free" ? "is-active" : ""} onClick={() => setPricing("free")} type="button">
+              Free
+            </button>
+            <button className={pricing === "paid" ? "is-active" : ""} onClick={() => setPricing("paid")} type="button">
+              Paid
+            </button>
+          </div>
+          <div className="meeting-pricing-row__aside">
+            {pricing === "paid" ? (
+              <label className="field-stack">
+                <span className="field-label">Amount / person</span>
+                <input
+                  className="field-input"
+                  min={0}
+                  onChange={(event) => setCostPerPerson(event.target.value)}
+                  placeholder="10"
+                  step="0.5"
+                  type="number"
+                  value={costPerPerson}
+                />
+              </label>
+            ) : (
+              <div className="meeting-pricing-row__placeholder" aria-hidden="true" />
+            )}
+          </div>
+        </div>
+      </div>
 
-      {!initialMeeting ? (
-        <label className="field-stack">
-          <span className="field-label">Repeat</span>
-          <select className="field-select" onChange={(event) => setRecurrenceType(event.target.value as "once" | "weekly")} value={recurrenceType}>
-            <option value="once">One-time</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </label>
-      ) : null}
-
-      {!initialMeeting && recurrenceType === "weekly" ? (
-        <label className="field-stack">
-          <span className="field-label">Repeat until</span>
-          <input className="field-input" onChange={(event) => setUntilDate(event.target.value)} type="date" value={untilDate} />
-        </label>
-      ) : null}
-
-      {initialMeeting?.seriesId ? (
-        <label className="field-check field-full">
-          <input checked={applyToSeries} onChange={(event) => setApplyToSeries(event.target.checked)} type="checkbox" />
-          Apply these changes to future weekly occurrences
-        </label>
+      {initialMeeting?.seriesId && !seriesMode ? (
+        <div className="field-full">
+          <FilterCheckbox checked={applyToSeries} label="Apply these changes to future weekly occurrences" onChange={setApplyToSeries} />
+        </div>
       ) : null}
 
       <label className="field-stack field-full">
+        <span className="field-label">Location</span>
+        <select className="field-select" onChange={(event) => setSelectedVenueId(event.target.value)} value={selectedVenueId}>
+          {venues.map((venue) => (
+            <option key={venue.id} value={venue.id}>
+              {venue.name}
+            </option>
+          ))}
+          <option value="other">Other location</option>
+        </select>
+      </label>
+
+      <label className="field-stack field-full">
         <span className="field-label">Location name</span>
-        <input className="field-input" onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
+        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">Address</span>
-        <input className="field-input" onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
+        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Latitude</span>
-        <input className="field-input" onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
+        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Longitude</span>
-        <input className="field-input" onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
+        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
       </label>
 
       <div className="form-actions field-full">
         <button className="button-primary" disabled={submitting}>
-          {submitting ? "Saving" : initialMeeting ? "Save meeting" : "Create meeting"}
+          {submitting
+            ? "Saving"
+            : (buildSeries || seriesMode) && seriesDates.length > 0
+              ? "Save all sessions"
+              : initialMeeting
+                ? "Save meeting"
+                : "Create meeting"}
         </button>
       </div>
     </form>

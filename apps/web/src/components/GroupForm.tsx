@@ -4,6 +4,8 @@ interface GroupFormProps {
   initialValues?: {
     activityLabel?: string | null;
     description: string;
+    heroImageUrl?: string | null;
+    messengerUrl?: string | null;
     name: string;
     slug: string;
     visibility: "public" | "private";
@@ -11,6 +13,8 @@ interface GroupFormProps {
   onSubmit: (payload: {
     activityLabel?: string | null;
     description: string;
+    heroImageUrl?: string | null;
+    messengerUrl?: string | null;
     name: string;
     slug: string;
     visibility: "public" | "private";
@@ -22,6 +26,8 @@ export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
   const [slug, setSlug] = useState(initialValues?.slug ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [activityLabel, setActivityLabel] = useState(initialValues?.activityLabel ?? "Beach volleyball");
+  const [heroImageUrl, setHeroImageUrl] = useState(initialValues?.heroImageUrl ?? "");
+  const [messengerUrl, setMessengerUrl] = useState(initialValues?.messengerUrl ?? "");
   const [visibility, setVisibility] = useState<"public" | "private">(
     initialValues?.visibility ?? "public",
   );
@@ -34,6 +40,8 @@ export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
       await onSubmit({
         activityLabel,
         description,
+        heroImageUrl,
+        messengerUrl,
         name,
         slug,
         visibility,
@@ -77,6 +85,16 @@ export function GroupForm({ initialValues, onSubmit }: GroupFormProps) {
       <label className="field-stack field-full">
         <span className="field-label">Description</span>
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} required value={description} />
+      </label>
+
+      <label className="field-stack field-full">
+        <span className="field-label">Hero image URL</span>
+        <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
+      </label>
+
+      <label className="field-stack field-full">
+        <span className="field-label">Messenger URL</span>
+        <input className="field-input" onChange={(event) => setMessengerUrl(event.target.value)} placeholder="https://t.me/..." type="url" value={messengerUrl} />
       </label>
 
       <div className="form-actions field-full">

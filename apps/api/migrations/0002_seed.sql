@@ -6,6 +6,8 @@ INSERT OR REPLACE INTO venues (
   pricing,
   latitude,
   longitude,
+  booking_url,
+  opening_hours_text,
   source_url,
   created_at
 ) VALUES
@@ -18,6 +20,8 @@ INSERT OR REPLACE INTO venues (
     52.5360,
     13.3924,
     'https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/',
+    'Daily 09:00-22:00',
+    'https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -28,6 +32,8 @@ INSERT OR REPLACE INTO venues (
     'paid',
     52.4988,
     13.3740,
+    'https://www.beach61.de/',
+    'Daily 10:00-22:00',
     'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -39,6 +45,8 @@ INSERT OR REPLACE INTO venues (
     'paid',
     52.4818,
     13.3669,
+    NULL,
+    'Varies by court booking',
     'https://berlin-beachvolleyball.de/beachvolleyball-berlin/',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -51,6 +59,8 @@ INSERT OR REPLACE INTO venues (
     52.5409,
     13.5702,
     'https://beach-zone.de/',
+    'Daily 09:00-23:00',
+    'https://beach-zone.de/',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -61,6 +71,8 @@ INSERT OR REPLACE INTO venues (
     'free',
     52.5297,
     13.4415,
+    NULL,
+    'Public outdoor courts',
     'https://berlin-beachvolleyball.de/en/volkspark-friedrichshain-6-courts-free-but-only-with-your-own-equipment/',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -72,6 +84,8 @@ INSERT OR REPLACE INTO venues (
     'free',
     52.5233,
     13.3994,
+    NULL,
+    'Open park access',
     'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -83,6 +97,8 @@ INSERT OR REPLACE INTO venues (
     'paid',
     52.5864,
     13.2531,
+    NULL,
+    'Seasonal opening hours',
     'https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187',
     '2026-04-03T00:00:00.000Z'
   );
@@ -95,6 +111,8 @@ INSERT OR REPLACE INTO users (
   bio,
   home_area,
   avatar_url,
+  is_profile_public,
+  show_email_publicly,
   created_at,
   updated_at
 ) VALUES (
@@ -105,6 +123,8 @@ INSERT OR REPLACE INTO users (
   'Weekend organiser for beach volleyball and mixed outdoor game sessions.',
   'Berlin Mitte',
   NULL,
+  1,
+  0,
   '2026-04-03T00:00:00.000Z',
   '2026-04-03T00:00:00.000Z'
 );
@@ -117,6 +137,7 @@ INSERT OR REPLACE INTO app_groups (
   description,
   visibility,
   activity_label,
+  messenger_url,
   created_at,
   updated_at
 ) VALUES
@@ -128,6 +149,7 @@ INSERT OR REPLACE INTO app_groups (
     'Open beach volleyball meetups around central Berlin courts with a friendly drop-in vibe.',
     'public',
     'Beach volleyball',
+    'https://t.me/melonmeet_sunset',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -139,6 +161,7 @@ INSERT OR REPLACE INTO app_groups (
     'Private early-morning crew that rotates through quieter Berlin sand courts.',
     'private',
     'Beach volleyball',
+    'https://chat.whatsapp.com/example-morning-sand',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -150,6 +173,7 @@ INSERT OR REPLACE INTO app_groups (
     'Public pick-up group for weekday evening sessions across free and paid Berlin courts.',
     'public',
     'Mixed play',
+    'https://t.me/melonmeet_open_city',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   );
@@ -209,6 +233,7 @@ INSERT OR REPLACE INTO meeting_series (
   id,
   group_id,
   owner_user_id,
+  short_name,
   title,
   description,
   activity_label,
@@ -232,6 +257,7 @@ INSERT OR REPLACE INTO meeting_series (
   '327968c9-f264-4f16-83b9-a6759c3f4a83',
   'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
   '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
+  'Sunset Rally',
   'Thursday Sunset Rally',
   'Weekly open-play evening focused on casual 4v4 beach volleyball.',
   'Beach volleyball',
@@ -258,6 +284,7 @@ INSERT OR REPLACE INTO meetings (
   group_id,
   owner_user_id,
   series_id,
+  short_name,
   title,
   description,
   activity_label,
@@ -280,6 +307,7 @@ INSERT OR REPLACE INTO meetings (
     'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     NULL,
+    'Warmup',
     'Sunday Free Courts Warmup',
     'Open warm-up session at the free Friedrichshain sandbox courts.',
     'Beach volleyball',
@@ -302,6 +330,7 @@ INSERT OR REPLACE INTO meetings (
     '8f96eb6d-918a-4f72-a50c-476fdc8c8325',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     NULL,
+    'Sunrise',
     'Private sunrise reps',
     'Invite-only morning practice slot for the private crew.',
     'Beach volleyball',
@@ -324,6 +353,7 @@ INSERT OR REPLACE INTO meetings (
     '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     NULL,
+    'City Play',
     'Tuesday City Courts Open Play',
     'Public evening rotations with flexible teams and extra space for walk-ins.',
     'Mixed play',
@@ -346,6 +376,7 @@ INSERT OR REPLACE INTO meetings (
     '61c8cf46-c3fe-4d42-8fab-5fd1e6b15731',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
     NULL,
+    'Afterwork',
     'Friday Afterwork Ladder',
     'Open ladder night with mixed levels and easy drop-in for new players.',
     'Mixed play',

@@ -4,6 +4,7 @@ import { fromZonedTime } from "date-fns-tz";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
 import {
   authSchema,
   friendRequestSchema,
@@ -44,6 +45,21 @@ import type { AppEnv } from "./types/env";
 type GroupRole = "owner" | "admin" | "member";
 type GroupVisibility = "public" | "private";
 
+type ViewerRow = {
+  avatar_url: string | null;
+  bio: string;
+  display_name: string;
+  email: string;
+  home_area: string;
+  id: string;
+  is_profile_public?: number | boolean;
+  show_email_publicly?: number | boolean;
+};
+
+type HeroImageRow = {
+  hero_image_url?: string | null;
+};
+
 function normalizeOptionalText(value: string | null | undefined) {
   if (!value) {
     return null;
@@ -54,6 +70,31 @@ function normalizeOptionalText(value: string | null | undefined) {
 
 function makeInviteCode() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+function mapViewerSummary(row: ViewerRow) {
+  return {
+    avatarUrl: row.avatar_url,
+    bio: row.bio,
+    displayName: row.display_name,
+    email: row.email,
+    homeArea: row.home_area,
+    id: row.id,
+    isProfilePublic: Boolean(row.is_profile_public),
+    showEmailPublicly: Boolean(row.show_email_publicly),
+  };
+}
+
+function maskViewerEmail(viewer: ReturnType<typeof mapViewerSummary>) {
+  return {
+    ...viewer,
+    email: viewer.showEmailPublicly ? viewer.email : "",
+  };
+}
+
+function buildGoogleMapsUrl(address: string, latitude: number, longitude: number) {
+  const query = address || `${latitude},${longitude}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 async function getGroupRole(
@@ -77,9 +118,12 @@ async function getGroupRole(
 async function getGroupRecord(db: D1Database, groupId: string) {
   const row = await firstRow<{
     activity_label: string | null;
+    archived_at: string | null;
     created_at: string;
     description: string;
+    hero_image_url: string | null;
     id: string;
+    messenger_url: string | null;
     name: string;
     owner_user_id: string;
     slug: string;
@@ -87,12 +131,13 @@ async function getGroupRecord(db: D1Database, groupId: string) {
     visibility: GroupVisibility;
   }>(
     db,
-    `SELECT id, owner_user_id, name, slug, description, visibility, activity_label, created_at, updated_at
+    `SELECT id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, archived_at, created_at, updated_at
      FROM app_groups
      WHERE id = ?`,
     groupId,
   );
   assertOrThrow(row, 404, "Group not found.");
+  assertOrThrow(!row.archived_at, 404, "Group not found.");
   return row;
 }
 
@@ -113,10 +158,13 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
   const rows = await allRows<{
     activity_label: string | null;
     description: string;
+    hero_image_url: string | null;
     id: string;
     member_count: number;
+    messenger_url: string | null;
     name: string;
     owner_user_id: string;
+    public_session_count: number;
     slug: string;
     viewer_role: GroupRole | null;
     visibility: GroupVisibility;
@@ -129,8 +177,17 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
        g.description,
        g.visibility,
        g.activity_label,
+       g.messenger_url,
+       g.hero_image_url,
        g.owner_user_id,
        COALESCE((SELECT COUNT(*) FROM app_group_members gm WHERE gm.group_id = g.id), 0) AS member_count,
+       COALESCE((
+         SELECT COUNT(*)
+         FROM meetings m
+         WHERE m.group_id = g.id
+           AND m.status = 'active'
+           AND m.archived_at IS NULL
+       ), 0) AS public_session_count,
        (
          SELECT gm.role
          FROM app_group_members gm
@@ -139,13 +196,16 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
          LIMIT 1
        ) AS viewer_role
      FROM app_groups g
-     WHERE g.visibility = 'public'
-        OR (? IS NOT NULL AND EXISTS (
+     WHERE g.archived_at IS NULL
+       AND (
+         g.visibility = 'public'
+         OR (? IS NOT NULL AND EXISTS (
           SELECT 1
           FROM app_group_members gm
           WHERE gm.group_id = g.id
             AND gm.user_id = ?
         ))
+       )
      ORDER BY g.created_at DESC`,
     viewerId,
     viewerId,
@@ -155,10 +215,13 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
   return rows.map((row) => ({
     activityLabel: row.activity_label,
     description: row.description,
+    heroImageUrl: row.hero_image_url,
     id: row.id,
     memberCount: Number(row.member_count),
+    messengerUrl: row.messenger_url,
     name: row.name,
     ownerUserId: row.owner_user_id,
+    publicSessionCount: Number(row.public_session_count),
     slug: row.slug,
     viewerRole: row.viewer_role,
     visibility: row.visibility,
@@ -172,11 +235,16 @@ function mapMeetingRow(row: Record<string, unknown>): MeetingSummary {
     activityLabel: (row.activity_label as string | null) ?? null,
     capacity,
     claimedSpots,
+    costPerPerson:
+      row.cost_per_person === null || row.cost_per_person === undefined
+        ? null
+        : Number(row.cost_per_person),
     description: (row.description as string | null) ?? null,
     endsAt: String(row.ends_at),
     groupId: String(row.group_id),
     groupName: String(row.group_name),
     groupVisibility: row.group_visibility as "public" | "private",
+    heroImageUrl: (row.hero_image_url as string | null) ?? null,
     id: String(row.id),
     latitude: Number(row.latitude),
     locationAddress: String(row.location_address),
@@ -186,13 +254,117 @@ function mapMeetingRow(row: Record<string, unknown>): MeetingSummary {
     ownerUserId: String(row.owner_user_id),
     pricing: row.pricing as "free" | "paid",
     seriesId: (row.series_id as string | null) ?? null,
+    shortName: String(row.short_name ?? row.title),
     startsAt: String(row.starts_at),
-    status: row.status as "active" | "cancelled",
+    status: row.archived_at ? "archived" : (row.status as "active" | "cancelled"),
     title: String(row.title),
     venueId: (row.venue_id as string | null) ?? null,
     viewerCanEdit: Boolean(row.viewer_can_edit),
     viewerHasClaimed: Boolean(row.viewer_has_claimed),
   };
+}
+
+function occurrenceDateFromIso(isoValue: string) {
+  return format(new Date(isoValue), "yyyy-MM-dd");
+}
+
+async function upsertSeriesOccurrenceOverride(
+  db: D1Database,
+  occurrence: {
+    activityLabel: string | null;
+    capacity: number;
+    costPerPerson: number | null;
+    description: string | null;
+    endsAt: string;
+    groupId: string;
+    heroImageUrl: string | null;
+    latitude: number;
+    locationAddress: string;
+    locationName: string;
+    longitude: number;
+    ownerUserId: string;
+    pricing: "free" | "paid";
+    seriesId: string;
+    shortName: string;
+    startsAt: string;
+    title: string;
+    venueId: string | null;
+  },
+) {
+  const occurrenceDate = occurrenceDateFromIso(occurrence.startsAt);
+  const timestamp = nowIso();
+  await runStatement(
+    db,
+    `INSERT INTO meetings (
+       id,
+       group_id,
+       owner_user_id,
+       series_id,
+       short_name,
+       title,
+       description,
+       activity_label,
+       hero_image_url,
+       venue_id,
+       location_name,
+       location_address,
+       latitude,
+       longitude,
+       pricing,
+       cost_per_person,
+       capacity,
+       starts_at,
+       ends_at,
+       occurrence_date,
+       status,
+       created_at,
+       updated_at,
+       archived_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
+     ON CONFLICT(series_id, occurrence_date) DO UPDATE SET
+       group_id = excluded.group_id,
+       owner_user_id = excluded.owner_user_id,
+       short_name = excluded.short_name,
+       title = excluded.title,
+       description = excluded.description,
+       activity_label = excluded.activity_label,
+       hero_image_url = excluded.hero_image_url,
+       venue_id = excluded.venue_id,
+       location_name = excluded.location_name,
+       location_address = excluded.location_address,
+       latitude = excluded.latitude,
+       longitude = excluded.longitude,
+       pricing = excluded.pricing,
+       cost_per_person = excluded.cost_per_person,
+       capacity = excluded.capacity,
+       starts_at = excluded.starts_at,
+       ends_at = excluded.ends_at,
+       status = 'active',
+       archived_at = NULL,
+       updated_at = excluded.updated_at`,
+    crypto.randomUUID(),
+    occurrence.groupId,
+    occurrence.ownerUserId,
+    occurrence.seriesId,
+    occurrence.shortName,
+    occurrence.title,
+    occurrence.description,
+    occurrence.activityLabel,
+    occurrence.heroImageUrl,
+    occurrence.venueId,
+    occurrence.locationName,
+    occurrence.locationAddress,
+    occurrence.latitude,
+    occurrence.longitude,
+    occurrence.pricing,
+    occurrence.costPerPerson,
+    occurrence.capacity,
+    occurrence.startsAt,
+    occurrence.endsAt,
+    occurrenceDate,
+    timestamp,
+    timestamp,
+  );
 }
 
 async function listAccessibleMeetings(
@@ -202,6 +374,7 @@ async function listAccessibleMeetings(
     endAt?: string;
     groupId?: string;
     meetingId?: string;
+    seriesId?: string;
     venueId?: string;
     north?: number;
     openOnly?: boolean;
@@ -220,18 +393,22 @@ async function listAccessibleMeetings(
        g.name AS group_name,
        g.visibility AS group_visibility,
        m.owner_user_id,
+       m.short_name,
        m.title,
        m.description,
        m.activity_label,
+       m.hero_image_url,
        m.location_name,
        m.location_address,
        m.latitude,
        m.longitude,
        m.pricing,
+       m.cost_per_person,
        m.capacity,
        m.starts_at,
        m.ends_at,
        m.status,
+       m.archived_at,
        m.venue_id,
        m.series_id,
        COALESCE((SELECT COUNT(*) FROM meeting_claims mc WHERE mc.meeting_id = m.id), 0) AS claimed_spots,
@@ -241,12 +418,25 @@ async function listAccessibleMeetings(
          WHERE mc.meeting_id = m.id
            AND mc.user_id = ?
        ) THEN 1 ELSE 0 END AS viewer_has_claimed,
-       CASE WHEN ? IS NOT NULL AND m.owner_user_id = ? THEN 1 ELSE 0 END AS viewer_can_edit
+       CASE
+         WHEN ? IS NOT NULL AND (
+           m.owner_user_id = ?
+           OR EXISTS (
+             SELECT 1
+             FROM app_group_members gm
+             WHERE gm.group_id = m.group_id
+               AND gm.user_id = ?
+               AND gm.role IN ('owner', 'admin')
+           )
+         ) THEN 1 ELSE 0 END AS viewer_can_edit
      FROM meetings m
      JOIN app_groups g ON g.id = m.group_id
      WHERE m.status = 'active'
+       AND m.archived_at IS NULL
+       AND g.archived_at IS NULL
        AND (? IS NULL OR m.id = ?)
        AND (? IS NULL OR m.group_id = ?)
+       AND (? IS NULL OR m.series_id = ?)
        AND (? IS NULL OR m.venue_id = ?)
        AND (? IS NULL OR m.starts_at >= ?)
        AND (? IS NULL OR m.starts_at <= ?)
@@ -269,10 +459,13 @@ async function listAccessibleMeetings(
     viewerId,
     viewerId,
     viewerId,
+    viewerId,
     options?.meetingId ?? null,
     options?.meetingId ?? null,
     options?.groupId ?? null,
     options?.groupId ?? null,
+    options?.seriesId ?? null,
+    options?.seriesId ?? null,
     options?.venueId ?? null,
     options?.venueId ?? null,
     options?.startAt ?? null,
@@ -311,6 +504,14 @@ async function getMeetingDetail(
   meetingId: string,
   viewerId: string | null,
 ) {
+  const rawMeeting = await firstRow<{ group_id: string; archived_at: string | null; status: string }>(
+    db,
+    "SELECT group_id, archived_at, status FROM meetings WHERE id = ?",
+    meetingId,
+  );
+  assertOrThrow(rawMeeting, 404, "Meeting not found.");
+  assertOrThrow(!rawMeeting.archived_at, 404, "Meeting not found.");
+  await assertCanAccessGroup(db, rawMeeting.group_id, viewerId);
   const [meeting] = await listAccessibleMeetings(db, viewerId, { meetingId });
   assertOrThrow(meeting, 404, "Meeting not found.");
   return meeting;
@@ -351,8 +552,11 @@ export function createApp() {
     const passwordHash = await hashPassword(password);
     await runStatement(
       c.env.DB,
-      `INSERT INTO users (id, email, password_hash, display_name, bio, home_area, avatar_url, created_at, updated_at)
-       VALUES (?, ?, ?, ?, '', '', NULL, ?, ?)`,
+      `INSERT INTO users (
+         id, email, password_hash, display_name, bio, home_area, avatar_url,
+         is_profile_public, show_email_publicly, created_at, updated_at
+       )
+       VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, ?, ?)`,
       userId,
       email.toLowerCase(),
       passwordHash,
@@ -372,6 +576,8 @@ export function createApp() {
         email: email.toLowerCase(),
         homeArea: "",
         id: userId,
+        isProfilePublic: false,
+        showEmailPublicly: false,
       },
     }, 201);
   });
@@ -385,10 +591,12 @@ export function createApp() {
       email: string;
       home_area: string;
       id: string;
+      is_profile_public: number;
       password_hash: string;
+      show_email_publicly: number;
     }>(
       c.env.DB,
-      `SELECT id, email, password_hash, display_name, bio, home_area, avatar_url
+      `SELECT id, email, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
        FROM users
        WHERE email = ?`,
       email.toLowerCase(),
@@ -401,14 +609,7 @@ export function createApp() {
     writeSessionCookie(c, session.token, session.expiresAt);
 
     return c.json({
-      user: {
-        avatarUrl: row.avatar_url,
-        bio: row.bio,
-        displayName: row.display_name,
-        email: row.email,
-        homeArea: row.home_area,
-        id: row.id,
-      },
+      user: mapViewerSummary(row),
     });
   });
 
@@ -426,15 +627,17 @@ export function createApp() {
 
     const groups = await listGroupSummaries(c.env.DB, viewer.id);
     const friends = await allRows<{
-      avatar_url: string | null;
-      bio: string;
       connection_id: string;
       direction: "incoming" | "outgoing";
-      display_name: string;
-      email: string;
-      home_area: string;
       status: "pending" | "accepted";
+      user_avatar_url: string | null;
+      user_bio: string;
+      user_display_name: string;
+      user_email: string;
+      user_home_area: string;
       user_id: string;
+      user_is_profile_public: number;
+      user_show_email_publicly: number;
     }>(
       c.env.DB,
       `SELECT
@@ -442,11 +645,13 @@ export function createApp() {
          fc.status,
          CASE WHEN fc.requester_user_id = ? THEN 'outgoing' ELSE 'incoming' END AS direction,
          u.id AS user_id,
-         u.email,
-         u.display_name,
-         u.bio,
-         u.home_area,
-         u.avatar_url
+         u.email AS user_email,
+         u.display_name AS user_display_name,
+         u.bio AS user_bio,
+         u.home_area AS user_home_area,
+         u.avatar_url AS user_avatar_url,
+         u.is_profile_public AS user_is_profile_public,
+         u.show_email_publicly AS user_show_email_publicly
        FROM friend_connections fc
        JOIN users u
          ON u.id = CASE
@@ -467,14 +672,16 @@ export function createApp() {
         direction: friend.direction,
         id: friend.connection_id,
         status: friend.status,
-        user: {
-          avatarUrl: friend.avatar_url,
-          bio: friend.bio,
-          displayName: friend.display_name,
-          email: friend.email,
-          homeArea: friend.home_area,
+        user: mapViewerSummary({
+          avatar_url: friend.user_avatar_url,
+          bio: friend.user_bio,
+          display_name: friend.user_display_name,
+          email: friend.user_email,
+          home_area: friend.user_home_area,
           id: friend.user_id,
-        },
+          is_profile_public: friend.user_is_profile_public,
+          show_email_publicly: friend.user_show_email_publicly,
+        }),
       })),
       groups,
       viewer,
@@ -482,16 +689,9 @@ export function createApp() {
   });
 
   app.get("/api/profiles/:id", async (c) => {
-    const row = await firstRow<{
-      avatar_url: string | null;
-      bio: string;
-      display_name: string;
-      email: string;
-      home_area: string;
-      id: string;
-    }>(
+    const row = await firstRow<ViewerRow>(
       c.env.DB,
-      `SELECT id, email, display_name, bio, home_area, avatar_url
+      `SELECT id, email, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
        FROM users
        WHERE id = ?`,
       c.req.param("id"),
@@ -499,6 +699,8 @@ export function createApp() {
     assertOrThrow(row, 404, "Profile not found.");
 
     const viewer = c.get("viewer");
+    const profile = mapViewerSummary(row);
+    const canViewProfile = viewer?.id === row.id || profile.isProfilePublic;
     const friendship = viewer
       ? await firstRow<{ id: string; status: "pending" | "accepted" }>(
         c.env.DB,
@@ -513,16 +715,55 @@ export function createApp() {
       )
       : null;
 
+    const memberships = canViewProfile
+      ? await allRows<{
+        group_id: string;
+        group_name: string;
+        group_slug: string;
+        role: GroupRole;
+      }>(
+        c.env.DB,
+        `SELECT gm.group_id, g.name AS group_name, g.slug AS group_slug, gm.role
+         FROM app_group_members gm
+         JOIN app_groups g ON g.id = gm.group_id
+         WHERE gm.user_id = ?
+           AND g.archived_at IS NULL
+           AND (g.visibility = 'public' OR ? = ?)
+         ORDER BY g.name ASC`,
+        row.id,
+        viewer?.id ?? "",
+        row.id,
+      )
+      : [];
+
+    const attending = canViewProfile
+      ? await listAccessibleMeetings(c.env.DB, viewer?.id ?? null, {})
+      : [];
+
     return c.json({
       friendship,
-      profile: {
-        avatarUrl: row.avatar_url,
-        bio: row.bio,
-        displayName: row.display_name,
-        email: viewer?.id === row.id ? row.email : "",
-        homeArea: row.home_area,
-        id: row.id,
-      },
+      memberships: memberships.map((membership) => ({
+        id: membership.group_id,
+        name: membership.group_name,
+        role: membership.role,
+        slug: membership.group_slug,
+      })),
+      profile: canViewProfile
+        ? {
+          ...profile,
+          email:
+            viewer?.id === row.id || profile.showEmailPublicly
+              ? profile.email
+              : "",
+        }
+        : {
+          ...profile,
+          bio: "",
+          email: "",
+          homeArea: "",
+        },
+      profileIsPrivate: !canViewProfile,
+      attending: attending.filter((meeting) => meeting.viewerHasClaimed || meeting.ownerUserId === row.id),
     });
   });
 
@@ -534,12 +775,20 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `UPDATE users
-       SET display_name = ?, bio = ?, home_area = ?, avatar_url = ?, updated_at = ?
+       SET display_name = ?,
+           bio = ?,
+           home_area = ?,
+           avatar_url = ?,
+           is_profile_public = ?,
+           show_email_publicly = ?,
+           updated_at = ?
        WHERE id = ?`,
       input.displayName,
       input.bio ?? "",
       input.homeArea ?? "",
       normalizeOptionalText(input.avatarUrl ?? null),
+      input.isProfilePublic ? 1 : 0,
+      input.showEmailPublicly ? 1 : 0,
       updatedAt,
       viewer.id,
     );
@@ -551,8 +800,18 @@ export function createApp() {
         bio: input.bio ?? "",
         displayName: input.displayName,
         homeArea: input.homeArea ?? "",
+        isProfilePublic: input.isProfilePublic,
+        showEmailPublicly: input.showEmailPublicly,
       },
     });
+  });
+
+  app.delete("/api/profiles/:id", async (c) => {
+    const viewer = await requireViewer(c);
+    assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
+    await runStatement(c.env.DB, "DELETE FROM users WHERE id = ?", viewer.id);
+    clearSessionCookie(c);
+    return c.json({ ok: true });
   });
 
   app.post("/api/friends/requests", zValidator("json", friendRequestSchema), async (c) => {
@@ -633,8 +892,8 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `INSERT INTO app_groups (
-         id, owner_user_id, name, slug, description, visibility, activity_label, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       groupId,
       viewer.id,
       input.name,
@@ -642,6 +901,8 @@ export function createApp() {
       input.description,
       input.visibility,
       normalizeOptionalText(input.activityLabel ?? null),
+      normalizeOptionalText(input.messengerUrl ?? null),
+      normalizeOptionalText(input.heroImageUrl ?? null),
       createdAt,
       createdAt,
     );
@@ -741,7 +1002,9 @@ export function createApp() {
         activityLabel: group.activity_label,
         createdAt: group.created_at,
         description: group.description,
+        heroImageUrl: group.hero_image_url,
         id: group.id,
+        messengerUrl: group.messenger_url,
         name: group.name,
         ownerUserId: group.owner_user_id,
         slug: group.slug,
@@ -759,24 +1022,28 @@ export function createApp() {
       meetings,
       members: members.map((member) => ({
         role: member.role,
-        user: {
-          avatarUrl: member.avatar_url,
+        user: mapViewerSummary({
+          avatar_url: member.avatar_url,
           bio: member.bio,
-          displayName: member.display_name,
+          display_name: member.display_name,
           email: member.email,
-          homeArea: member.home_area,
+          home_area: member.home_area,
           id: member.user_id,
-        },
+          is_profile_public: 0,
+          show_email_publicly: 0,
+        }),
       })),
       posts: posts.map((post) => ({
-        author: {
-          avatarUrl: post.author_avatar_url,
+        author: mapViewerSummary({
+          avatar_url: post.author_avatar_url,
           bio: post.author_bio,
-          displayName: post.author_display_name,
+          display_name: post.author_display_name,
           email: post.author_email,
-          homeArea: post.author_home_area,
+          home_area: post.author_home_area,
           id: post.author_id,
-        },
+          is_profile_public: 0,
+          show_email_publicly: 0,
+        }),
         content: post.content,
         createdAt: post.created_at,
         id: post.id,
@@ -798,6 +1065,8 @@ export function createApp() {
            description = COALESCE(?, description),
            visibility = COALESCE(?, visibility),
            activity_label = COALESCE(?, activity_label),
+           messenger_url = COALESCE(?, messenger_url),
+           hero_image_url = COALESCE(?, hero_image_url),
            updated_at = ?
        WHERE id = ?`,
       input.name ?? null,
@@ -805,10 +1074,26 @@ export function createApp() {
       input.description ?? null,
       input.visibility ?? null,
       input.activityLabel === undefined ? null : normalizeOptionalText(input.activityLabel ?? null),
+      input.messengerUrl === undefined ? null : normalizeOptionalText(input.messengerUrl ?? null),
+      input.heroImageUrl === undefined ? null : normalizeOptionalText(input.heroImageUrl ?? null),
       nowIso(),
       group.id,
     );
 
+    return c.json({ ok: true });
+  });
+
+  app.delete("/api/groups/:id", async (c) => {
+    const viewer = await requireViewer(c);
+    const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can archive the group.");
+    await runStatement(
+      c.env.DB,
+      "UPDATE app_groups SET archived_at = ?, updated_at = ? WHERE id = ?",
+      nowIso(),
+      nowIso(),
+      group.id,
+    );
     return c.json({ ok: true });
   });
 
@@ -824,6 +1109,136 @@ export function createApp() {
       group.id,
       viewer.id,
       nowIso(),
+    );
+    return c.json({ ok: true });
+  });
+
+  app.post(
+    "/api/groups/:id/membership-requests",
+    zValidator("json", z.object({ note: z.string().trim().max(300).optional().nullable() })),
+    async (c) => {
+      const viewer = await requireViewer(c);
+      const group = await getGroupRecord(c.env.DB, c.req.param("id"));
+      const existingRole = await getGroupRole(c.env.DB, group.id, viewer.id);
+      assertOrThrow(!existingRole, 400, "You are already a member of this group.");
+      await runStatement(
+        c.env.DB,
+        `INSERT INTO group_membership_requests (
+           id, group_id, requester_user_id, note, status, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, 'pending', ?, ?)
+         ON CONFLICT(group_id, requester_user_id)
+         DO UPDATE SET note = excluded.note, status = 'pending', updated_at = excluded.updated_at`,
+        crypto.randomUUID(),
+        group.id,
+        viewer.id,
+        normalizeOptionalText(c.req.valid("json").note ?? null),
+        nowIso(),
+        nowIso(),
+      );
+      return c.json({ ok: true }, 201);
+    },
+  );
+
+  app.get("/api/groups/:id/membership-requests", async (c) => {
+    const viewer = await requireViewer(c);
+    const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
+    const requests = await allRows<{
+      created_at: string;
+      id: string;
+      note: string | null;
+      requester_avatar_url: string | null;
+      requester_bio: string;
+      requester_display_name: string;
+      requester_email: string;
+      requester_home_area: string;
+      requester_id: string;
+      status: "pending" | "approved" | "rejected";
+    }>(
+      c.env.DB,
+      `SELECT
+         r.id,
+         r.note,
+         r.status,
+         r.created_at,
+         u.id AS requester_id,
+         u.email AS requester_email,
+         u.display_name AS requester_display_name,
+         u.bio AS requester_bio,
+         u.home_area AS requester_home_area,
+         u.avatar_url AS requester_avatar_url
+       FROM group_membership_requests r
+       JOIN users u ON u.id = r.requester_user_id
+       WHERE r.group_id = ?
+       ORDER BY r.created_at DESC`,
+      group.id,
+    );
+    return c.json({
+      requests: requests.map((request) => ({
+        createdAt: request.created_at,
+        groupId: group.id,
+        id: request.id,
+        note: request.note,
+        requester: mapViewerSummary({
+          avatar_url: request.requester_avatar_url,
+          bio: request.requester_bio,
+          display_name: request.requester_display_name,
+          email: request.requester_email,
+          home_area: request.requester_home_area,
+          id: request.requester_id,
+          is_profile_public: 0,
+          show_email_publicly: 0,
+        }),
+        status: request.status,
+      })),
+    });
+  });
+
+  app.post("/api/groups/:id/membership-requests/:requestId/approve", async (c) => {
+    const viewer = await requireViewer(c);
+    const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
+    const request = await firstRow<{ requester_user_id: string }>(
+      c.env.DB,
+      `SELECT requester_user_id
+       FROM group_membership_requests
+       WHERE id = ? AND group_id = ? AND status = 'pending'`,
+      c.req.param("requestId"),
+      group.id,
+    );
+    assertOrThrow(request, 404, "Membership request not found.");
+    await runStatement(
+      c.env.DB,
+      `INSERT OR IGNORE INTO app_group_members (id, group_id, user_id, role, created_at)
+       VALUES (?, ?, ?, 'member', ?)`,
+      crypto.randomUUID(),
+      group.id,
+      request.requester_user_id,
+      nowIso(),
+    );
+    await runStatement(
+      c.env.DB,
+      `UPDATE group_membership_requests
+       SET status = 'approved', updated_at = ?
+       WHERE id = ?`,
+      nowIso(),
+      c.req.param("requestId"),
+    );
+    return c.json({ ok: true });
+  });
+
+  app.post("/api/groups/:id/membership-requests/:requestId/reject", async (c) => {
+    const viewer = await requireViewer(c);
+    const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
+    await runStatement(
+      c.env.DB,
+      `UPDATE group_membership_requests
+       SET status = 'rejected', updated_at = ?
+       WHERE id = ? AND group_id = ?`,
+      nowIso(),
+      c.req.param("requestId"),
+      group.id,
     );
     return c.json({ ok: true });
   });
@@ -924,16 +1339,19 @@ export function createApp() {
   app.get("/api/venues", async (c) => {
     const venues = await allRows<{
       address: string;
+      booking_url: string | null;
       description: string;
+      hero_image_url: string | null;
       id: string;
       latitude: number;
       longitude: number;
       name: string;
+      opening_hours_text: string | null;
       pricing: "free" | "paid";
       source_url: string | null;
     }>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
        FROM venues
        ORDER BY name ASC`,
     );
@@ -941,10 +1359,13 @@ export function createApp() {
       venues: venues.map((venue) => ({
         address: venue.address,
         description: venue.description,
+        heroImageUrl: venue.hero_image_url,
         id: venue.id,
         latitude: Number(venue.latitude),
         longitude: Number(venue.longitude),
         name: venue.name,
+        bookingUrl: venue.booking_url,
+        openingHoursText: venue.opening_hours_text,
         pricing: venue.pricing,
         sourceUrl: venue.source_url,
       })),
@@ -957,16 +1378,19 @@ export function createApp() {
 
     const venue = await firstRow<{
       address: string;
+      booking_url: string | null;
       description: string;
+      hero_image_url: string | null;
       id: string;
       latitude: number;
       longitude: number;
       name: string;
+      opening_hours_text: string | null;
       pricing: "free" | "paid";
       source_url: string | null;
     }>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
        FROM venues
        WHERE id = ?`,
       c.req.param("id"),
@@ -982,10 +1406,13 @@ export function createApp() {
       venue: {
         address: venue.address,
         description: venue.description,
+        heroImageUrl: venue.hero_image_url,
         id: venue.id,
         latitude: Number(venue.latitude),
         longitude: Number(venue.longitude),
         name: venue.name,
+        bookingUrl: venue.booking_url,
+        openingHoursText: venue.opening_hours_text,
         pricing: venue.pricing,
         sourceUrl: venue.source_url,
       },
@@ -999,16 +1426,19 @@ export function createApp() {
 
     const venues = await allRows<{
       address: string;
+      booking_url: string | null;
       description: string;
+      hero_image_url: string | null;
       id: string;
       latitude: number;
       longitude: number;
       name: string;
+      opening_hours_text: string | null;
       pricing: "free" | "paid";
       source_url: string | null;
     }>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
        FROM venues
        WHERE longitude BETWEEN ? AND ?
          AND latitude BETWEEN ? AND ?
@@ -1038,10 +1468,13 @@ export function createApp() {
       venues: venues.map((venue) => ({
         address: venue.address,
         description: venue.description,
+        heroImageUrl: venue.hero_image_url,
         id: venue.id,
         latitude: Number(venue.latitude),
         longitude: Number(venue.longitude),
         name: venue.name,
+        bookingUrl: venue.booking_url,
+        openingHoursText: venue.opening_hours_text,
         pricing: venue.pricing,
         sourceUrl: venue.source_url,
       })),
@@ -1079,22 +1512,25 @@ export function createApp() {
       await runStatement(
         c.env.DB,
         `INSERT INTO meeting_series (
-           id, group_id, owner_user_id, title, description, activity_label, venue_id, location_name,
-           location_address, latitude, longitude, pricing, capacity, timezone, weekday, start_time_local,
+           id, group_id, owner_user_id, short_name, title, description, activity_label, hero_image_url, venue_id, location_name,
+           location_address, latitude, longitude, pricing, cost_per_person, capacity, timezone, weekday, start_time_local,
            duration_minutes, start_date, until_date, status, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
         seriesId,
         group.id,
         viewer.id,
+        input.shortName,
         input.title,
         normalizeOptionalText(input.description ?? null),
         groupActivity,
+        normalizeOptionalText(input.heroImageUrl ?? null),
         normalizeOptionalText(input.venueId ?? null),
         input.locationName,
         input.locationAddress,
         input.latitude,
         input.longitude,
         input.pricing,
+        input.costPerPerson ?? null,
         input.capacity,
         timeZone,
         weekday,
@@ -1119,22 +1555,25 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `INSERT INTO meetings (
-         id, group_id, owner_user_id, series_id, title, description, activity_label, venue_id,
-         location_name, location_address, latitude, longitude, pricing, capacity, starts_at, ends_at,
+         id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, venue_id,
+         location_name, location_address, latitude, longitude, pricing, cost_per_person, capacity, starts_at, ends_at,
          occurrence_date, status, created_at, updated_at
-       ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+       ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
       meetingId,
       group.id,
       viewer.id,
+      input.shortName,
       input.title,
       normalizeOptionalText(input.description ?? null),
       groupActivity,
+      normalizeOptionalText(input.heroImageUrl ?? null),
       normalizeOptionalText(input.venueId ?? null),
       input.locationName,
       input.locationAddress,
       input.latitude,
       input.longitude,
       input.pricing,
+      input.costPerPerson ?? null,
       input.capacity,
       input.startsAt,
       input.endsAt,
@@ -1151,6 +1590,9 @@ export function createApp() {
     const viewer = c.get("viewer");
     const meeting = await getMeetingDetail(c.env.DB, c.req.param("id"), viewer?.id ?? null);
     const groupRole = await getGroupRole(c.env.DB, meeting.groupId, viewer?.id ?? null);
+    const seriesMeetings = meeting.seriesId
+      ? await listAccessibleMeetings(c.env.DB, viewer?.id ?? null, { seriesId: meeting.seriesId })
+      : [];
 
     const claims = await allRows<{
       avatar_url: string | null;
@@ -1201,27 +1643,34 @@ export function createApp() {
 
     return c.json({
       claims: claims.map((claim) => ({
-        avatarUrl: claim.avatar_url,
-        bio: claim.bio,
-        displayName: claim.display_name,
-        email: claim.email,
-        homeArea: claim.home_area,
-        id: claim.user_id,
+        ...mapViewerSummary({
+          avatar_url: claim.avatar_url,
+          bio: claim.bio,
+          display_name: claim.display_name,
+          email: claim.email,
+          home_area: claim.home_area,
+          id: claim.user_id,
+          is_profile_public: 0,
+          show_email_publicly: 0,
+        }),
       })),
       meeting,
       posts: posts.map((post) => ({
-        author: {
-          avatarUrl: post.author_avatar_url,
+        author: mapViewerSummary({
+          avatar_url: post.author_avatar_url,
           bio: post.author_bio,
-          displayName: post.author_display_name,
+          display_name: post.author_display_name,
           email: post.author_email,
-          homeArea: post.author_home_area,
+          home_area: post.author_home_area,
           id: post.author_id,
-        },
+          is_profile_public: 0,
+          show_email_publicly: 0,
+        }),
         content: post.content,
         createdAt: post.created_at,
         id: post.id,
       })),
+      seriesMeetings,
       viewerGroupRole: groupRole,
     });
   });
@@ -1237,6 +1686,7 @@ export function createApp() {
       description: string | null;
       ends_at: string;
       group_id: string;
+      hero_image_url: string | null;
       id: string;
       latitude: number;
       location_address: string;
@@ -1244,14 +1694,16 @@ export function createApp() {
       longitude: number;
       owner_user_id: string;
       pricing: "free" | "paid";
+      cost_per_person: number | null;
       series_id: string | null;
+      short_name: string;
       starts_at: string;
       title: string;
       venue_id: string | null;
     }>(
       c.env.DB,
-      `SELECT id, group_id, owner_user_id, series_id, title, description, activity_label, venue_id,
-              location_name, location_address, latitude, longitude, pricing, capacity, starts_at, ends_at
+      `SELECT id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, venue_id,
+              location_name, location_address, latitude, longitude, pricing, cost_per_person, capacity, starts_at, ends_at
        FROM meetings
        WHERE id = ?`,
       meetingId,
@@ -1271,48 +1723,129 @@ export function createApp() {
       );
       assertOrThrow(series, 404, "Meeting series not found.");
       const timezone = series.timezone;
-      const localStartDate = isoToLocalDate(nextStartsAt, timezone);
-      const localStartTime = isoToLocalTime(nextStartsAt, timezone);
+      const submittedSeriesDates =
+        input.seriesDates && input.seriesDates.length > 0
+          ? [...input.seriesDates].sort(
+              (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+            )
+          : null;
+      const seriesStartAt = submittedSeriesDates?.[0]?.startsAt ?? nextStartsAt;
+      const seriesEndAt = submittedSeriesDates?.[0]?.endsAt ?? nextEndsAt;
+      const localStartDate = isoToLocalDate(seriesStartAt, timezone);
+      const localStartTime = isoToLocalTime(seriesStartAt, timezone);
       const weekday = getDay(fromZonedTime(`${localStartDate}T${localStartTime}:00`, timezone));
+      const untilDate = submittedSeriesDates?.length
+        ? isoToLocalDate(submittedSeriesDates[submittedSeriesDates.length - 1].startsAt, timezone)
+        : series.until_date ?? horizonDate();
 
       await runStatement(
         c.env.DB,
         `UPDATE meeting_series
-         SET title = ?,
+         SET short_name = ?,
+             title = ?,
              description = ?,
              activity_label = ?,
+             hero_image_url = ?,
              venue_id = ?,
              location_name = ?,
              location_address = ?,
              latitude = ?,
              longitude = ?,
              pricing = ?,
+             cost_per_person = ?,
              capacity = ?,
              weekday = ?,
              start_time_local = ?,
              duration_minutes = ?,
+             start_date = ?,
+             until_date = ?,
              updated_at = ?
          WHERE id = ?`,
+        input.shortName ?? meetingRow.short_name,
         input.title ?? meetingRow.title,
         input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
         input.activityLabel === undefined ? meetingRow.activity_label : normalizeOptionalText(input.activityLabel),
+        input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
         input.venueId === undefined ? meetingRow.venue_id : normalizeOptionalText(input.venueId),
         input.locationName ?? meetingRow.location_name,
         input.locationAddress ?? meetingRow.location_address,
         input.latitude ?? meetingRow.latitude,
         input.longitude ?? meetingRow.longitude,
         input.pricing ?? meetingRow.pricing,
+        input.costPerPerson === undefined ? meetingRow.cost_per_person : input.costPerPerson,
         input.capacity ?? meetingRow.capacity,
         weekday,
         localStartTime,
-        durationMinutes(nextStartsAt, nextEndsAt),
+        durationMinutes(seriesStartAt, seriesEndAt),
+        localStartDate,
+        untilDate,
         nowIso(),
         meetingRow.series_id,
       );
 
+      if (submittedSeriesDates) {
+        const submittedDates = new Set(submittedSeriesDates.map((entry) => occurrenceDateFromIso(entry.startsAt)));
+        const timestamp = nowIso();
+
+        for (const slot of submittedSeriesDates) {
+          await upsertSeriesOccurrenceOverride(c.env.DB, {
+            activityLabel: input.activityLabel === undefined ? meetingRow.activity_label : normalizeOptionalText(input.activityLabel),
+            capacity: input.capacity ?? meetingRow.capacity,
+            costPerPerson: input.costPerPerson === undefined ? meetingRow.cost_per_person : input.costPerPerson,
+            description: input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
+            endsAt: slot.endsAt,
+            groupId: meetingRow.group_id,
+            heroImageUrl: input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+            latitude: input.latitude ?? meetingRow.latitude,
+            locationAddress: input.locationAddress ?? meetingRow.location_address,
+            locationName: input.locationName ?? meetingRow.location_name,
+            longitude: input.longitude ?? meetingRow.longitude,
+            ownerUserId: meetingRow.owner_user_id,
+            pricing: input.pricing ?? meetingRow.pricing,
+            seriesId: meetingRow.series_id,
+            shortName: input.shortName ?? meetingRow.short_name,
+            startsAt: slot.startsAt,
+            title: input.title ?? meetingRow.title,
+            venueId: input.venueId === undefined ? meetingRow.venue_id : normalizeOptionalText(input.venueId),
+          });
+        }
+
+        const existingSeriesMeetings = await allRows<{ occurrence_date: string; id: string }>(
+          c.env.DB,
+          `SELECT id, occurrence_date
+           FROM meetings
+           WHERE series_id = ?
+             AND archived_at IS NULL`,
+          meetingRow.series_id,
+        );
+
+        const datesToArchive = existingSeriesMeetings
+          .map((item) => item.occurrence_date)
+          .filter((occurrenceDate) => !submittedDates.has(occurrenceDate));
+
+        if (datesToArchive.length > 0) {
+          await runStatement(
+            c.env.DB,
+            `UPDATE meetings
+             SET status = 'cancelled',
+                 archived_at = ?,
+                 updated_at = ?
+             WHERE series_id = ?
+               AND archived_at IS NULL
+               AND occurrence_date IN (${datesToArchive.map(() => "?").join(", ")})`,
+            timestamp,
+            timestamp,
+            meetingRow.series_id,
+            ...datesToArchive,
+          );
+        }
+
+        return c.json({ ok: true });
+      }
+
       await ensureSeriesCoverage(c.env.DB, {
         fromDate: localStartDate,
-        horizon: series.until_date ?? horizonDate(),
+        horizon: untilDate,
         seriesId: meetingRow.series_id,
       });
 
@@ -1322,30 +1855,36 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `UPDATE meetings
-       SET title = ?,
+       SET short_name = ?,
+           title = ?,
            description = ?,
            activity_label = ?,
+           hero_image_url = ?,
            venue_id = ?,
            location_name = ?,
            location_address = ?,
            latitude = ?,
            longitude = ?,
            pricing = ?,
+           cost_per_person = ?,
            capacity = ?,
            starts_at = ?,
            ends_at = ?,
            occurrence_date = ?,
            updated_at = ?
        WHERE id = ?`,
+      input.shortName ?? meetingRow.short_name,
       input.title ?? meetingRow.title,
       input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
       input.activityLabel === undefined ? meetingRow.activity_label : normalizeOptionalText(input.activityLabel),
+      input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
       input.venueId === undefined ? meetingRow.venue_id : normalizeOptionalText(input.venueId),
       input.locationName ?? meetingRow.location_name,
       input.locationAddress ?? meetingRow.location_address,
       input.latitude ?? meetingRow.latitude,
       input.longitude ?? meetingRow.longitude,
       input.pricing ?? meetingRow.pricing,
+      input.costPerPerson === undefined ? meetingRow.cost_per_person : input.costPerPerson,
       input.capacity ?? meetingRow.capacity,
       nextStartsAt,
       nextEndsAt,
@@ -1400,6 +1939,27 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       "UPDATE meetings SET status = 'cancelled', updated_at = ? WHERE id = ?",
+      nowIso(),
+      c.req.param("id"),
+    );
+    return c.json({ ok: true });
+  });
+
+  app.delete("/api/meetings/:id", async (c) => {
+    const viewer = await requireViewer(c);
+    const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
+      c.env.DB,
+      "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
+      c.req.param("id"),
+    );
+    assertOrThrow(meeting, 404, "Meeting not found.");
+    const viewerRole = await getGroupRole(c.env.DB, meeting.group_id, viewer.id);
+    const canArchive = meeting.owner_user_id === viewer.id || viewerRole === "owner" || viewerRole === "admin";
+    assertOrThrow(canArchive, 403, "Only the session owner or group admins can archive this session.");
+    await runStatement(
+      c.env.DB,
+      "UPDATE meetings SET status = 'cancelled', archived_at = ?, updated_at = ? WHERE id = ?",
+      nowIso(),
       nowIso(),
       c.req.param("id"),
     );

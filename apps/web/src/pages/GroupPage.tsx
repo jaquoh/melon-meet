@@ -1,81 +1,86 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { ExternalLink, Shield, Users } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import type { ThemeMode } from "../App";
+import { DetailHero } from "../components/DetailHero";
 import { EventTimeline } from "../components/EventTimeline";
 import { GroupForm } from "../components/GroupForm";
-import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
+import { WorkspaceShell } from "../components/WorkspaceShell";
 import {
+  approveMembershipRequest,
   createGroupPost,
   createInviteLink,
-  createMeeting,
+  createMembershipRequest,
+  deleteGroup,
   getGroup,
-  getGroups,
-  joinGroup,
+  getMembershipRequests,
   updateGroup,
-  updateMemberRole,
 } from "../lib/api";
-import { formatDateTime } from "../lib/format";
-import { createNavigationState, resolveNavigationState } from "../lib/navigation";
+import { resolveNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
-export function GroupPage({ viewer }: { viewer: ViewerSummary | null }) {
+export function GroupPage({
+  onLogOut,
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  onLogOut: () => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const { groupId = "" } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+
   const groupQuery = useQuery({
     queryFn: () => getGroup(groupId),
     queryKey: ["group", groupId],
   });
-  const groupsQuery = useQuery({
-    queryFn: getGroups,
-    queryKey: ["groups"],
+
+  const requestsQuery = useQuery({
+    enabled: groupQuery.data?.group.viewerCanManageMembers ?? false,
+    queryFn: () => getMembershipRequests(groupId),
+    queryKey: ["group", groupId, "requests"],
   });
 
-  const joinMutation = useMutation({
-    mutationFn: () => joinGroup(groupId),
+  const updateMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => updateGroup(groupId, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["group", groupId] }),
-        queryClient.invalidateQueries({ queryKey: ["groups"] }),
-      ]);
-    },
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: () => createInviteLink(groupId),
-    onSuccess: async () => {
+      setEditing(false);
       await queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+      await queryClient.invalidateQueries({ queryKey: ["groups"] });
     },
   });
-
   const postMutation = useMutation({
     mutationFn: (content: string) => createGroupPost(groupId, content),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["group", groupId] });
     },
   });
-
-  const updateGroupMutation = useMutation({
-    mutationFn: (payload: Record<string, unknown>) => updateGroup(groupId, payload),
+  const requestMutation = useMutation({
+    mutationFn: () => createMembershipRequest(groupId),
+  });
+  const inviteMutation = useMutation({
+    mutationFn: () => createInviteLink(groupId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["group", groupId] });
     },
   });
-
-  const createMeetingMutation = useMutation({
-    mutationFn: createMeeting,
+  const approveMutation = useMutation({
+    mutationFn: (requestId: string) => approveMembershipRequest(groupId, requestId),
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["group", groupId, "requests"] });
       await queryClient.invalidateQueries({ queryKey: ["group", groupId] });
-      await queryClient.invalidateQueries({ queryKey: ["map"] });
     },
   });
-
-  const roleMutation = useMutation({
-    mutationFn: ({ role, userId }: { role: "admin" | "member"; userId: string }) =>
-      updateMemberRole(groupId, userId, role),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["group", groupId] });
-    },
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteGroup(groupId),
   });
 
   if (groupQuery.isLoading) {
@@ -86,226 +91,165 @@ export function GroupPage({ viewer }: { viewer: ViewerSummary | null }) {
     return <div className="error-shell">{groupQuery.error?.message ?? "Group not found."}</div>;
   }
 
-  const { group, inviteLinks, members, meetings, posts } = groupQuery.data;
+  const { group, inviteLinks, meetings, members, posts } = groupQuery.data;
   const backTarget = resolveNavigationState(location.state, "/groups", "Groups");
-  const groupNavigationState = createNavigationState(location, group.name);
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this group? This cannot be undone.")) {
+      return;
+    }
+    await deleteMutation.mutateAsync();
+    navigate(backTarget.fromPath);
+  }
 
   return (
-    <div className="page-wrap page-wrap--workspace">
-      <section className="workspace-board">
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">{group.visibility} group</p>
-              <h2 className="section-title typewriter-title">Group: {group.name}</h2>
-            </div>
-            <Link className="button-secondary button-inline" to={backTarget.fromPath}>
-              Back
-            </Link>
-          </div>
-
-          <div className="board-column__body">
-            <div className="board-column__section">
-              <p className="muted-copy">{group.description}</p>
-              <div className="compact-badges">
-                {group.activityLabel ? <span className="badge-invert">{group.activityLabel}</span> : null}
-                <span className="badge">{members.length} members</span>
-                <span className="badge-outline">Role: {group.viewerRole ?? "guest"}</span>
+    <WorkspaceShell
+      center={
+        <div className="workspace-detail-scroll">
+          <div className="stack-panel">
+          {editing ? (
+            <>
+              <GroupForm
+                initialValues={{
+                  activityLabel: group.activityLabel,
+                  description: group.description,
+                  heroImageUrl: group.heroImageUrl,
+                  messengerUrl: group.messengerUrl,
+                  name: group.name,
+                  slug: group.slug,
+                  visibility: group.visibility,
+                }}
+                onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
+              />
+              <div className="workspace-button-row">
+                <button className="button-danger" onClick={handleDelete} type="button">
+                  Delete group
+                </button>
+                <button className="button-secondary" onClick={() => setEditing(false)} type="button">
+                  Cancel
+                </button>
               </div>
-            </div>
-
-            <div className="board-column__section">
-              <div className="metrics-grid metrics-grid--compact">
-                <div className="metric-box">
-                  <p className="metric-box__value">{meetings.length}</p>
-                  <p className="metric-box__label">Meetings</p>
-                </div>
-                <div className="metric-box">
-                  <p className="metric-box__value">{members.length}</p>
-                  <p className="metric-box__label">Members</p>
-                </div>
+            </>
+          ) : (
+            <>
+              <DetailHero
+                description={group.description}
+                eyebrow={`${group.visibility} group`}
+                imageUrl={group.heroImageUrl}
+                meta={
+                  <>
+                    {group.activityLabel ? <span className="mini-chip">{group.activityLabel}</span> : null}
+                    <span className="mini-chip">{members.length} members</span>
+                    <span className="mini-chip">{meetings.length} upcoming</span>
+                  </>
+                }
+                title={group.name}
+              />
+              <div className="detail-fact-grid">
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Visibility</span>
+                  <strong>{group.visibility}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Members</span>
+                  <strong>{members.length}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Upcoming sessions</span>
+                  <strong>{meetings.length}</strong>
+                </article>
               </div>
-            </div>
-
-            <div className="board-column__section">
-              <div className="board-column__actions">
-                {!group.viewerRole && group.visibility === "public" && viewer ? (
-                  <button className="button-primary" onClick={() => joinMutation.mutate()} type="button">
-                    Join group
-                  </button>
-                ) : null}
-                {meetings.length > 0 ? (
-                  <Link className="button-secondary" state={groupNavigationState} to={`/meetings/${meetings[0].id}`}>
-                    Open next session
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Group</p>
-              <h2 className="section-title typewriter-title">Board and management</h2>
-            </div>
-            {group.viewerCanCreateMeeting ? (
-              <a className="button-secondary button-inline" href="#create-meeting">
-                Create meeting
-              </a>
-            ) : null}
-          </div>
-
-          <div className="board-column__body">
-            <section className="workspace-section stack-md">
-              <div className="workspace-section__header">
-                <div className="stack-sm">
-                  <p className="muted-copy">Manage group settings, members, posts, and new sessions from one place.</p>
-                </div>
-              </div>
-
-              <div className="metrics-grid metrics-grid--compact">
-                <div className="metric-box">
-                  <p className="metric-box__value">{meetings.length}</p>
-                  <p className="metric-box__label">Meetings</p>
-                </div>
-                <div className="metric-box">
-                  <p className="metric-box__value">{members.length}</p>
-                  <p className="metric-box__label">Members</p>
-                </div>
-              </div>
-            </section>
-
-            {group.viewerCanEditGroup ? (
-              <section className="workspace-section stack-md">
-                <div>
-                  <p className="eyebrow">Edit group</p>
-                  <h2 className="section-title">Adjust labels and visibility</h2>
-                </div>
-                <GroupForm
-                  initialValues={{
-                    activityLabel: group.activityLabel,
-                    description: group.description,
-                    name: group.name,
-                    slug: group.slug,
-                    visibility: group.visibility,
-                  }}
-                  onSubmit={async (payload) => updateGroupMutation.mutateAsync(payload)}
-                />
-              </section>
-            ) : null}
-
-            {group.viewerCanCreateMeeting ? (
-              <section className="workspace-section stack-md" id="create-meeting">
-                <div>
-                  <p className="eyebrow">Create meeting</p>
-                  <h2 className="section-title">Launch a one-time or weekly session</h2>
-                </div>
-                <MeetingForm
-                  groups={groupsQuery.data?.groups ?? []}
-                  onSubmit={async (payload) => createMeetingMutation.mutateAsync(payload)}
-                />
-              </section>
-            ) : null}
-
-            <section className="workspace-section stack-md">
-              <div>
-                <p className="eyebrow">Members</p>
-                <h2 className="section-title">Roster</h2>
-              </div>
-
-              <div className="stack-sm">
-                {members.map((member) => (
-                  <div className="terminal-item" key={member.user.id}>
-                    <div className="terminal-item__row">
-                      <div>
-                        <p className="terminal-item__title">{member.user.displayName}</p>
-                        <p className="terminal-item__meta">{member.role}</p>
-                      </div>
-                      {group.viewerCanManageMembers && member.role !== "owner" ? (
-                        <select
-                          className="field-select"
-                          defaultValue={member.role}
-                          onChange={(event) =>
-                            roleMutation.mutate({
-                              role: event.target.value as "admin" | "member",
-                              userId: member.user.id,
-                            })
-                          }
-                          style={{ maxWidth: "9rem" }}
-                        >
-                          <option value="member">member</option>
-                          <option value="admin">admin</option>
-                        </select>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {group.viewerCanManageMembers ? (
-              <section className="workspace-section stack-md">
-                <div className="workspace-section__header">
-                  <div>
-                    <p className="eyebrow">Invite codes</p>
-                    <h2 className="section-title">Private-group access</h2>
-                  </div>
-                  <button className="button-primary" onClick={() => inviteMutation.mutate()} type="button">
-                    Generate code
-                  </button>
-                </div>
-
-                <div className="stack-sm">
-                  {inviteLinks.length === 0 ? (
-                    <p className="empty-state">No invite codes created yet.</p>
-                  ) : (
-                    inviteLinks.map((link) => (
-                      <div className="terminal-item" key={link.id}>
-                        <p className="terminal-item__title">{link.code}</p>
-                        <p className="terminal-item__meta">Created {formatDateTime(link.created_at)}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-            ) : null}
-
-            <PostBoard
-              buttonLabel="Post to group"
-              canPost={Boolean(group.viewerRole)}
-              emptyLabel="No group posts yet."
-              onSubmit={async (content) => postMutation.mutateAsync(content)}
-              posts={posts}
-              title={`${group.name} internal board`}
-            />
+              <PostBoard
+                buttonLabel="Post to group"
+                canPost={Boolean(group.viewerRole)}
+                emptyLabel="No posts yet."
+                onSubmit={async (content) => postMutation.mutateAsync(content)}
+                posts={posts}
+                title="Pin board"
+              />
+            </>
+          )}
           </div>
         </div>
-
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Upcoming sessions</p>
-              <h2 className="section-title typewriter-title">Group events</h2>
+      }
+      detailCloseTo={backTarget.fromPath}
+      left={
+        <div className="stack-panel">
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Owner</span>
+            <strong>{members.find((member) => member.role === "owner")?.user.displayName ?? "Unknown"}</strong>
+          </div>
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Members</span>
+            <div className="detail-link-list">
+              {members.map((member) => (
+                <Link className="mini-link" key={member.user.id} to={`/profile/${member.user.id}`}>
+                  {member.user.displayName} · {member.role}
+                </Link>
+              ))}
             </div>
-            <span className="badge">{meetings.length}</span>
           </div>
-
-          <div className="board-column__body">
-            <EventTimeline
-              contextLabel={group.name}
-              emptyLabel="No meetings yet for this group."
-              heading="Group events"
-              meetings={meetings}
-              secondaryMeta="location"
-              showHeader={false}
-              showGroupLabel={false}
-              variant="embedded"
-            />
-          </div>
-        </aside>
-      </section>
-    </div>
+          {group.messengerUrl ? (
+            <a className="button-secondary" href={group.messengerUrl} rel="noreferrer" target="_blank">
+              <ExternalLink size={14} strokeWidth={2} />
+              Open messenger
+            </a>
+          ) : null}
+          {!group.viewerRole && viewer ? (
+            <button className="button-primary" onClick={() => requestMutation.mutate()} type="button">
+              <Users size={14} strokeWidth={2} />
+              Request membership
+            </button>
+          ) : null}
+          {group.viewerCanEditGroup ? (
+            <button className="button-secondary" onClick={() => setEditing((current) => !current)} type="button">
+              <Shield size={14} strokeWidth={2} />
+              {editing ? "Close edit" : "Edit group"}
+            </button>
+          ) : null}
+          {group.viewerCanManageMembers ? (
+            <>
+              <button className="button-secondary" onClick={() => inviteMutation.mutate()} type="button">
+                <ExternalLink size={14} strokeWidth={2} />
+                Create invite link
+              </button>
+              {inviteLinks.map((link) => (
+                <div className="detail-card detail-card--compact" key={link.id}>
+                  <span className="panel-caption">Invite</span>
+                  <strong>{link.code}</strong>
+                </div>
+              ))}
+              {(requestsQuery.data?.requests ?? []).map((request) => (
+                <div className="detail-card detail-card--compact" key={request.id}>
+                  <span className="panel-caption">Request</span>
+                  <strong>{request.requester.displayName}</strong>
+                  <p>{request.note || "No note"}</p>
+                  <button className="button-primary" onClick={() => approveMutation.mutate(request.id)} type="button">
+                    Approve
+                  </button>
+                </div>
+              ))}
+            </>
+          ) : null}
+        </div>
+      }
+      leftHeader={undefined}
+      onLogOut={onLogOut}
+      right={
+        <EventTimeline
+          contextLabel={group.name}
+          emptyLabel="No sessions created by this group yet."
+          heading="Upcoming sessions"
+          meetings={meetings}
+          secondaryMeta="location"
+          showGroupLabel={false}
+        />
+      }
+      rightHeader={undefined}
+      theme={theme}
+      title={`Group: ${group.name}`}
+      toggleTheme={toggleTheme}
+      viewer={viewer}
+    />
   );
 }

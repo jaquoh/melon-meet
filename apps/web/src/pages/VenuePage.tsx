@@ -1,38 +1,31 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Clock3, ExternalLink, MapPinned } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import type { ThemeMode } from "../App";
+import { CopyTextButton } from "../components/CopyTextButton";
+import { DetailHero } from "../components/DetailHero";
 import { EventTimeline } from "../components/EventTimeline";
-import { MeetingForm } from "../components/MeetingForm";
-import { createMeeting, getGroups, getVenue } from "../lib/api";
-import { formatDateTime } from "../lib/format";
-import { createNavigationState, resolveNavigationState } from "../lib/navigation";
-import { queryClient } from "../lib/query-client";
+import { WorkspaceShell } from "../components/WorkspaceShell";
+import { getVenue } from "../lib/api";
+import { resolveNavigationState } from "../lib/navigation";
 
-export function VenuePage({ viewer }: { viewer: ViewerSummary | null }) {
+export function VenuePage({
+  onLogOut,
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  onLogOut: () => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const { venueId = "" } = useParams();
   const location = useLocation();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-
   const venueQuery = useQuery({
     queryFn: () => getVenue(venueId),
     queryKey: ["venue", venueId],
-  });
-  const groupsQuery = useQuery({
-    queryFn: getGroups,
-    queryKey: ["groups"],
-  });
-
-  const createMeetingMutation = useMutation({
-    mutationFn: createMeeting,
-    onSuccess: async () => {
-      setShowCreateForm(false);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["map"] }),
-        queryClient.invalidateQueries({ queryKey: ["map", "member-upcoming"] }),
-        queryClient.invalidateQueries({ queryKey: ["venue", venueId] }),
-      ]);
-    },
   });
 
   if (venueQuery.isLoading) {
@@ -43,153 +36,114 @@ export function VenuePage({ viewer }: { viewer: ViewerSummary | null }) {
     return <div className="error-shell">{venueQuery.error?.message ?? "Venue not found."}</div>;
   }
 
-  const backTarget = resolveNavigationState(location.state, "/map", "Map");
-  const venueNavigationState = createNavigationState(location, venueQuery.data.venue.name);
-  const nextMeeting = venueQuery.data.meetings[0] ?? null;
+  const { venue, meetings } = venueQuery.data;
+  const closeTarget = resolveNavigationState(location.state, "/map", "Map");
 
   return (
-    <div className="page-wrap page-wrap--workspace">
-      <section className="workspace-board">
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Venue</p>
-              <h2 className="section-title typewriter-title">Venue: {venueQuery.data.venue.name}</h2>
-            </div>
-            <Link className="button-secondary button-inline" to={backTarget.fromPath}>
-              Back
-            </Link>
-          </div>
-
-          <div className="board-column__body">
-            <div className="board-column__section">
-              <div className="compact-badges">
-                <span className="badge-outline">{venueQuery.data.venue.pricing}</span>
-                <span className="badge">{venueQuery.data.meetings.length} events</span>
-              </div>
-              <p className="muted-copy">{venueQuery.data.venue.description}</p>
-              <p className="terminal-item__meta">{venueQuery.data.venue.address}</p>
-            </div>
-
-            <div className="board-column__section">
-              <div className="board-column__actions">
-                {nextMeeting ? (
-                  <Link className="button-secondary" state={venueNavigationState} to={`/meetings/${nextMeeting.id}`}>
-                    Open next session
-                  </Link>
-                ) : null}
-                {viewer ? (
-                  <button className="button-primary" onClick={() => setShowCreateForm((value) => !value)} type="button">
-                    {showCreateForm ? "Hide create form" : "Create meeting here"}
-                  </button>
-                ) : (
-                  <Link className="button-primary" to="/auth">
-                    Sign in to create
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Venue</p>
-              <h2 className="section-title typewriter-title">Details and schedule</h2>
-            </div>
-            {venueQuery.data.venue.sourceUrl ? (
-              <a className="button-secondary button-inline" href={venueQuery.data.venue.sourceUrl} rel="noreferrer" target="_blank">
-                Source
+    <WorkspaceShell
+      center={
+        <div className="workspace-detail-scroll">
+          <div className="stack-panel">
+            <DetailHero
+              description={venue.description}
+              eyebrow="Venue"
+              imageUrl={venue.heroImageUrl}
+              meta={
+                <>
+                  <span className="mini-chip">{venue.pricing === "free" ? "Free access" : "Paid access"}</span>
+                  {venue.openingHoursText ? <span className="mini-chip">{venue.openingHoursText}</span> : null}
+                </>
+              }
+              title={venue.name}
+            >
+              <CopyTextButton label="Copy address" value={venue.address} />
+              <a
+                className="button-secondary button-inline"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <MapPinned size={14} strokeWidth={2} />
+                <span>Open maps</span>
               </a>
-            ) : null}
-          </div>
-
-          <div className="board-column__body">
-            <section className="workspace-section stack-md">
-              <div className="workspace-section__header">
-                <div className="stack-sm">
-                  <p className="muted-copy">Keep venue details and creation flow in the middle, while upcoming sessions stay available on the right.</p>
-                </div>
-              </div>
-
-              <div className="detail-grid detail-grid--two">
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">Address</p>
-                  <p className="terminal-item__title">{venueQuery.data.venue.address}</p>
-                </div>
-                <div className="terminal-item">
-                  <p className="terminal-item__meta">Next event</p>
-                  <p className="terminal-item__title">
-                    {nextMeeting ? formatDateTime(nextMeeting.startsAt) : "Nothing scheduled"}
-                  </p>
-                </div>
-              </div>
-
-              {nextMeeting ? (
-                <div className="terminal-item">
-                  <div className="terminal-item__row">
-                    <div>
-                      <p className="terminal-item__meta">Next meeting here</p>
-                      <p className="terminal-item__title">{nextMeeting.title}</p>
-                    </div>
-                    <span className={nextMeeting.viewerHasClaimed ? "badge-accent" : "badge-outline"}>
-                      {nextMeeting.groupName}
-                    </span>
-                  </div>
-                  <p className="terminal-item__meta">{formatDateTime(nextMeeting.startsAt)}</p>
-                </div>
-              ) : null}
-            </section>
-
-            {showCreateForm ? (
-              <section className="workspace-section stack-md">
-                <div>
-                  <p className="eyebrow">Create meeting</p>
-                  <h2 className="section-title">Launch a new session at this venue</h2>
-                </div>
-
-                {viewer ? (
-                  <MeetingForm
-                    groups={groupsQuery.data?.groups ?? []}
-                    initialLocation={{
-                      latitude: venueQuery.data.venue.latitude,
-                      locationAddress: venueQuery.data.venue.address,
-                      locationName: venueQuery.data.venue.name,
-                      longitude: venueQuery.data.venue.longitude,
-                      venueId: venueQuery.data.venue.id,
-                    }}
-                    onSubmit={async (payload) => {
-                      await createMeetingMutation.mutateAsync(payload);
-                    }}
-                  />
-                ) : null}
-              </section>
-            ) : null}
+            </DetailHero>
+            <div className="detail-fact-grid">
+              <article className="detail-fact-card">
+                <span className="panel-caption">Address</span>
+                <strong>{venue.address}</strong>
+              </article>
+              <article className="detail-fact-card">
+                <span className="panel-caption">Access</span>
+                <strong>{venue.pricing === "free" ? "Free courts" : "Paid booking"}</strong>
+              </article>
+              <article className="detail-fact-card">
+                <span className="panel-caption">Opening hours</span>
+                <strong>{venue.openingHoursText || "Check source before you go"}</strong>
+              </article>
+            </div>
           </div>
         </div>
-
-        <aside className="board-column">
-          <div className="board-column__header">
-            <div>
-              <p className="eyebrow">Upcoming sessions</p>
-              <h2 className="section-title typewriter-title">Venue events</h2>
+      }
+      detailCloseTo={closeTarget.fromPath}
+      left={
+        <div className="stack-panel">
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Quick links</span>
+            <div className="detail-link-list">
+              <Link className="mini-link" to="/map">
+                Back to map
+              </Link>
+              <Link className="mini-link" to={`/map?venue=${venue.id}`}>
+                Open venue on map
+              </Link>
             </div>
           </div>
-
-          <div className="board-column__body">
-            <EventTimeline
-              contextLabel={venueQuery.data.venue.name}
-              emptyLabel="No active meetings are scheduled for this venue."
-              heading="Venue events"
-              meetings={venueQuery.data.meetings}
-              secondaryMeta="group"
-              showHeader={false}
-              variant="embedded"
-            />
+          {venue.bookingUrl ? (
+            <a className="button-secondary" href={venue.bookingUrl} rel="noreferrer" target="_blank">
+              <ExternalLink size={14} strokeWidth={2} />
+              Booking page
+            </a>
+          ) : null}
+          <a
+            className="button-secondary"
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <MapPinned size={14} strokeWidth={2} />
+            Open Google Maps
+          </a>
+          {venue.sourceUrl ? (
+            <a className="button-secondary" href={venue.sourceUrl} rel="noreferrer" target="_blank">
+              <ExternalLink size={14} strokeWidth={2} />
+              Source
+            </a>
+          ) : null}
+          <div className="detail-card detail-card--compact">
+            <span className="panel-caption">Practical</span>
+            <div className="detail-meta-list">
+              <span><Clock3 size={14} strokeWidth={2} />{venue.openingHoursText || "Hours vary"}</span>
+              <span><MapPinned size={14} strokeWidth={2} />Berlin venue</span>
+            </div>
           </div>
-        </aside>
-      </section>
-    </div>
+        </div>
+      }
+      leftHeader={undefined}
+      onLogOut={onLogOut}
+      right={
+        <EventTimeline
+          contextLabel={venue.name}
+          emptyLabel="No upcoming sessions at this venue."
+          heading="Upcoming sessions"
+          meetings={meetings}
+          secondaryMeta="group"
+        />
+      }
+      rightHeader={undefined}
+      theme={theme}
+      title={`Venue: ${venue.name}`}
+      toggleTheme={toggleTheme}
+      viewer={viewer}
+    />
   );
 }

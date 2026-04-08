@@ -4,6 +4,7 @@ export const pricingSchema = z.enum(["free", "paid"]);
 export const visibilitySchema = z.enum(["public", "private"]);
 export const groupRoleSchema = z.enum(["owner", "admin", "member"]);
 export const recurrenceTypeSchema = z.enum(["once", "weekly"]);
+export const membershipRequestStatusSchema = z.enum(["pending", "approved", "rejected"]);
 
 export const authSchema = z.object({
   email: z.string().email(),
@@ -15,6 +16,8 @@ export const profileUpdateSchema = z.object({
   bio: z.string().trim().max(500).default(""),
   homeArea: z.string().trim().max(120).default(""),
   avatarUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  isProfilePublic: z.boolean().default(false),
+  showEmailPublicly: z.boolean().default(false),
 });
 
 export const groupCreateSchema = z.object({
@@ -28,6 +31,8 @@ export const groupCreateSchema = z.object({
   description: z.string().trim().min(10).max(1000),
   visibility: visibilitySchema,
   activityLabel: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
+  messengerUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
 });
 
 export const groupUpdateSchema = groupCreateSchema.partial().refine(
@@ -43,13 +48,15 @@ export const roleUpdateSchema = z.object({
   role: z.enum(["admin", "member"]),
 });
 
-export const friendRequestSchema = z.object({
-  targetUserId: z.string().uuid().optional(),
-  targetEmail: z.string().email().optional(),
-}).refine(
-  (value) => Boolean(value.targetUserId || value.targetEmail),
-  "Provide a target email or user id.",
-);
+export const friendRequestSchema = z
+  .object({
+    targetUserId: z.string().uuid().optional(),
+    targetEmail: z.string().email().optional(),
+  })
+  .refine(
+    (value) => Boolean(value.targetUserId || value.targetEmail),
+    "Provide a target email or user id.",
+  );
 
 export const recurrenceSchema = z.discriminatedUnion("type", [
   z.object({
@@ -62,50 +69,73 @@ export const recurrenceSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const meetingCreateSchema = z.object({
-  groupId: z.string().uuid(),
-  title: z.string().trim().min(3).max(80),
-  description: z.string().trim().max(1000).optional().or(z.literal("")).nullable(),
-  activityLabel: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
-  startsAt: z.string().datetime(),
-  endsAt: z.string().datetime(),
-  venueId: z.string().optional().nullable(),
-  locationName: z.string().trim().min(2).max(120),
-  locationAddress: z.string().trim().min(2).max(160),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  pricing: pricingSchema,
-  capacity: z.number().int().min(2).max(200),
-  recurrence: recurrenceSchema,
-}).refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
-  message: "Meeting end time must be after the start time.",
-  path: ["endsAt"],
-});
-
-export const meetingUpdateSchema = z.object({
-  title: z.string().trim().min(3).max(80).optional(),
-  description: z.string().trim().max(1000).optional().nullable(),
-  activityLabel: z.string().trim().max(80).optional().nullable(),
-  startsAt: z.string().datetime().optional(),
-  endsAt: z.string().datetime().optional(),
-  venueId: z.string().optional().nullable(),
-  locationName: z.string().trim().min(2).max(120).optional(),
-  locationAddress: z.string().trim().min(2).max(160).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-  pricing: pricingSchema.optional(),
-  capacity: z.number().int().min(2).max(200).optional(),
-  applyToSeries: z.boolean().optional(),
-}).refine(
-  (value) =>
-    !value.startsAt ||
-    !value.endsAt ||
-    new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(),
-  {
+export const meetingCreateSchema = z
+  .object({
+    groupId: z.string().uuid(),
+    shortName: z.string().trim().min(2).max(24),
+    title: z.string().trim().min(3).max(80),
+    description: z.string().trim().max(1000).optional().or(z.literal("")).nullable(),
+    activityLabel: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
+    startsAt: z.string().datetime(),
+    endsAt: z.string().datetime(),
+    venueId: z.string().optional().nullable(),
+    locationName: z.string().trim().min(2).max(120),
+    locationAddress: z.string().trim().min(2).max(160),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    pricing: pricingSchema,
+    costPerPerson: z.number().min(0).max(500).optional().nullable(),
+    capacity: z.number().int().min(2).max(200),
+    heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+    recurrence: recurrenceSchema,
+  })
+  .refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
     message: "Meeting end time must be after the start time.",
     path: ["endsAt"],
-  },
-);
+  });
+
+export const meetingUpdateSchema = z
+  .object({
+    shortName: z.string().trim().min(2).max(24).optional(),
+    title: z.string().trim().min(3).max(80).optional(),
+    description: z.string().trim().max(1000).optional().nullable(),
+    activityLabel: z.string().trim().max(80).optional().nullable(),
+    startsAt: z.string().datetime().optional(),
+    endsAt: z.string().datetime().optional(),
+    venueId: z.string().optional().nullable(),
+    locationName: z.string().trim().min(2).max(120).optional(),
+    locationAddress: z.string().trim().min(2).max(160).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    pricing: pricingSchema.optional(),
+    costPerPerson: z.number().min(0).max(500).optional().nullable(),
+    capacity: z.number().int().min(2).max(200).optional(),
+    heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+    applyToSeries: z.boolean().optional(),
+    seriesDates: z
+      .array(
+        z
+          .object({
+            startsAt: z.string().datetime(),
+            endsAt: z.string().datetime(),
+          })
+          .refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
+            message: "Meeting end time must be after the start time.",
+            path: ["endsAt"],
+          }),
+      )
+      .optional(),
+  })
+  .refine(
+    (value) =>
+      !value.startsAt ||
+      !value.endsAt ||
+      new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(),
+    {
+      message: "Meeting end time must be after the start time.",
+      path: ["endsAt"],
+    },
+  );
 
 export const postSchema = z.object({
   content: z.string().trim().min(1).max(400),
@@ -141,6 +171,8 @@ export interface ViewerSummary {
   bio: string;
   homeArea: string;
   avatarUrl: string | null;
+  isProfilePublic: boolean;
+  showEmailPublicly: boolean;
 }
 
 export interface FriendSummary {
@@ -159,6 +191,9 @@ export interface GroupSummary {
   activityLabel: string | null;
   ownerUserId: string;
   memberCount: number;
+  publicSessionCount: number;
+  messengerUrl: string | null;
+  heroImageUrl: string | null;
   viewerRole: "owner" | "admin" | "member" | null;
 }
 
@@ -168,6 +203,7 @@ export interface MeetingSummary {
   groupName: string;
   groupVisibility: "public" | "private";
   ownerUserId: string;
+  shortName: string;
   title: string;
   description: string | null;
   activityLabel: string | null;
@@ -176,12 +212,14 @@ export interface MeetingSummary {
   latitude: number;
   longitude: number;
   pricing: "free" | "paid";
+  costPerPerson: number | null;
   capacity: number;
   claimedSpots: number;
   openSpots: number;
+  heroImageUrl: string | null;
   startsAt: string;
   endsAt: string;
-  status: "active" | "cancelled";
+  status: "active" | "cancelled" | "archived";
   venueId: string | null;
   seriesId: string | null;
   viewerCanEdit: boolean;
@@ -197,6 +235,9 @@ export interface VenueSummary {
   latitude: number;
   longitude: number;
   sourceUrl: string | null;
+  bookingUrl: string | null;
+  openingHoursText: string | null;
+  heroImageUrl: string | null;
 }
 
 export interface GroupPost {
@@ -211,4 +252,13 @@ export interface MeetingPost {
   content: string;
   createdAt: string;
   author: ViewerSummary;
+}
+
+export interface MembershipRequestSummary {
+  id: string;
+  groupId: string;
+  requester: ViewerSummary;
+  note: string | null;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
 }

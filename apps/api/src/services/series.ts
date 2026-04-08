@@ -6,15 +6,18 @@ export interface MeetingSeriesRow {
   id: string;
   group_id: string;
   owner_user_id: string;
+  short_name: string;
   title: string;
   description: string | null;
   activity_label: string | null;
+  hero_image_url: string | null;
   venue_id: string | null;
   location_name: string;
   location_address: string;
   latitude: number;
   longitude: number;
   pricing: "free" | "paid";
+  cost_per_person: number | null;
   capacity: number;
   timezone: string;
   weekday: number;
@@ -47,15 +50,18 @@ async function upsertOccurrence(
        group_id,
        owner_user_id,
        series_id,
+       short_name,
        title,
        description,
        activity_label,
+       hero_image_url,
        venue_id,
        location_name,
        location_address,
        latitude,
        longitude,
        pricing,
+       cost_per_person,
        capacity,
        starts_at,
        ends_at,
@@ -63,19 +69,22 @@ async function upsertOccurrence(
        status,
        created_at,
        updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
      ON CONFLICT(series_id, occurrence_date) DO UPDATE SET
        group_id = excluded.group_id,
        owner_user_id = excluded.owner_user_id,
+       short_name = excluded.short_name,
        title = excluded.title,
        description = excluded.description,
        activity_label = excluded.activity_label,
+       hero_image_url = excluded.hero_image_url,
        venue_id = excluded.venue_id,
        location_name = excluded.location_name,
        location_address = excluded.location_address,
        latitude = excluded.latitude,
        longitude = excluded.longitude,
        pricing = excluded.pricing,
+       cost_per_person = excluded.cost_per_person,
        capacity = excluded.capacity,
        starts_at = excluded.starts_at,
        ends_at = excluded.ends_at,
@@ -84,15 +93,18 @@ async function upsertOccurrence(
     series.group_id,
     series.owner_user_id,
     series.id,
+    series.short_name,
     series.title,
     series.description,
     series.activity_label,
+    series.hero_image_url,
     series.venue_id,
     series.location_name,
     series.location_address,
     series.latitude,
     series.longitude,
     series.pricing,
+    series.cost_per_person,
     series.capacity,
     startsAt,
     endsAt,

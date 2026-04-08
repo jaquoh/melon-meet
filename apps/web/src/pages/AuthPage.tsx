@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
@@ -17,12 +18,12 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
     mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate("/");
+      navigate("/map");
     },
   });
 
   if (viewer) {
-    return <Navigate replace to="/" />;
+    return <Navigate replace to="/map" />;
   }
 
   return (
@@ -66,6 +67,22 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
         </div>
 
         <PanelCard className="auth-card stack-md">
+          <div className="workspace-button-row">
+            <button
+              className="button-secondary button-inline"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                  return;
+                }
+                navigate("/");
+              }}
+              type="button"
+            >
+              <ArrowLeft size={14} strokeWidth={2} />
+              <span>Back</span>
+            </button>
+          </div>
           <div className="stack-sm">
             <p className="eyebrow">Identity</p>
             <h2 className="section-title">{mode === "login" ? "Log in to your account" : "Create your account"}</h2>

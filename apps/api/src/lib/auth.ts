@@ -159,6 +159,8 @@ export async function resolveSessionViewer(
     bio: string;
     home_area: string;
     avatar_url: string | null;
+    is_profile_public: number;
+    show_email_publicly: number;
   }>(
     db,
     `SELECT
@@ -168,7 +170,9 @@ export async function resolveSessionViewer(
        users.display_name,
        users.bio,
        users.home_area,
-       users.avatar_url
+       users.avatar_url,
+       users.is_profile_public,
+       users.show_email_publicly
      FROM sessions
      JOIN users ON users.id = sessions.user_id
      WHERE sessions.token_hash = ?
@@ -190,6 +194,8 @@ export async function resolveSessionViewer(
       email: row.email,
       homeArea: row.home_area,
       id: row.id,
+      isProfilePublic: Boolean(row.is_profile_public),
+      showEmailPublicly: Boolean(row.show_email_publicly),
     },
   };
 }

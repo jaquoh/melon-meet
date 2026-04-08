@@ -1,3 +1,4 @@
+import { CalendarDays, Map, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import watermelonMark from "../assets/watermelon-mark.svg";
 
@@ -9,18 +10,26 @@ export function LandingPage() {
           <p className="eyebrow">Berlin beach volleyball</p>
           <h1 className="landing-hero__title">Find Beachvolleyball courts, groups, and sessions.</h1>
           <p className="landing-hero__text">
-            Browse the live map or jump straight into groups. Public discovery stays open, and the full workspace opens from there.
+            Explore courts and communities around Berlin, browse public sessions, and jump into the live workspace from the path that fits you best.
           </p>
           <div className="landing-entry-actions">
             <Link className="landing-entry-button" to="/map">
+              <Map size={18} strokeWidth={2} />
               <span className="landing-entry-button__eyebrow">Open workspace</span>
               <span className="landing-entry-button__title">Map</span>
               <span className="landing-entry-button__copy">Courts, venues, sessions, and public groups on one board.</span>
             </Link>
             <Link className="landing-entry-button" to="/groups">
+              <Users size={18} strokeWidth={2} />
               <span className="landing-entry-button__eyebrow">Open workspace</span>
               <span className="landing-entry-button__title">Groups</span>
               <span className="landing-entry-button__copy">Private groups first when signed in, then all public communities.</span>
+            </Link>
+            <Link className="landing-entry-button" to="/sessions">
+              <CalendarDays size={18} strokeWidth={2} />
+              <span className="landing-entry-button__eyebrow">Open workspace</span>
+              <span className="landing-entry-button__title">Sessions</span>
+              <span className="landing-entry-button__copy">See upcoming play in timeline order and jump straight into a session.</span>
             </Link>
           </div>
         </div>

@@ -1,60 +1,61 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { CalendarDays, Users } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
-import { PanelCard } from "../components/PanelCard";
+import type { ThemeMode } from "../App";
+import { EventTimeline } from "../components/EventTimeline";
+import { GroupForm } from "../components/GroupForm";
+import { MeetingForm } from "../components/MeetingForm";
 import { ProfileForm } from "../components/ProfileForm";
-import {
-  acceptFriendRequest,
-  deleteFriend,
-  getMe,
-  getProfile,
-  sendFriendRequest,
-  updateProfile,
-} from "../lib/api";
+import { WorkspaceShell } from "../components/WorkspaceShell";
+import { createGroup, createMeeting, deleteProfile, getGroups, getProfile, updateProfile } from "../lib/api";
+import { resolveNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
-export function ProfilePage({ viewer }: { viewer: ViewerSummary | null }) {
+export function ProfilePage({
+  onLogOut,
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  onLogOut: () => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const { profileId = "" } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+  const [composeMode, setComposeMode] = useState<"group" | "session" | null>(null);
+
   const profileQuery = useQuery({
     queryFn: () => getProfile(profileId),
     queryKey: ["profile", profileId],
   });
-  const meQuery = useQuery({
-    queryFn: getMe,
-    queryKey: ["me"],
+  const groupsQuery = useQuery({
+    enabled: viewer?.id === profileId,
+    queryFn: getGroups,
+    queryKey: ["groups"],
   });
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => updateProfile(profileId, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["profile", profileId] }),
-        queryClient.invalidateQueries({ queryKey: ["me"] }),
-      ]);
-    },
-  });
-
-  const friendMutation = useMutation({
-    mutationFn: () => sendFriendRequest({ targetUserId: profileId }),
-    onSuccess: async () => {
+      setEditing(false);
       await queryClient.invalidateQueries({ queryKey: ["profile", profileId] });
-    },
-  });
-
-  const acceptMutation = useMutation({
-    mutationFn: (requestId: string) => acceptFriendRequest(requestId),
-    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      await queryClient.invalidateQueries({ queryKey: ["profile", profileId] });
     },
   });
-
   const deleteMutation = useMutation({
-    mutationFn: (connectionId: string) => deleteFriend(connectionId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      await queryClient.invalidateQueries({ queryKey: ["profile", profileId] });
-    },
+    mutationFn: () => deleteProfile(profileId),
+  });
+  const createGroupMutation = useMutation({
+    mutationFn: createGroup,
+  });
+  const createMeetingMutation = useMutation({
+    mutationFn: createMeeting,
   });
 
   if (profileQuery.isLoading) {
@@ -66,145 +67,156 @@ export function ProfilePage({ viewer }: { viewer: ViewerSummary | null }) {
   }
 
   const ownProfile = viewer?.id === profileId;
-  const incomingRequest = meQuery.data?.friends.find(
-    (friend) => friend.id === profileQuery.data.friendship?.id && friend.direction === "incoming",
-  );
+  const closeTarget = resolveNavigationState(location.state, "/map", "Map");
+
+  async function handleCreateMeeting(payload: Record<string, unknown>) {
+    const { seriesDates, ...basePayload } = payload as Record<string, unknown> & {
+      groupId?: string;
+      seriesDates?: Array<{ endsAt: string; startsAt: string }>;
+    };
+
+    if (!seriesDates || seriesDates.length === 0) {
+      const response = await createMeetingMutation.mutateAsync(basePayload);
+      navigate(response.meetingId ? `/sessions/${response.meetingId}` : "/sessions");
+      return;
+    }
+
+    const sortedDates = [...seriesDates].sort(
+      (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+    );
+    let firstMeetingId: string | undefined;
+    for (const slot of sortedDates) {
+      const response = await createMeetingMutation.mutateAsync({
+        ...basePayload,
+        endsAt: slot.endsAt,
+        startsAt: slot.startsAt,
+      });
+      firstMeetingId = firstMeetingId ?? response.meetingId;
+    }
+    navigate(firstMeetingId ? `/sessions/${firstMeetingId}` : "/sessions");
+  }
 
   return (
-    <div className="page-wrap">
-      <div className="profile-grid">
-        <section className="stack-md">
-          <PanelCard className="panel-card--highlight stack-md">
-            <div className="terminal-item__row">
-              <div className="stack-sm">
-                <p className="eyebrow">Player profile</p>
-                <h1 className="display-title">{profileQuery.data.profile.displayName}</h1>
-              </div>
-              {profileQuery.data.profile.avatarUrl ? (
-                <img
-                  alt={profileQuery.data.profile.displayName}
-                  className="profile-avatar"
-                  src={profileQuery.data.profile.avatarUrl}
-                />
-              ) : null}
+    <WorkspaceShell
+      center={
+        <div className="workspace-detail-scroll">
+          <div className="stack-panel">
+          {profileQuery.data.profileIsPrivate ? (
+            <div className="detail-card">
+              <span className="panel-caption">Profile</span>
+              <h2>User profile is private</h2>
             </div>
-
-            <p className="muted-copy">{profileQuery.data.profile.bio || "No bio yet."}</p>
-
-            <div className="form-actions form-actions--start">
-              <span className="badge">{profileQuery.data.profile.homeArea || "Berlin"}</span>
-              {ownProfile ? <span className="badge-outline">{profileQuery.data.profile.email}</span> : null}
-            </div>
-          </PanelCard>
-
-          {ownProfile ? (
-            <PanelCard className="stack-md">
-              <div>
-                <p className="eyebrow">Edit profile</p>
-                <h2 className="section-title">Keep your player card current</h2>
+          ) : editing ? (
+            <>
+              <ProfileForm onSubmit={async (payload) => updateMutation.mutateAsync(payload)} profile={profileQuery.data.profile} />
+              <div className="workspace-button-row">
+                <button className="button-danger" onClick={() => deleteMutation.mutate()} type="button">
+                  Delete profile
+                </button>
+                <button className="button-secondary" onClick={() => setEditing(false)} type="button">
+                  Cancel
+                </button>
               </div>
-              <ProfileForm
-                onSubmit={async (payload) => updateMutation.mutateAsync(payload)}
-                profile={profileQuery.data.profile}
+            </>
+          ) : composeMode === "group" && ownProfile ? (
+            <>
+              <GroupForm
+                onSubmit={async (payload) => {
+                  const response = await createGroupMutation.mutateAsync(payload);
+                  navigate(`/groups/${response.groupId}`);
+                }}
               />
-            </PanelCard>
-          ) : null}
-        </section>
-
-        <aside className="stack-md">
-          <PanelCard className="stack-md">
-            <div>
-              <p className="eyebrow">Profile details</p>
-              <h2 className="detail-title">Snapshot</h2>
-            </div>
-
-            <div className="detail-grid detail-grid--two">
-              <div className="terminal-item">
-                <p className="terminal-item__meta">Home area</p>
-                <p className="terminal-item__title">{profileQuery.data.profile.homeArea || "Berlin"}</p>
+              <div className="workspace-button-row">
+                <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
+                  Cancel
+                </button>
               </div>
-              <div className="terminal-item">
-                <p className="terminal-item__meta">Connection</p>
-                <p className="terminal-item__title">
-                  {profileQuery.data.friendship
-                    ? `${profileQuery.data.friendship.status} link`
-                    : ownProfile
-                      ? "Your account"
-                      : "No friend link"}
-                </p>
+            </>
+          ) : composeMode === "session" && ownProfile ? (
+            <>
+              <MeetingForm groups={groupsQuery.data?.groups ?? []} onSubmit={handleCreateMeeting} />
+              <div className="workspace-button-row">
+                <button className="button-secondary" onClick={() => setComposeMode(null)} type="button">
+                  Cancel
+                </button>
               </div>
-              {ownProfile ? (
-                <div className="terminal-item field-full">
-                  <p className="terminal-item__meta">Email</p>
-                  <p className="terminal-item__title">{profileQuery.data.profile.email}</p>
-                </div>
-              ) : null}
-            </div>
-
-            {!ownProfile && viewer ? (
-              <div className="form-actions form-actions--start">
-                {profileQuery.data.friendship ? (
-                  <>
-                    {incomingRequest ? (
-                      <button className="button-primary" onClick={() => acceptMutation.mutate(incomingRequest.id)} type="button">
-                        Accept request
-                      </button>
-                    ) : null}
-                    <button
-                      className="button-secondary"
-                      onClick={() => deleteMutation.mutate(profileQuery.data.friendship!.id)}
-                      type="button"
-                    >
-                      Remove friend link
-                    </button>
-                  </>
-                ) : (
-                  <button className="button-primary" onClick={() => friendMutation.mutate()} type="button">
-                    Add friend
-                  </button>
-                )}
-              </div>
-            ) : null}
-          </PanelCard>
-
-          {ownProfile ? (
-            <PanelCard className="stack-md">
-              <div>
-                <p className="eyebrow">Friends</p>
-                <h2 className="detail-title">Connections</h2>
-              </div>
-
-              <div className="stack-sm">
-                {(meQuery.data?.friends ?? []).length === 0 ? (
-                  <p className="empty-state">No friend links yet.</p>
-                ) : (
-                  meQuery.data?.friends.map((friend) => (
-                    <div className="terminal-item" key={friend.id}>
-                      <div className="terminal-item__row">
-                        <div>
-                          <p className="terminal-item__title">{friend.user.displayName}</p>
-                          <p className="terminal-item__meta">
-                            {friend.status} · {friend.direction}
-                          </p>
-                        </div>
-                        {friend.status === "pending" && friend.direction === "incoming" ? (
-                          <button className="button-primary" onClick={() => acceptMutation.mutate(friend.id)} type="button">
-                            Accept
-                          </button>
-                        ) : (
-                          <button className="button-secondary" onClick={() => deleteMutation.mutate(friend.id)} type="button">
-                            Remove
-                          </button>
-                        )}
-                      </div>
+            </>
+          ) : (
+            <section className="player-card">
+              <div className="player-card__frame">
+                <div className="player-card__art">
+                  {profileQuery.data.profile.avatarUrl ? (
+                    <img alt={profileQuery.data.profile.displayName} className="player-card__avatar" src={profileQuery.data.profile.avatarUrl} />
+                  ) : (
+                    <div className="player-card__avatar player-card__avatar--fallback">
+                      {profileQuery.data.profile.displayName.slice(0, 1)}
                     </div>
-                  ))
-                )}
+                  )}
+                </div>
+                <div className="player-card__content">
+                  <div className="player-card__top">
+                    <div>
+                      <p className="eyebrow">Player card</p>
+                      <h1 className="display-title typewriter-title">{profileQuery.data.profile.displayName}</h1>
+                    </div>
+                    <span className="badge-invert">{profileQuery.data.profile.homeArea || "Berlin"}</span>
+                  </div>
+                  <p className="player-card__bio">{profileQuery.data.profile.bio || "No bio yet."}</p>
+                  <div className="mini-meta-row">
+                    {profileQuery.data.profile.email ? <span className="mini-chip">{profileQuery.data.profile.email}</span> : null}
+                    <span className="mini-chip">{profileQuery.data.memberships.length} groups</span>
+                    <span className="mini-chip">{profileQuery.data.attending.length} sessions</span>
+                  </div>
+                </div>
               </div>
-            </PanelCard>
+            </section>
+          )}
+          </div>
+        </div>
+      }
+      detailCloseTo={closeTarget.fromPath}
+      left={
+        <div className="stack-panel">
+          <Link className="button-secondary" to="/">
+            Home
+          </Link>
+          {profileQuery.data.memberships.map((membership) => (
+            <Link className="mini-link" key={membership.id} to={`/groups/${membership.id}`}>
+              {membership.name} · {membership.role}
+            </Link>
+          ))}
+          {ownProfile ? (
+            <>
+              <button className="button-primary" onClick={() => { setComposeMode(null); setEditing((current) => !current); }} type="button">
+                {editing ? "Close edit" : "Edit profile"}
+              </button>
+              <button className="button-secondary" onClick={() => { setEditing(false); setComposeMode("group"); }} type="button">
+                <Users size={14} strokeWidth={2} />
+                Create group
+              </button>
+              <button className="button-secondary" onClick={() => { setEditing(false); setComposeMode("session"); }} type="button">
+                <CalendarDays size={14} strokeWidth={2} />
+                Create session
+              </button>
+            </>
           ) : null}
-        </aside>
-      </div>
-    </div>
+        </div>
+      }
+      leftHeader={undefined}
+      onLogOut={onLogOut}
+      right={
+        <EventTimeline
+          contextLabel={profileQuery.data.profile.displayName}
+          emptyLabel="No attending sessions."
+          heading="Attending sessions"
+          meetings={profileQuery.data.attending}
+        />
+      }
+      rightHeader={undefined}
+      theme={theme}
+      title={`Profile: ${profileQuery.data.profile.displayName}`}
+      toggleTheme={toggleTheme}
+      viewer={viewer}
+    />
   );
 }

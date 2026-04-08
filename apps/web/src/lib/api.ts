@@ -1,7 +1,10 @@
 import type {
   FriendSummary,
+  GroupPost,
   GroupSummary,
+  MeetingPost,
   MeetingSummary,
+  MembershipRequestSummary,
   ViewerSummary,
   VenueSummary,
 } from "../../../../packages/shared/src";
@@ -17,7 +20,9 @@ export interface GroupDetailResponse {
     activityLabel: string | null;
     createdAt: string;
     description: string;
+    heroImageUrl: string | null;
     id: string;
+    messengerUrl: string | null;
     name: string;
     ownerUserId: string;
     slug: string;
@@ -34,29 +39,23 @@ export interface GroupDetailResponse {
     role: "owner" | "admin" | "member";
     user: ViewerSummary;
   }>;
-  posts: Array<{
-    author: ViewerSummary;
-    content: string;
-    createdAt: string;
-    id: string;
-  }>;
+  posts: GroupPost[];
 }
 
 export interface MeetingDetailResponse {
   claims: ViewerSummary[];
   meeting: MeetingSummary;
-  posts: Array<{
-    author: ViewerSummary;
-    content: string;
-    createdAt: string;
-    id: string;
-  }>;
+  posts: MeetingPost[];
+  seriesMeetings: MeetingSummary[];
   viewerGroupRole: "owner" | "admin" | "member" | null;
 }
 
 export interface ProfileResponse {
+  attending: MeetingSummary[];
   friendship: { id: string; status: "pending" | "accepted" } | null;
+  memberships: Array<{ id: string; name: string; role: "owner" | "admin" | "member"; slug: string }>;
   profile: ViewerSummary;
+  profileIsPrivate: boolean;
 }
 
 export interface MapResponse {
@@ -82,8 +81,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const payload = (await response
       .json()
-      .catch(() => ({ error: "Request failed." }))) as { error?: string };
-    throw new Error(payload.error ?? "Request failed.");
+      .catch(() => ({ error: "Request failed." }))) as { error?: unknown; issues?: Array<{ message?: string }> };
+
+    const message =
+      typeof payload.error === "string"
+        ? payload.error
+        : Array.isArray(payload.issues) && payload.issues[0]?.message
+          ? payload.issues[0].message
+          : payload.error && typeof payload.error === "object" && "message" in payload.error
+            ? String((payload.error as { message?: unknown }).message ?? "Request failed.")
+            : "Request failed.";
+
+    throw new Error(message);
   }
 
   if (response.status === 204) {
@@ -122,6 +131,8 @@ export function getGroups() {
 export function createGroup(payload: {
   activityLabel?: string | null;
   description: string;
+  heroImageUrl?: string | null;
+  messengerUrl?: string | null;
   name: string;
   slug: string;
   visibility: "public" | "private";
@@ -143,8 +154,33 @@ export function updateGroup(groupId: string, payload: Record<string, unknown>) {
   });
 }
 
+export function deleteGroup(groupId: string) {
+  return request<{ ok: true }>(`/api/groups/${groupId}`, {
+    method: "DELETE",
+  });
+}
+
 export function joinGroup(groupId: string) {
   return request<{ ok: true }>(`/api/groups/${groupId}/join`, { method: "POST" });
+}
+
+export function createMembershipRequest(groupId: string, note?: string) {
+  return request<{ ok: true }>(`/api/groups/${groupId}/membership-requests`, {
+    body: JSON.stringify({ note }),
+    method: "POST",
+  });
+}
+
+export function getMembershipRequests(groupId: string) {
+  return request<{ requests: MembershipRequestSummary[] }>(`/api/groups/${groupId}/membership-requests`);
+}
+
+export function approveMembershipRequest(groupId: string, requestId: string) {
+  return request<{ ok: true }>(`/api/groups/${groupId}/membership-requests/${requestId}/approve`, { method: "POST" });
+}
+
+export function rejectMembershipRequest(groupId: string, requestId: string) {
+  return request<{ ok: true }>(`/api/groups/${groupId}/membership-requests/${requestId}/reject`, { method: "POST" });
 }
 
 export function createInviteLink(groupId: string) {
@@ -200,6 +236,10 @@ export function getVenue(venueId: string) {
   return request<VenueDetailResponse>(`/api/venues/${venueId}`);
 }
 
+export function getVenues() {
+  return request<{ venues: VenueSummary[] }>("/api/venues");
+}
+
 export function createMeeting(payload: Record<string, unknown>) {
   return request<{ meetingId?: string; seriesId?: string }>("/api/meetings", {
     body: JSON.stringify(payload),
@@ -230,6 +270,10 @@ export function cancelMeeting(meetingId: string) {
   return request<{ ok: true }>(`/api/meetings/${meetingId}/cancel`, { method: "POST" });
 }
 
+export function deleteMeeting(meetingId: string) {
+  return request<{ ok: true }>(`/api/meetings/${meetingId}`, { method: "DELETE" });
+}
+
 export function createMeetingPost(meetingId: string, content: string) {
   return request<{ ok: true }>(`/api/meetings/${meetingId}/posts`, {
     body: JSON.stringify({ content }),
@@ -245,6 +289,12 @@ export function updateProfile(profileId: string, payload: Record<string, unknown
   return request<{ profile: ViewerSummary }>(`/api/profiles/${profileId}`, {
     body: JSON.stringify(payload),
     method: "PATCH",
+  });
+}
+
+export function deleteProfile(profileId: string) {
+  return request<{ ok: true }>(`/api/profiles/${profileId}`, {
+    method: "DELETE",
   });
 }
 
