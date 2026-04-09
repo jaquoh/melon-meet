@@ -271,6 +271,10 @@ export function cancelMeeting(meetingId: string) {
   return request<{ ok: true }>(`/api/meetings/${meetingId}/cancel`, { method: "POST" });
 }
 
+export function reviveMeeting(meetingId: string) {
+  return request<{ ok: true }>(`/api/meetings/${meetingId}/revive`, { method: "POST" });
+}
+
 export function deleteMeeting(meetingId: string) {
   return request<{ ok: true }>(`/api/meetings/${meetingId}`, { method: "DELETE" });
 }

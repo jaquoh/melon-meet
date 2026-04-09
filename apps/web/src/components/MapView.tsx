@@ -10,6 +10,7 @@ interface BoundsValue {
 }
 
 interface GroupPin {
+  filteredSessionCount: number;
   group: GroupSummary;
   latitude: number;
   longitude: number;
@@ -65,9 +66,15 @@ const LAYER_ICON_ID = "melon-map-icon";
 const LAYER_BADGE_ID = "melon-map-badge";
 const LAYER_LABEL_ID = "melon-map-label";
 const LAYER_HIT_ID = "melon-map-hit";
+const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const DEFAULT_DARK_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json";
 
-function popupHtml(title: string, lines: string[]) {
-  return `<div class="map-popup"><strong>${title}</strong>${lines.map((line) => `<span>${line}</span>`).join("")}</div>`;
+function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
+  return `<div class="map-popup">${
+    options?.cancelled ? '<span class="map-popup__status">Cancelled</span>' : ""
+  }<strong class="${options?.cancelled ? "map-popup__title--cancelled" : ""}">${title}</strong>${lines
+    .map((line) => `<span>${line}</span>`)
+    .join("")}</div>`;
 }
 
 function svgDataUrl(svg: string) {
@@ -177,6 +184,13 @@ function formatPriceBadge(pricing: "free" | "paid", costPerPerson?: number | nul
   return "Paid";
 }
 
+function formatSessionPopupLine(prefix: string, meeting: MeetingSummary | null | undefined) {
+  if (!meeting) {
+    return prefix;
+  }
+  return meeting.status === "cancelled" ? `${prefix} Cancelled — ${meeting.title}` : `${prefix} ${meeting.title}`;
+}
+
 function currentThemePalette(theme: "dark" | "light") {
   return theme === "dark"
     ? {
@@ -189,6 +203,13 @@ function currentThemePalette(theme: "dark" | "light") {
         halo: "#fffdfa",
         labelColor: "#231d1c",
       };
+}
+
+function mapStyleUrl(theme: "dark" | "light") {
+  if (theme === "dark") {
+    return import.meta.env.VITE_MAP_STYLE_URL_DARK ?? DEFAULT_DARK_STYLE;
+  }
+  return import.meta.env.VITE_MAP_STYLE_URL ?? DEFAULT_LIGHT_STYLE;
 }
 
 function buildFeatureCollection({
@@ -221,7 +242,7 @@ function buildFeatureCollection({
         kind: "venue",
         popupLines: [
           venue.address,
-          meetingsAtVenue[0] ? `Next: ${meetingsAtVenue[0].title}` : "No sessions yet",
+          meetingsAtVenue[0] ? formatSessionPopupLine("Next:", meetingsAtVenue[0]) : "No sessions yet",
           meetingsAtVenue.length > 0 ? `${meetingsAtVenue.length} upcoming sessions` : venue.pricing,
         ],
         popupTitle: venue.name,
@@ -247,7 +268,7 @@ function buildFeatureCollection({
 
   if (mode === "groups") {
     for (const pin of groupPins) {
-      const badge = pin.group.publicSessionCount > 0 ? `${pin.group.publicSessionCount}x` : "";
+      const badge = pin.filteredSessionCount > 0 ? `${pin.filteredSessionCount}x` : "";
       const accent = badgeAccent(theme, badge);
       const lookupKey = `group:${pin.group.id}`;
       lookup.set(lookupKey, {
@@ -255,8 +276,8 @@ function buildFeatureCollection({
         kind: "group",
         popupLines: [
           pin.group.visibility,
-          pin.nextMeeting ? `Next: ${pin.nextMeeting.title}` : "No session scheduled",
-          `${pin.group.publicSessionCount} public sessions`,
+          pin.nextMeeting ? formatSessionPopupLine("Next:", pin.nextMeeting) : "No session scheduled",
+          `${pin.filteredSessionCount} matching sessions`,
         ],
         popupTitle: pin.group.name,
       });
@@ -310,7 +331,9 @@ function buildFeatureCollection({
             meetings: sorted,
             popupLines: [
               `${sameLocation.length} sessions at this location`,
-              `Next: ${representative.shortName || representative.title}`,
+              representative.status === "cancelled"
+                ? `Next: Cancelled — ${representative.shortName || representative.title}`
+                : `Next: ${representative.shortName || representative.title}`,
               representative.groupName,
             ],
             popupTitle: representative.locationName,
@@ -429,7 +452,7 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
       "text-allow-overlap": true,
       "text-anchor": "top",
       "text-field": ["get", "label"],
-      "text-font": ["IBM Plex Mono SemiBold"],
+      "text-font": ["Noto Sans Regular", "Open Sans Regular"],
       "text-max-width": 10,
       "text-offset": [0, 2.35],
       "text-size": 13,
@@ -473,6 +496,8 @@ export function MapView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const lookupRef = useRef<Map<string, MarkerLookupEntry>>(new Map());
+  const interactionsBoundRef = useRef(false);
+  const appliedStyleRef = useRef<string | null>(null);
   const suppressBackgroundClickRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
 
@@ -496,6 +521,11 @@ export function MapView({
       }),
     [groupPins, meetings, mode, selectedKey, theme, venueMeetingsById, venues],
   );
+  const currentStyleUrl = mapStyleUrl(theme);
+  const sourceDataRef = useRef(sourceData);
+  const themeRef = useRef(theme);
+  sourceDataRef.current = sourceData;
+  themeRef.current = theme;
 
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) {
@@ -506,9 +536,10 @@ export function MapView({
       attributionControl: { compact: true },
       center: BERLIN_CENTER,
       container: mapContainerRef.current,
-      style: import.meta.env.VITE_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty",
+      style: currentStyleUrl,
       zoom: 10.8,
     });
+    appliedStyleRef.current = currentStyleUrl;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
@@ -546,7 +577,14 @@ export function MapView({
       if (!coordinates) {
         return;
       }
-      popupRef.current?.setLngLat(coordinates).setHTML(popupHtml(lookup.popupTitle, lookup.popupLines)).addTo(map);
+      popupRef.current
+        ?.setLngLat(coordinates)
+        .setHTML(
+          popupHtml(lookup.popupTitle, lookup.popupLines, {
+            cancelled: lookup.kind === "session" && lookup.meeting.status === "cancelled",
+          }),
+        )
+        .addTo(map);
     };
 
     const clearHover = () => {
@@ -582,22 +620,27 @@ export function MapView({
 
     const handleLoad = async () => {
       await ensureBaseAssets(map);
-      addLayers(map, theme);
-      popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
-      map.on("click", handleMapClick);
-      [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID].forEach((layerId) => {
-        map.on("click", layerId, handleFeatureClick);
-        map.on("mousemove", layerId, handleHover);
-        map.on("mouseleave", layerId, clearHover);
-      });
-      map.on("movestart", clearHover);
-      map.on("load", syncBounds);
-      map.on("moveend", syncBounds);
+      await ensureBadgeAssets(map, sourceDataRef.current.featureCollection.features, themeRef.current);
+      addLayers(map, themeRef.current);
+      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      source?.setData(sourceDataRef.current.featureCollection as never);
+      popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
+      if (!interactionsBoundRef.current) {
+        map.on("click", handleMapClick);
+        [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID].forEach((layerId) => {
+          map.on("click", layerId, handleFeatureClick);
+          map.on("mousemove", layerId, handleHover);
+          map.on("mouseleave", layerId, clearHover);
+        });
+        map.on("movestart", clearHover);
+        map.on("moveend", syncBounds);
+        interactionsBoundRef.current = true;
+      }
       syncBounds();
       setMapReady(true);
     };
 
-    map.once("load", () => {
+    map.on("load", () => {
       void handleLoad();
     });
     mapRef.current = map;
@@ -607,13 +650,24 @@ export function MapView({
       popupRef.current = null;
       map.remove();
       mapRef.current = null;
+      interactionsBoundRef.current = false;
       setMapReady(false);
     };
-  }, []);
+  }, [currentStyleUrl]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) {
+    if (!map || appliedStyleRef.current === currentStyleUrl) {
+      return;
+    }
+    appliedStyleRef.current = currentStyleUrl;
+    popupRef.current?.remove();
+    map.setStyle(currentStyleUrl);
+  }, [currentStyleUrl]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !map.isStyleLoaded()) {
       return;
     }
 

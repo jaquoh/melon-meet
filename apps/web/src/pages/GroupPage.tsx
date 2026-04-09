@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ExternalLink, Shield, Users } from "lucide-react";
+import { ExternalLink, Image as ImageIcon, Shield, Users } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
-import { DetailHero } from "../components/DetailHero";
 import { EventTimeline } from "../components/EventTimeline";
 import { GroupForm } from "../components/GroupForm";
 import { PostBoard } from "../components/PostBoard";
@@ -93,6 +92,9 @@ export function GroupPage({
 
   const { group, inviteLinks, meetings, members, posts } = groupQuery.data;
   const backTarget = resolveNavigationState(location.state, "/groups", "Groups");
+  const hasLeftActions = Boolean(
+    (!group.viewerRole && viewer) || group.viewerCanEditGroup || group.viewerCanManageMembers || group.messengerUrl,
+  );
 
   async function handleDelete() {
     if (!window.confirm("Delete this group? This cannot be undone.")) {
@@ -141,31 +143,43 @@ export function GroupPage({
             </>
           ) : (
             <>
-              <DetailHero
-                description={group.description}
-                eyebrow={`${group.visibility} group`}
-                imageUrl={group.heroImageUrl}
-                meta={
-                  <>
-                    {group.activityLabel ? <span className="mini-chip">{group.activityLabel}</span> : null}
-                    <span className="mini-chip">{members.length} members</span>
-                    <span className="mini-chip">{meetings.length} upcoming</span>
-                  </>
-                }
-                title={group.name}
-              />
-              <div className="detail-fact-grid">
+              <section className="session-detail-main">
+                <p className="eyebrow">{`${group.visibility} group`}</p>
+                <h1 className="display-title typewriter-title session-detail-main__title">{group.name}</h1>
+                <div className="session-detail-main__hero-row">
+                  <div className={`detail-hero__media ${group.heroImageUrl ? "has-image" : ""}`.trim()}>
+                    {group.heroImageUrl ? <img alt={group.name} className="detail-hero__image" src={group.heroImageUrl} /> : null}
+                    <div className="detail-hero__fallback" aria-hidden={Boolean(group.heroImageUrl)}>
+                      <ImageIcon size={24} strokeWidth={1.8} />
+                    </div>
+                  </div>
+                  <div className="session-detail-main__summary">
+                    <p className="detail-hero__description">{group.description || "No description yet."}</p>
+                  </div>
+                </div>
+              </section>
+              <div className="detail-fact-grid detail-fact-grid--session">
                 <article className="detail-fact-card">
-                  <span className="panel-caption">Visibility</span>
-                  <strong>{group.visibility}</strong>
-                </article>
-                <article className="detail-fact-card">
-                  <span className="panel-caption">Members</span>
-                  <strong>{members.length}</strong>
+                  <span className="panel-caption">Activity</span>
+                  <strong className="detail-fact-card__value--mono">{group.activityLabel || "Beach volleyball"}</strong>
                 </article>
                 <article className="detail-fact-card">
                   <span className="panel-caption">Upcoming sessions</span>
-                  <strong>{meetings.length}</strong>
+                  <strong className="detail-fact-card__value--mono">{meetings.length}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Members</span>
+                  <strong className="detail-fact-card__value--mono">{members.length}</strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Owner</span>
+                  <strong className="detail-fact-card__value--mono">
+                    {members.find((member) => member.role === "owner")?.user.displayName ?? "Unknown"}
+                  </strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Visibility</span>
+                  <strong className="detail-fact-card__value--mono">{group.visibility}</strong>
                 </article>
               </div>
               <PostBoard
@@ -174,7 +188,7 @@ export function GroupPage({
                 emptyLabel="No posts yet."
                 onSubmit={async (content) => postMutation.mutateAsync(content)}
                 posts={posts}
-                title="Pin board"
+                title="Pin board Group Updates"
               />
             </>
           )}
@@ -184,26 +198,6 @@ export function GroupPage({
       detailCloseTo={backTarget.fromPath}
       left={
         <div className="stack-panel">
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Owner</span>
-            <strong>{members.find((member) => member.role === "owner")?.user.displayName ?? "Unknown"}</strong>
-          </div>
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Members</span>
-            <div className="detail-link-list">
-              {members.map((member) => (
-                <Link className="mini-link" key={member.user.id} to={`/profile/${member.user.id}`}>
-                  {member.user.displayName} · {member.role}
-                </Link>
-              ))}
-            </div>
-          </div>
-          {group.messengerUrl ? (
-            <a className="button-secondary" href={group.messengerUrl} rel="noreferrer" target="_blank">
-              <ExternalLink size={14} strokeWidth={2} />
-              Open messenger
-            </a>
-          ) : null}
           {!group.viewerRole && viewer ? (
             <button className="button-primary" onClick={() => requestMutation.mutate()} type="button">
               <Users size={14} strokeWidth={2} />
@@ -222,21 +216,42 @@ export function GroupPage({
                 <ExternalLink size={14} strokeWidth={2} />
                 Create invite link
               </button>
+            </>
+          ) : null}
+          {group.messengerUrl ? (
+            <a className="button-secondary" href={group.messengerUrl} rel="noreferrer" target="_blank">
+              <ExternalLink size={14} strokeWidth={2} />
+              Open messenger
+            </a>
+          ) : null}
+          {hasLeftActions ? <div className="list-divider" /> : null}
+          <section className="detail-section">
+            <span className="panel-caption">Members</span>
+            <div className="detail-link-list">
+              {members.map((member) => (
+                <Link className="mini-link" key={member.user.id} to={`/profile/${member.user.id}`}>
+                  {member.user.displayName} · {member.role}
+                </Link>
+              ))}
+            </div>
+          </section>
+          {group.viewerCanManageMembers ? (
+            <>
               {inviteLinks.map((link) => (
-                <div className="detail-card detail-card--compact" key={link.id}>
+                <section className="detail-section" key={link.id}>
                   <span className="panel-caption">Invite</span>
-                  <strong>{link.code}</strong>
-                </div>
+                  <strong className="detail-section__value">{link.code}</strong>
+                </section>
               ))}
               {(requestsQuery.data?.requests ?? []).map((request) => (
-                <div className="detail-card detail-card--compact" key={request.id}>
+                <section className="detail-section" key={request.id}>
                   <span className="panel-caption">Request</span>
-                  <strong>{request.requester.displayName}</strong>
+                  <strong className="detail-section__value">{request.requester.displayName}</strong>
                   <p>{request.note || "No note"}</p>
                   <button className="button-primary" onClick={() => approveMutation.mutate(request.id)} type="button">
                     Approve
                   </button>
-                </div>
+                </section>
               ))}
             </>
           ) : null}
@@ -245,14 +260,16 @@ export function GroupPage({
       leftHeader={undefined}
       onLogOut={onLogOut}
       right={
-        <EventTimeline
-          contextLabel={group.name}
-          emptyLabel="No sessions created by this group yet."
-          heading="Upcoming sessions"
-          meetings={meetings}
-          secondaryMeta="location"
-          showGroupLabel={false}
-        />
+        <div className="stack-panel">
+          <EventTimeline
+            contextLabel={group.name}
+            emptyLabel="No sessions created by this group yet."
+            heading="Upcoming sessions"
+            meetings={meetings}
+            secondaryMeta="location"
+            showGroupLabel={false}
+          />
+        </div>
       }
       rightHeader={undefined}
       theme={theme}

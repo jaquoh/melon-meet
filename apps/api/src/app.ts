@@ -431,8 +431,7 @@ async function listAccessibleMeetings(
          ) THEN 1 ELSE 0 END AS viewer_can_edit
      FROM meetings m
      JOIN app_groups g ON g.id = m.group_id
-     WHERE m.status = 'active'
-       AND m.archived_at IS NULL
+     WHERE m.archived_at IS NULL
        AND g.archived_at IS NULL
        AND (? IS NULL OR m.id = ?)
        AND (? IS NULL OR m.group_id = ?)
@@ -490,7 +489,7 @@ async function listAccessibleMeetings(
   if (!options?.openOnly) {
     return meetings;
   }
-  return meetings.filter((meeting) => meeting.openSpots > 0);
+  return meetings.filter((meeting) => meeting.status === "active" && meeting.openSpots > 0);
 }
 
 async function requireViewer(c: Context<AppEnv>) {
@@ -1968,16 +1967,38 @@ export function createApp() {
 
   app.post("/api/meetings/:id/cancel", async (c) => {
     const viewer = await requireViewer(c);
-    const meeting = await firstRow<{ owner_user_id: string }>(
+    const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
-      "SELECT owner_user_id FROM meetings WHERE id = ?",
+      "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
       c.req.param("id"),
     );
     assertOrThrow(meeting, 404, "Meeting not found.");
-    assertOrThrow(meeting.owner_user_id === viewer.id, 403, "Only the meeting owner can cancel this meeting.");
+    const viewerRole = await getGroupRole(c.env.DB, meeting.group_id, viewer.id);
+    const canManage = meeting.owner_user_id === viewer.id || viewerRole === "owner" || viewerRole === "admin";
+    assertOrThrow(canManage, 403, "Only the meeting owner or group admins can cancel this meeting.");
     await runStatement(
       c.env.DB,
       "UPDATE meetings SET status = 'cancelled', updated_at = ? WHERE id = ?",
+      nowIso(),
+      c.req.param("id"),
+    );
+    return c.json({ ok: true });
+  });
+
+  app.post("/api/meetings/:id/revive", async (c) => {
+    const viewer = await requireViewer(c);
+    const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
+      c.env.DB,
+      "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
+      c.req.param("id"),
+    );
+    assertOrThrow(meeting, 404, "Meeting not found.");
+    const viewerRole = await getGroupRole(c.env.DB, meeting.group_id, viewer.id);
+    const canManage = meeting.owner_user_id === viewer.id || viewerRole === "owner" || viewerRole === "admin";
+    assertOrThrow(canManage, 403, "Only the meeting owner or group admins can revive this meeting.");
+    await runStatement(
+      c.env.DB,
+      "UPDATE meetings SET status = 'active', updated_at = ? WHERE id = ?",
       nowIso(),
       c.req.param("id"),
     );

@@ -85,6 +85,7 @@ export function MeetingForm({
     [selectedVenueId, venues],
   );
   const isOtherLocation = selectedVenueId === "other";
+  const inheritedFieldClassName = `field-input${isOtherLocation ? "" : " field-input--inherited"}`;
 
   useEffect(() => {
     if (!initialLocation) return;
@@ -267,7 +268,7 @@ export function MeetingForm({
       </div>
 
       {buildSeries || seriesMode ? (
-        <div className="detail-card detail-card--compact field-full">
+        <div className="field-full stack-sm">
           <span className="panel-caption">Session dates</span>
           {seriesDates.length === 0 ? (
             <p className="muted-copy">Use the add session button next to the start time to build the series.</p>
@@ -354,22 +355,22 @@ export function MeetingForm({
 
       <label className="field-stack field-full">
         <span className="field-label">Location name</span>
-        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
+        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">Address</span>
-        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
+        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Latitude</span>
-        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
+        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Longitude</span>
-        <input className="field-input" disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
+        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
       </label>
 
     </form>

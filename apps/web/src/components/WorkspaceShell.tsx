@@ -37,12 +37,18 @@ export function WorkspaceShell({
 }: WorkspaceShellProps) {
   const navigate = useNavigate();
 
+  function handleDetailClose() {
+    if (typeof window !== "undefined" && window.history.state && typeof window.history.state.idx === "number" && window.history.state.idx > 0) {
+      navigate(-1);
+      return;
+    }
+    if (detailCloseTo) {
+      navigate(detailCloseTo);
+    }
+  }
+
   const actions = detailCloseTo ? (
     <div className="workspace-auth">
-      <button className="workspace-action workspace-action--close" onClick={() => navigate(detailCloseTo)} type="button">
-        <X size={16} strokeWidth={2} />
-        <span>Close</span>
-      </button>
       <button
         aria-label="Toggle theme"
         className="workspace-action workspace-action--icon"
@@ -51,9 +57,21 @@ export function WorkspaceShell({
       >
         {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
       </button>
+      <button className="workspace-action workspace-action--close" onClick={handleDetailClose} type="button">
+        <X size={16} strokeWidth={2} />
+        <span>Close</span>
+      </button>
     </div>
   ) : (
     <div className="workspace-auth">
+      <button
+        aria-label="Toggle theme"
+        className="workspace-action workspace-action--icon"
+        onClick={toggleTheme}
+        type="button"
+      >
+        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+      </button>
       {viewer ? (
         <details className="workspace-user-menu">
           <summary className="workspace-action workspace-action--primary">
@@ -76,18 +94,10 @@ export function WorkspaceShell({
           </div>
         </details>
       ) : (
-        <Link className="workspace-action workspace-action--primary" to="/auth">
+        <Link className="workspace-action workspace-action--primary" to="/">
           Sign in
         </Link>
       )}
-      <button
-        aria-label="Toggle theme"
-        className="workspace-action workspace-action--icon"
-        onClick={toggleTheme}
-        type="button"
-      >
-        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-      </button>
     </div>
   );
 
@@ -120,20 +130,48 @@ export function WorkspaceShell({
 
           <div className="workspace-cell workspace-cell--top workspace-cell--top-right">{actions}</div>
 
-          <section
-            className={`workspace-cell workspace-cell--panel ${leftHeader ? "" : "workspace-cell--panel-no-header"} workspace-cell--left`.trim()}
-          >
-            {leftHeader ? <div className="workspace-panel__header">{leftHeader}</div> : null}
-            <div className="workspace-panel__body">{left}</div>
-          </section>
+          {detailCloseTo ? null : (
+            <section
+              className={`workspace-cell workspace-cell--panel ${leftHeader ? "" : "workspace-cell--panel-no-header"} workspace-cell--left`.trim()}
+            >
+              {leftHeader ? <div className="workspace-panel__header">{leftHeader}</div> : null}
+              <div className="workspace-panel__body">{left}</div>
+            </section>
+          )}
 
-          <section className="workspace-cell workspace-cell--center">{center}</section>
+          <section className={`workspace-cell workspace-cell--center ${detailCloseTo ? "workspace-cell--center-detail" : ""}`.trim()}>
+            {detailCloseTo ? (
+              <div className="workspace-detail-main-column">
+                <div className="workspace-detail-main-column__primary">{center}</div>
+              </div>
+            ) : (
+              center
+            )}
+          </section>
 
           <section
             className={`workspace-cell workspace-cell--panel ${rightHeader ? "" : "workspace-cell--panel-no-header"} workspace-cell--right`.trim()}
           >
             {rightHeader ? <div className="workspace-panel__header">{rightHeader}</div> : null}
-            <div className="workspace-panel__body">{right}</div>
+            <div className="workspace-panel__body">
+              {detailCloseTo ? (
+                <div className="workspace-detail-side-column">
+                  {left ? (
+                    <div className="workspace-detail-side-column__top">
+                      {leftHeader ? <div className="workspace-inline-subheader">{leftHeader}</div> : null}
+                      {left}
+                    </div>
+                  ) : null}
+                  {right ? (
+                    <div className={`workspace-detail-side-column__bottom ${left ? "workspace-detail-side-column__bottom--with-divider" : ""}`.trim()}>
+                      {right}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                right
+              )}
+            </div>
           </section>
         </div>
       </div>

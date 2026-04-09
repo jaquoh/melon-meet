@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CircleDollarSign, Clock3, MapPinned, Shield, Users } from "lucide-react";
+import { Compass, Image as ImageIcon, MapPinned, Shield, Users } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { CopyTextButton } from "../components/CopyTextButton";
-import { DetailHero } from "../components/DetailHero";
 import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
 import { WorkspaceShell } from "../components/WorkspaceShell";
@@ -17,10 +16,11 @@ import {
   deleteMeeting,
   getGroups,
   getMeeting,
+  reviveMeeting,
   unclaimMeeting,
   updateMeeting,
 } from "../lib/api";
-import { formatDateTime } from "../lib/format";
+import { formatDateTimeWithWeekdayShort } from "../lib/format";
 import { resolveNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
@@ -59,6 +59,14 @@ export function MeetingPage({
     mutationFn: () => cancelMeeting(meetingId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
+    },
+  });
+  const reviveMutation = useMutation({
+    mutationFn: () => reviveMeeting(meetingId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
     },
   });
   const updateMutation = useMutation({
@@ -161,6 +169,13 @@ export function MeetingPage({
     await cancelMutation.mutateAsync();
   }
 
+  async function handleReviveSession() {
+    if (!window.confirm("Revive this session and remove the cancelled state?")) {
+      return;
+    }
+    await reviveMutation.mutateAsync();
+  }
+
   return (
     <WorkspaceShell
       center={
@@ -197,56 +212,73 @@ export function MeetingPage({
             </>
           ) : (
             <>
-              <DetailHero
-                description={meeting.description || "No description yet."}
-                eyebrow="Session"
-                imageUrl={meeting.heroImageUrl}
-                meta={
-                  <>
-                    {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
-                    <span className="mini-chip">{meeting.shortName}</span>
-                    <span className="mini-chip">{formatDateTime(meeting.startsAt)}</span>
-                    <span className="mini-chip">
-                      {meeting.pricing === "free"
-                        ? "Free"
-                        : meeting.costPerPerson
-                          ? `${meeting.costPerPerson}€ / person`
-                          : "Shared costs"}
-                    </span>
-                  </>
-                }
-                titleClassName={meeting.status === "cancelled" ? "session-title--cancelled" : undefined}
-                title={meeting.title}
-              >
-                <CopyTextButton label="Copy address" value={meeting.locationAddress} />
-                <a
-                  className="button-secondary button-inline"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.locationAddress)}`}
-                  rel="noreferrer"
-                  target="_blank"
+              <section className="session-detail-main">
+                <p className="eyebrow">Session</p>
+                <h1
+                  className={`display-title typewriter-title session-detail-main__title ${meeting.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}
                 >
-                  <MapPinned size={14} strokeWidth={2} />
-                  <span>Open maps</span>
-                </a>
-              </DetailHero>
-              <div className="detail-fact-grid">
+                  {meeting.title}
+                </h1>
+                <div className="session-detail-main__hero-row">
+                  <div className={`detail-hero__media ${meeting.heroImageUrl ? "has-image" : ""}`.trim()}>
+                    {meeting.heroImageUrl ? <img alt={meeting.title} className="detail-hero__image" src={meeting.heroImageUrl} /> : null}
+                    <div className="detail-hero__fallback" aria-hidden={Boolean(meeting.heroImageUrl)}>
+                      <ImageIcon size={24} strokeWidth={1.8} />
+                    </div>
+                  </div>
+                  <div className="session-detail-main__summary">
+                    {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
+                    <p className="detail-hero__description">{meeting.description || "No description yet."}</p>
+                  </div>
+                </div>
+              </section>
+              <div className="detail-fact-grid detail-fact-grid--session">
                 <article className="detail-fact-card">
                   <span className="panel-caption">Time</span>
-                  <strong>{formatDateTime(meeting.startsAt)}</strong>
-                </article>
-                <article className="detail-fact-card">
-                  <span className="panel-caption">Venue</span>
-                  <strong>{meeting.locationName}</strong>
+                  <strong className="detail-fact-card__value--mono">{formatDateTimeWithWeekdayShort(meeting.startsAt)}</strong>
                 </article>
                 <article className="detail-fact-card">
                   <span className="panel-caption">Access</span>
-                  <strong>
+                  <strong className="detail-fact-card__value--mono">
                     {meeting.pricing === "free"
                       ? "Free to join"
                       : meeting.costPerPerson
                         ? `${meeting.costPerPerson}€ / person`
                         : "Estimated shared costs"}
                   </strong>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Location</span>
+                  <strong className="detail-fact-card__value--mono">{meeting.locationName}</strong>
+                  <p className="detail-fact-card__body">{meeting.locationAddress}</p>
+                  <div className="detail-hero__actions">
+                    <CopyTextButton label="Copy address" value={meeting.locationAddress} />
+                    <a
+                      className="button-secondary button-inline"
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.locationAddress)}`}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <Compass size={14} strokeWidth={2} />
+                      <span>Google Maps</span>
+                    </a>
+                    {meeting.venueId ? (
+                      <Link className="button-secondary button-inline" to={`/venues/${meeting.venueId}`}>
+                        <MapPinned size={14} strokeWidth={2} />
+                        <span>Open Venue</span>
+                      </Link>
+                    ) : null}
+                  </div>
+                </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Group</span>
+                  <strong className="detail-fact-card__value--mono">{meeting.groupName}</strong>
+                  <div className="detail-link-list">
+                    <Link className="button-secondary button-inline" to={`/groups/${meeting.groupId}`}>
+                      <Users size={14} strokeWidth={2} />
+                      <span>Open Group</span>
+                    </Link>
+                  </div>
                 </article>
               </div>
               <PostBoard
@@ -255,7 +287,7 @@ export function MeetingPage({
                 emptyLabel="No updates yet."
                 onSubmit={async (content) => postMutation.mutateAsync(content)}
                 posts={posts}
-                title="Pin board"
+                title="Pin board Session Updates"
               />
             </>
           )}
@@ -265,51 +297,6 @@ export function MeetingPage({
       detailCloseTo={closeTarget.fromPath}
       left={
         <div className="stack-panel">
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Availability</span>
-            <strong>{meeting.claimedSpots}/{meeting.capacity} occupied</strong>
-            {meeting.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Attending</span> : null}
-          </div>
-          {viewer ? (
-            <button className="button-primary" onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)} type="button">
-              <Users size={14} strokeWidth={2} />
-              {meeting.viewerHasClaimed ? "Release spot" : "Claim spot"}
-            </button>
-          ) : null}
-          <a
-            className="button-secondary"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.locationAddress)}`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <MapPinned size={14} strokeWidth={2} />
-            Open in Google Maps
-          </a>
-          <CopyTextButton label="Copy address" value={meeting.locationAddress} />
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Practical</span>
-            <div className="detail-meta-list">
-              <span><Clock3 size={14} strokeWidth={2} />{meeting.locationName}</span>
-              <span>
-                <CircleDollarSign size={14} strokeWidth={2} />
-                {meeting.pricing === "free"
-                  ? "Free"
-                  : meeting.costPerPerson
-                    ? `${meeting.costPerPerson}€ / person`
-                    : "Shared costs"}
-              </span>
-            </div>
-          </div>
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Roster</span>
-            <div className="detail-link-list">
-              {claims.map((claim) => (
-                <Link className="mini-link" key={claim.id} to={`/profile/${claim.id}`}>
-                  {claim.displayName}
-                </Link>
-              ))}
-            </div>
-          </div>
           {canManage ? (
             <>
               <button
@@ -326,9 +313,15 @@ export function MeetingPage({
                   {editingMode === "series" ? "Close series edit" : "Edit series"}
                 </button>
               ) : null}
-              <button className="button-danger" onClick={handleCancelSession} type="button">
-                Cancel session
-              </button>
+              {meeting.status === "cancelled" ? (
+                <button className="button-primary" onClick={handleReviveSession} type="button">
+                  Revive session
+                </button>
+              ) : (
+                <button className="button-danger" onClick={handleCancelSession} type="button">
+                  Cancel session
+                </button>
+              )}
             </>
           ) : null}
         </div>
@@ -337,22 +330,27 @@ export function MeetingPage({
       onLogOut={onLogOut}
       right={
         <div className="stack-panel">
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Group</span>
-            <strong>{meeting.groupName}</strong>
-            <Link className="mini-link" to={`/groups/${meeting.groupId}`}>
-              Open group
-            </Link>
-          </div>
-          {meeting.venueId ? (
-            <div className="detail-card detail-card--compact">
-              <span className="panel-caption">Venue</span>
-              <strong>{meeting.locationName}</strong>
-              <Link className="mini-link" to={`/venues/${meeting.venueId}`}>
-                Open venue
-              </Link>
+          <section className="detail-section">
+            <span className="panel-caption">Availability</span>
+            <strong className="detail-section__value">{meeting.claimedSpots}/{meeting.capacity} occupied</strong>
+            {meeting.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Attending</span> : null}
+            {viewer ? (
+              <button className="button-primary" onClick={() => claimMutation.mutate(meeting.viewerHasClaimed)} type="button">
+                <Users size={14} strokeWidth={2} />
+                {meeting.viewerHasClaimed ? "Release spot" : "Claim spot"}
+              </button>
+            ) : null}
+          </section>
+          <section className="detail-section">
+            <span className="panel-caption">Attendees</span>
+            <div className="detail-link-list">
+              {claims.map((claim) => (
+                <Link className="mini-link" key={claim.id} to={`/profile/${claim.id}`}>
+                  {claim.displayName}
+                </Link>
+              ))}
             </div>
-          ) : null}
+          </section>
         </div>
       }
       rightHeader={undefined}

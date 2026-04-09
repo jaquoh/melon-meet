@@ -124,11 +124,15 @@ export function EventTimeline({
               <div className="timeline-card__meta-row">
                 <p className="timeline-card__meta">{meta}</p>
                 <div className="timeline-card__tags timeline-card__tags--bottom-right">
-                  {date.isToday ? <span className="badge-accent">Today</span> : null}
                   {meeting.seriesId && !meeting.viewerHasClaimed ? <span className="badge-outline">Series</span> : null}
                   {meeting.viewerHasClaimed ? <span className="badge-accent">Claimed</span> : null}
                 </div>
               </div>
+              {date.isToday ? (
+                <div className="timeline-card__notice-row">
+                  <span className="badge-accent">Today</span>
+                </div>
+              ) : null}
             </>
           );
 

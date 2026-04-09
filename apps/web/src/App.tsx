@@ -4,7 +4,6 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
-import { AuthPage } from "./pages/AuthPage";
 import { DiscoveryPage } from "./pages/DiscoveryPage";
 import { GroupPage } from "./pages/GroupPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -52,8 +51,8 @@ function AppShell() {
 
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/auth" element={<AuthPage viewer={viewer} />} />
+      <Route path="/" element={<LandingPage viewer={viewer} />} />
+      <Route path="/auth" element={<Navigate replace to="/" />} />
       <Route
         path="/map"
         element={

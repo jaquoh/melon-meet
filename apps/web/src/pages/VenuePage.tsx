@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Clock3, ExternalLink, MapPinned } from "lucide-react";
+import { Image as ImageIcon, MapPinned } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { CopyTextButton } from "../components/CopyTextButton";
-import { DetailHero } from "../components/DetailHero";
 import { EventTimeline } from "../components/EventTimeline";
 import { WorkspaceShell } from "../components/WorkspaceShell";
 import { getVenue } from "../lib/api";
@@ -44,100 +43,93 @@ export function VenuePage({
       center={
         <div className="workspace-detail-scroll">
           <div className="stack-panel">
-            <DetailHero
-              description={venue.description}
-              eyebrow="Venue"
-              imageUrl={venue.heroImageUrl}
-              meta={
-                <>
-                  <span className="mini-chip">{venue.pricing === "free" ? "Free access" : "Paid access"}</span>
-                  {venue.openingHoursText ? <span className="mini-chip">{venue.openingHoursText}</span> : null}
-                </>
-              }
-              title={venue.name}
-            >
-              <CopyTextButton label="Copy address" value={venue.address} />
-              <a
-                className="button-secondary button-inline"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <MapPinned size={14} strokeWidth={2} />
-                <span>Open maps</span>
-              </a>
-            </DetailHero>
-            <div className="detail-fact-grid">
-              <article className="detail-fact-card">
-                <span className="panel-caption">Address</span>
-                <strong>{venue.address}</strong>
-              </article>
+            <section className="session-detail-main">
+              <p className="eyebrow">Venue</p>
+              <h1 className="display-title typewriter-title session-detail-main__title">{venue.name}</h1>
+                <div className="session-detail-main__hero-row">
+                  <div className={`detail-hero__media ${venue.heroImageUrl ? "has-image" : ""}`.trim()}>
+                    {venue.heroImageUrl ? <img alt={venue.name} className="detail-hero__image" src={venue.heroImageUrl} /> : null}
+                    <div className="detail-hero__fallback" aria-hidden={Boolean(venue.heroImageUrl)}>
+                      <ImageIcon size={24} strokeWidth={1.8} />
+                    </div>
+                  </div>
+                  <div className="session-detail-main__summary">
+                    <p className="detail-hero__description">{venue.description || "No description yet."}</p>
+                  </div>
+                </div>
+              </section>
+            <div className="detail-fact-grid detail-fact-grid--session">
               <article className="detail-fact-card">
                 <span className="panel-caption">Access</span>
-                <strong>{venue.pricing === "free" ? "Free courts" : "Paid booking"}</strong>
+                <strong className="detail-fact-card__value--mono">{venue.pricing === "free" ? "Free courts" : "Paid booking"}</strong>
               </article>
               <article className="detail-fact-card">
                 <span className="panel-caption">Opening hours</span>
-                <strong>{venue.openingHoursText || "Check source before you go"}</strong>
+                <strong className="detail-fact-card__value--mono">{venue.openingHoursText || "Check source before you go"}</strong>
               </article>
+                <article className="detail-fact-card">
+                  <span className="panel-caption">Location</span>
+                  <strong className="detail-fact-card__value--mono">{venue.address}</strong>
+                  <div className="detail-hero__actions">
+                  <CopyTextButton label="Copy address" value={venue.address} />
+                  <a
+                    className="button-secondary button-inline"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <MapPinned size={14} strokeWidth={2} />
+                    <span>Open maps</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
             </div>
           </div>
-        </div>
       }
       detailCloseTo={closeTarget.fromPath}
       left={
         <div className="stack-panel">
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Quick links</span>
+          {(venue.bookingUrl || venue.sourceUrl) ? (
+            <section className="detail-section">
+              <span className="panel-caption">Links</span>
+              <div className="detail-link-list">
+                {venue.bookingUrl ? (
+                  <a className="mini-link" href={venue.bookingUrl} rel="noreferrer" target="_blank">
+                    Booking page
+                  </a>
+                ) : null}
+                {venue.sourceUrl ? (
+                  <a className="mini-link" href={venue.sourceUrl} rel="noreferrer" target="_blank">
+                    Website
+                  </a>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+          {(venue.bookingUrl || venue.sourceUrl) ? <div className="list-divider" /> : null}
+          <section className="detail-section">
+            <span className="panel-caption">Map</span>
             <div className="detail-link-list">
-              <Link className="mini-link" to="/map">
-                Back to map
-              </Link>
               <Link className="mini-link" to={`/map?venue=${venue.id}`}>
                 Open venue on map
               </Link>
             </div>
-          </div>
-          {venue.bookingUrl ? (
-            <a className="button-secondary" href={venue.bookingUrl} rel="noreferrer" target="_blank">
-              <ExternalLink size={14} strokeWidth={2} />
-              Booking page
-            </a>
-          ) : null}
-          <a
-            className="button-secondary"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <MapPinned size={14} strokeWidth={2} />
-            Open Google Maps
-          </a>
-          {venue.sourceUrl ? (
-            <a className="button-secondary" href={venue.sourceUrl} rel="noreferrer" target="_blank">
-              <ExternalLink size={14} strokeWidth={2} />
-              Source
-            </a>
-          ) : null}
-          <div className="detail-card detail-card--compact">
-            <span className="panel-caption">Practical</span>
-            <div className="detail-meta-list">
-              <span><Clock3 size={14} strokeWidth={2} />{venue.openingHoursText || "Hours vary"}</span>
-              <span><MapPinned size={14} strokeWidth={2} />Berlin venue</span>
-            </div>
-          </div>
+          </section>
         </div>
       }
       leftHeader={undefined}
       onLogOut={onLogOut}
       right={
-        <EventTimeline
-          contextLabel={venue.name}
-          emptyLabel="No upcoming sessions at this venue."
-          heading="Upcoming sessions"
-          meetings={meetings}
-          secondaryMeta="group"
-        />
+        <div className="stack-panel">
+          <EventTimeline
+            contextLabel={venue.name}
+            emptyLabel="No upcoming sessions at this venue."
+            heading="Upcoming sessions"
+            meetings={meetings}
+            secondaryMeta="group"
+          />
+        </div>
       }
       rightHeader={undefined}
       theme={theme}

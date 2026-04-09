@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Filter, List, Map as MapIcon, MapPin, Users } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { EventTimeline } from "../components/EventTimeline";
@@ -14,7 +14,7 @@ import { queryClient } from "../lib/query-client";
 
 type DisplayMode = "list" | "map";
 type ItemMode = "groups" | "sessions" | "venues";
-type TimePreset = "custom" | "next-weekend" | "this-month" | "this-week" | "today" | "tomorrow";
+type TimePreset = "all-sessions" | "custom" | "next-week" | "this-month" | "this-week" | "today" | "tomorrow";
 
 interface DiscoveryBounds {
   east: number;
@@ -57,9 +57,20 @@ function formatSessionPrice(meeting: MeetingSummary) {
   return "Paid";
 }
 
+function timePresetLabel(preset: TimePreset) {
+  if (preset === "all-sessions") return "All sessions";
+  if (preset === "next-week") return "Next week";
+  if (preset === "this-week") return "This week";
+  if (preset === "this-month") return "This month";
+  return preset.charAt(0).toUpperCase() + preset.slice(1).replace("-", " ");
+}
+
 function windowForPreset(preset: TimePreset, customStartAt: string, customEndAt: string) {
   const now = new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (preset === "all-sessions") {
+    return { endAt: undefined, startAt: undefined };
+  }
   if (preset === "today") {
     return { endAt: toIso(new Date(dayStart.getTime() + 86400000 - 1)), startAt: toIso(dayStart) };
   }
@@ -73,8 +84,10 @@ function windowForPreset(preset: TimePreset, customStartAt: string, customEndAt:
   if (preset === "this-month") {
     return { endAt: toIso(new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)), startAt: toIso(now) };
   }
-  if (preset === "next-weekend") {
-    return { endAt: toIso(new Date(now.getTime() + 10 * 86400000)), startAt: toIso(new Date(now.getTime() + 5 * 86400000)) };
+  if (preset === "next-week") {
+    const nextWeekStart = new Date(dayStart.getTime() + 7 * 86400000);
+    const nextWeekEnd = new Date(dayStart.getTime() + 14 * 86400000 - 1);
+    return { endAt: toIso(nextWeekEnd), startAt: toIso(nextWeekStart) };
   }
   return {
     endAt: customEndAt ? new Date(customEndAt).toISOString() : undefined,
@@ -98,6 +111,7 @@ export function DiscoveryPage({
   viewer: ViewerSummary | null;
 }) {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [displayMode, setDisplayMode] = useState<DisplayMode>(initialDisplayMode);
   const [itemMode, setItemMode] = useState<ItemMode>(initialItemMode);
   const [bounds, setBounds] = useState<DiscoveryBounds>(INITIAL_BOUNDS);
@@ -141,12 +155,12 @@ export function DiscoveryPage({
     queryFn: () =>
       getMap({
         east: queryBounds.east,
-        endAt: itemMode === "sessions" ? timeWindow.endAt : undefined,
+        endAt: itemMode !== "venues" ? timeWindow.endAt : undefined,
         north: queryBounds.north,
         openOnly: queryBounds.openOnly,
         pricing: queryBounds.pricing,
         south: queryBounds.south,
-        startAt: itemMode === "sessions" ? timeWindow.startAt : undefined,
+        startAt: itemMode !== "venues" ? timeWindow.startAt : undefined,
         west: queryBounds.west,
       }),
     placeholderData: (previousData) => previousData,
@@ -176,6 +190,23 @@ export function DiscoveryPage({
   const groups = groupsQuery.data?.groups ?? [];
   const memberGroups = groups.filter((group) => group.viewerRole);
   const publicGroups = groups.filter((group) => group.visibility === "public" && !group.viewerRole);
+  const selectedVenueIdFromQuery = searchParams.get("venue");
+
+  function clearVenueQueryParam() {
+    if (!searchParams.has("venue")) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("venue");
+    setSearchParams(next, { replace: true });
+  }
+
+  function setItemModeSafely(nextMode: ItemMode) {
+    if (nextMode !== "venues") {
+      clearVenueQueryParam();
+    }
+    setItemMode(nextMode);
+  }
 
   const venueMeetingsById = useMemo(
     () =>
@@ -202,11 +233,13 @@ export function DiscoveryPage({
     () =>
       publicGroups
         .map((group) => {
-          const nextMeeting = (groupMeetingsById[group.id] ?? [])[0] ?? null;
+          const filteredMeetings = groupMeetingsById[group.id] ?? [];
+          const nextMeeting = filteredMeetings[0] ?? null;
           if (!nextMeeting) {
             return null;
           }
           return {
+            filteredSessionCount: filteredMeetings.length,
             group,
             latitude: nextMeeting.latitude,
             longitude: nextMeeting.longitude,
@@ -216,6 +249,23 @@ export function DiscoveryPage({
         .filter((value): value is NonNullable<typeof value> => Boolean(value)),
     [groupMeetingsById, publicGroups],
   );
+
+  useEffect(() => {
+    if (!selectedVenueIdFromQuery) {
+      return;
+    }
+    const venue = venues.find((entry) => entry.id === selectedVenueIdFromQuery) ?? null;
+    if (!venue && venues.length > 0) {
+      clearVenueQueryParam();
+      return;
+    }
+    setDisplayMode("map");
+    setItemMode("venues");
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedGroup(null);
+    setSelectedVenue(venue);
+  }, [selectedVenueIdFromQuery, venues]);
 
   const selectedTitle =
     selectedMeeting?.title ?? selectedMeetingCluster?.title ?? selectedVenue?.name ?? selectedGroup?.name ?? "";
@@ -229,6 +279,7 @@ export function DiscoveryPage({
     setSelectedMeetingCluster(null);
     setSelectedVenue(null);
     setSelectedGroup(null);
+    clearVenueQueryParam();
   };
   const handleMapBackgroundClick = () => {
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches) {
@@ -309,6 +360,7 @@ export function DiscoveryPage({
       <EventTimeline
         contextLabel="Venue"
         emptyLabel="No sessions at this venue yet."
+        heading={`Sessions @${selectedVenue.name}`}
         meetings={selectedVenueMeetings}
         secondaryMeta="group"
         showGroupLabel
@@ -341,6 +393,7 @@ export function DiscoveryPage({
       <EventTimeline
         contextLabel="Group"
         emptyLabel="No sessions created by this group yet."
+        heading={`Sessions from ${selectedGroup.name}`}
         meetings={selectedGroupMeetings}
         secondaryMeta="location"
         showGroupLabel={false}
@@ -364,28 +417,28 @@ export function DiscoveryPage({
       {showMobileFilters ? (
         <div className="filter-dropdown__panel">
           <div className="workspace-segmented workspace-segmented--column">
-            <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemMode("sessions")} type="button">
+            <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemModeSafely("sessions")} type="button">
               <CalendarRange size={14} strokeWidth={2} />
               <span>Sessions</span>
             </button>
-            <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemMode("groups")} type="button">
+            <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
               <Users size={14} strokeWidth={2} />
               <span>Groups</span>
             </button>
-            <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemMode("venues")} type="button">
+            <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
               <MapPin size={14} strokeWidth={2} />
               <span>Venues</span>
             </button>
           </div>
           <div className="time-filter-group">
-            {(["today", "tomorrow", "this-week", "next-weekend", "this-month", "custom"] as TimePreset[]).map((preset) => (
+            {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
               <button
                 className={timePreset === preset ? "is-active" : ""}
                 key={preset}
                 onClick={() => setTimePreset(preset)}
                 type="button"
               >
-                {preset.replace("-", " ")}
+                {timePresetLabel(preset)}
               </button>
             ))}
           </div>
@@ -653,15 +706,15 @@ export function DiscoveryPage({
           </div>
 
           <div className="workspace-segmented workspace-segmented--column">
-            <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemMode("venues")} type="button">
+            <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
               <MapPin size={14} strokeWidth={2} />
               <span>Venues</span>
             </button>
-            <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemMode("groups")} type="button">
+            <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
               <Users size={14} strokeWidth={2} />
               <span>Groups</span>
             </button>
-            <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemMode("sessions")} type="button">
+            <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemModeSafely("sessions")} type="button">
               <CalendarRange size={14} strokeWidth={2} />
               <span>Sessions</span>
             </button>
@@ -669,15 +722,15 @@ export function DiscoveryPage({
 
           <div className="stack-panel">
             <p className="panel-caption">Filters</p>
-            <div className="time-filter-group">
-              {(["today", "tomorrow", "this-week", "next-weekend", "this-month", "custom"] as TimePreset[]).map((preset) => (
+          <div className="time-filter-group">
+              {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
                 <button
                   className={timePreset === preset ? "is-active" : ""}
                   key={preset}
                   onClick={() => setTimePreset(preset)}
                   type="button"
                 >
-                  {preset.replace("-", " ")}
+                  {timePresetLabel(preset)}
                 </button>
               ))}
             </div>
