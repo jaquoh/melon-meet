@@ -2224,23 +2224,6 @@ img {
     justify-self: center;
   }
 
-  .landing-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-shell__center {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .landing-shell__center {
-    order: 1;
-  }
-
-  .landing-shell__right {
-    order: 2;
-  }
-
   .landing-entry-actions {
     grid-template-columns: 1fr;
   }
@@ -2568,5 +2551,31 @@ img {
 
   .player-card__art {
     min-height: 13rem;
+  }
+}
+
+@media (max-width: 1120px) {
+  .landing-shell {
+    height: auto;
+    min-height: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: max-content max-content;
+    align-content: start;
+  }
+
+  .landing-shell-frame {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .landing-shell__center {
+    order: 1;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .landing-shell__right {
+    order: 2;
+    overflow: visible;
   }
 }
