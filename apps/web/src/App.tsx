@@ -92,6 +92,19 @@ function AppShell() {
           />
         }
       />
+      <Route
+        path="/discover"
+        element={
+          <DiscoveryPage
+            initialDisplayMode="map"
+            initialItemMode="sessions"
+            onLogOut={() => logoutMutation.mutate()}
+            theme={theme}
+            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            viewer={viewer}
+          />
+        }
+      />
       <Route path="/meetings/:meetingId" element={<Navigate replace to="/sessions/:meetingId" />} />
       <Route
         path="/groups/:groupId"

@@ -84,7 +84,7 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
                     Sign up when you want to contribute, organise, and unlock the full board.
                   </p>
                   <p className="landing-hero__text">
-                    Contribute, add venues, create public or private groups, and attend public or private sessions. Public browsing stays open, but signing in turns discovery into participation.
+                    Contribute, create public or private groups and attend sessions. Public browsing stays open, but signing in turns discovery into participation.
                   </p>
                 </div>
 

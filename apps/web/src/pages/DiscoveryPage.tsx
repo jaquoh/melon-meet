@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarRange, Filter, List, Map as MapIcon, MapPin, Users } from "lucide-react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { ArrowRight, CalendarRange, Filter, List, Map as MapIcon, MapPin, Users, X } from "lucide-react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { EventTimeline } from "../components/EventTimeline";
@@ -15,6 +15,21 @@ import { queryClient } from "../lib/query-client";
 type DisplayMode = "list" | "map";
 type ItemMode = "groups" | "sessions" | "venues";
 type TimePreset = "all-sessions" | "custom" | "next-week" | "this-month" | "this-week" | "today" | "tomorrow";
+
+interface DiscoveryWorkspaceState {
+  bounds: DiscoveryBounds;
+  customEndAt: string;
+  customStartAt: string;
+  displayMode: DisplayMode;
+  itemMode: ItemMode;
+  selectedGroupId?: string | null;
+  selectedMeetingClusterMeetingIds?: string[];
+  selectedMeetingClusterTitle?: string | null;
+  selectedMeetingId?: string | null;
+  selectedVenueId?: string | null;
+  showMobileFilters: boolean;
+  timePreset: TimePreset;
+}
 
 interface DiscoveryBounds {
   east: number;
@@ -111,15 +126,22 @@ export function DiscoveryPage({
   viewer: ViewerSummary | null;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(initialDisplayMode);
-  const [itemMode, setItemMode] = useState<ItemMode>(initialItemMode);
-  const [bounds, setBounds] = useState<DiscoveryBounds>(INITIAL_BOUNDS);
-  const [queryBounds, setQueryBounds] = useState<DiscoveryBounds>(INITIAL_BOUNDS);
-  const [timePreset, setTimePreset] = useState<TimePreset>("this-week");
-  const [customStartAt, setCustomStartAt] = useState(formatDateInput(new Date()));
-  const [customEndAt, setCustomEndAt] = useState(formatDateInput(new Date(Date.now() + 2 * 60 * 60 * 1000)));
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const workspaceState =
+    location.state && typeof location.state === "object" && "discoveryWorkspace" in location.state
+      ? (location.state as { discoveryWorkspace?: DiscoveryWorkspaceState }).discoveryWorkspace
+      : undefined;
+  const defaultCustomStartAt = formatDateInput(new Date());
+  const defaultCustomEndAt = formatDateInput(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(workspaceState?.displayMode ?? initialDisplayMode);
+  const [itemMode, setItemMode] = useState<ItemMode>(workspaceState?.itemMode ?? initialItemMode);
+  const [bounds, setBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
+  const [queryBounds, setQueryBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
+  const [timePreset, setTimePreset] = useState<TimePreset>(workspaceState?.timePreset ?? "this-week");
+  const [customStartAt, setCustomStartAt] = useState(workspaceState?.customStartAt ?? defaultCustomStartAt);
+  const [customEndAt, setCustomEndAt] = useState(workspaceState?.customEndAt ?? defaultCustomEndAt);
+  const [showMobileFilters, setShowMobileFilters] = useState(workspaceState?.showMobileFilters ?? false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingSummary | null>(null);
   const [selectedMeetingCluster, setSelectedMeetingCluster] = useState<{
     lookupKey: string;
@@ -128,6 +150,17 @@ export function DiscoveryPage({
   } | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<VenueSummary | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupSummary | null>(null);
+  const [pendingSelectionState, setPendingSelectionState] = useState(() =>
+    workspaceState
+      ? {
+          selectedGroupId: workspaceState.selectedGroupId ?? null,
+          selectedMeetingClusterMeetingIds: workspaceState.selectedMeetingClusterMeetingIds ?? [],
+          selectedMeetingClusterTitle: workspaceState.selectedMeetingClusterTitle ?? null,
+          selectedMeetingId: workspaceState.selectedMeetingId ?? null,
+          selectedVenueId: workspaceState.selectedVenueId ?? null,
+        }
+      : null,
+  );
   const timeWindow = useMemo(
     () => windowForPreset(timePreset, customStartAt, customEndAt),
     [customEndAt, customStartAt, timePreset],
@@ -201,7 +234,50 @@ export function DiscoveryPage({
     setSearchParams(next, { replace: true });
   }
 
+  function buildWorkspaceState(
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+  ): DiscoveryWorkspaceState {
+    const cluster = overrides.selectedMeetingCluster ?? selectedMeetingCluster;
+    return {
+      bounds,
+      customEndAt,
+      customStartAt,
+      displayMode,
+      itemMode,
+      selectedGroupId: overrides.selectedGroupId ?? selectedGroup?.id ?? null,
+      selectedMeetingClusterMeetingIds: overrides.selectedMeetingClusterMeetingIds ?? cluster?.meetings.map((meeting) => meeting.id) ?? [],
+      selectedMeetingClusterTitle: overrides.selectedMeetingClusterTitle ?? cluster?.title ?? null,
+      selectedMeetingId: overrides.selectedMeetingId ?? selectedMeeting?.id ?? null,
+      selectedVenueId: overrides.selectedVenueId ?? selectedVenue?.id ?? null,
+      showMobileFilters,
+      timePreset,
+    };
+  }
+
+  function normalizeWorkspacePath(
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+  ) {
+    if (location.pathname === "/discover") {
+      return;
+    }
+    const search = searchParams.toString();
+    navigate(
+      {
+        pathname: "/discover",
+        search: search ? `?${search}` : "",
+      },
+      {
+        replace: true,
+        state: {
+          ...(location.state && typeof location.state === "object" ? location.state : {}),
+          discoveryWorkspace: buildWorkspaceState(overrides),
+        },
+      },
+    );
+  }
+
   function setItemModeSafely(nextMode: ItemMode) {
+    normalizeWorkspacePath({ itemMode: nextMode });
     if (nextMode !== "venues") {
       clearVenueQueryParam();
     }
@@ -267,6 +343,63 @@ export function DiscoveryPage({
     setSelectedVenue(venue);
   }, [selectedVenueIdFromQuery, venues]);
 
+  useEffect(() => {
+    if (!pendingSelectionState || selectedVenueIdFromQuery) {
+      return;
+    }
+
+    const clusterMeetings =
+      pendingSelectionState.selectedMeetingClusterMeetingIds.length > 0
+        ? meetings.filter((meeting) => pendingSelectionState.selectedMeetingClusterMeetingIds.includes(meeting.id))
+        : [];
+
+    if (clusterMeetings.length > 0) {
+      setSelectedMeetingCluster({
+        lookupKey: clusterMeetings.map((meeting) => meeting.id).sort().join(":"),
+        meetings: clusterMeetings,
+        title: pendingSelectionState.selectedMeetingClusterTitle ?? `${clusterMeetings.length} sessions`,
+      });
+      setPendingSelectionState(null);
+      return;
+    }
+
+    if (pendingSelectionState.selectedMeetingId) {
+      const meeting = meetings.find((entry) => entry.id === pendingSelectionState.selectedMeetingId);
+      if (meeting) {
+        setSelectedMeeting(meeting);
+        setPendingSelectionState(null);
+        return;
+      }
+    }
+
+    if (pendingSelectionState.selectedVenueId) {
+      const venue = venues.find((entry) => entry.id === pendingSelectionState.selectedVenueId);
+      if (venue) {
+        setSelectedVenue(venue);
+        setPendingSelectionState(null);
+        return;
+      }
+    }
+
+    if (pendingSelectionState.selectedGroupId) {
+      const group = groups.find((entry) => entry.id === pendingSelectionState.selectedGroupId);
+      if (group) {
+        setSelectedGroup(group);
+        setPendingSelectionState(null);
+        return;
+      }
+    }
+
+    if (
+      !pendingSelectionState.selectedMeetingId &&
+      !pendingSelectionState.selectedVenueId &&
+      !pendingSelectionState.selectedGroupId &&
+      pendingSelectionState.selectedMeetingClusterMeetingIds.length === 0
+    ) {
+      setPendingSelectionState(null);
+    }
+  }, [groups, meetings, pendingSelectionState, selectedVenueIdFromQuery, venues]);
+
   const selectedTitle =
     selectedMeeting?.title ?? selectedMeetingCluster?.title ?? selectedVenue?.name ?? selectedGroup?.name ?? "";
   const listHeading = itemMode === "groups" ? "Groups:" : itemMode === "venues" ? "Venues:" : "Sessions:";
@@ -275,6 +408,13 @@ export function DiscoveryPage({
   const selectedGroupMeetings = selectedGroup ? groupMeetingsById[selectedGroup.id] ?? [] : [];
   const hasSelection = Boolean(selectedMeeting || selectedMeetingCluster || selectedVenue || selectedGroup);
   const clearSelection = () => {
+    normalizeWorkspacePath({
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+    });
     setSelectedMeeting(null);
     setSelectedMeetingCluster(null);
     setSelectedVenue(null);
@@ -287,6 +427,28 @@ export function DiscoveryPage({
       setShowMobileFilters(false);
     }
   };
+
+  const selectionTarget = selectedMeeting
+    ? { label: "Go to Session", to: `/sessions/${selectedMeeting.id}` }
+    : selectedVenue
+      ? { label: "Go to Venue", to: `/venues/${selectedVenue.id}` }
+      : selectedGroup
+        ? { label: "Go to Group", to: `/groups/${selectedGroup.id}` }
+        : null;
+
+  const selectionHeaderActions = hasSelection ? (
+    <div className="workspace-panel-header-actions">
+      {selectionTarget ? (
+        <Link className="button-secondary workspace-panel-header-link" state={navState} to={selectionTarget.to}>
+          <span>{selectionTarget.label}</span>
+          <ArrowRight size={14} strokeWidth={2} />
+        </Link>
+      ) : null}
+      <button className="button-secondary workspace-panel-close-square" onClick={clearSelection} type="button">
+        <X size={16} strokeWidth={2} />
+      </button>
+    </div>
+  ) : null;
 
   const selectionPanel = selectedMeetingCluster ? (
     <div className="stack-panel">
@@ -336,9 +498,6 @@ export function DiscoveryPage({
             {selectedMeeting.viewerHasClaimed ? "Release" : "Claim spot"}
           </button>
         ) : null}
-        <Link className="button-secondary" state={navState} to={`/sessions/${selectedMeeting.id}`}>
-          Open session
-        </Link>
       </div>
     </div>
   ) : selectedVenue ? (
@@ -351,11 +510,6 @@ export function DiscoveryPage({
         <h3>{selectedVenue.name}</h3>
         <p>{selectedVenue.address}</p>
         <p>{selectedVenue.description}</p>
-      </div>
-      <div className="workspace-button-row">
-        <Link className="button-secondary" state={navState} to={`/venues/${selectedVenue.id}`}>
-          Open venue
-        </Link>
       </div>
       <EventTimeline
         contextLabel="Venue"
@@ -381,9 +535,6 @@ export function DiscoveryPage({
         </div>
       </div>
       <div className="workspace-button-row">
-        <Link className="button-secondary" state={navState} to={`/groups/${selectedGroup.id}`}>
-          Open group
-        </Link>
         {!selectedGroup.viewerRole && viewer ? (
           <button className="button-primary" onClick={() => membershipMutation.mutate(selectedGroup.id)} type="button">
             Request membership
@@ -435,7 +586,10 @@ export function DiscoveryPage({
               <button
                 className={timePreset === preset ? "is-active" : ""}
                 key={preset}
-                onClick={() => setTimePreset(preset)}
+                onClick={() => {
+                  normalizeWorkspacePath({ timePreset: preset });
+                  setTimePreset(preset);
+                }}
                 type="button"
               >
                 {timePresetLabel(preset)}
@@ -446,38 +600,68 @@ export function DiscoveryPage({
             <div className="custom-range-grid">
               <label className="field-stack">
                 <span className="field-label">From</span>
-                <input className="field-input" onChange={(event) => setCustomStartAt(event.target.value)} type="datetime-local" value={customStartAt} />
+                <input
+                  className="field-input"
+                  onChange={(event) => {
+                    normalizeWorkspacePath({ customStartAt: event.target.value });
+                    setCustomStartAt(event.target.value);
+                  }}
+                  type="datetime-local"
+                  value={customStartAt}
+                />
               </label>
               <label className="field-stack">
                 <span className="field-label">To</span>
-                <input className="field-input" onChange={(event) => setCustomEndAt(event.target.value)} type="datetime-local" value={customEndAt} />
+                <input
+                  className="field-input"
+                  onChange={(event) => {
+                    normalizeWorkspacePath({ customEndAt: event.target.value });
+                    setCustomEndAt(event.target.value);
+                  }}
+                  type="datetime-local"
+                  value={customEndAt}
+                />
               </label>
             </div>
           ) : null}
           <FilterCheckbox
             checked={bounds.pricing !== "paid"}
             label="Free"
-            onChange={(checked) =>
-              setBounds((current) => ({
-                ...current,
-                pricing: checked ? (current.pricing === "paid" ? "all" : current.pricing) : "paid",
-              }))
+              onChange={(checked) =>
+              setBounds((current) => {
+                const next: DiscoveryBounds = {
+                  ...current,
+                  pricing: checked ? (current.pricing === "paid" ? "all" : current.pricing) : "paid",
+                };
+                normalizeWorkspacePath({ bounds: next });
+                return next;
+              })
             }
           />
           <FilterCheckbox
             checked={bounds.pricing !== "free"}
             label="Paid"
-            onChange={(checked) =>
-              setBounds((current) => ({
-                ...current,
-                pricing: checked ? (current.pricing === "free" ? "all" : current.pricing) : "free",
-              }))
+              onChange={(checked) =>
+              setBounds((current) => {
+                const next: DiscoveryBounds = {
+                  ...current,
+                  pricing: checked ? (current.pricing === "free" ? "all" : current.pricing) : "free",
+                };
+                normalizeWorkspacePath({ bounds: next });
+                return next;
+              })
             }
           />
           <FilterCheckbox
             checked={bounds.openOnly}
             label="Free spots only"
-            onChange={(checked) => setBounds((current) => ({ ...current, openOnly: checked }))}
+            onChange={(checked) =>
+              setBounds((current) => {
+                const next = { ...current, openOnly: checked };
+                normalizeWorkspacePath({ bounds: next });
+                return next;
+              })
+            }
           />
         </div>
       ) : null}
@@ -486,11 +670,25 @@ export function DiscoveryPage({
 
   const mobileDisplaySwitch = (
     <div className="workspace-segmented workspace-segmented--floating">
-      <button className={displayMode === "map" ? "is-active" : ""} onClick={() => setDisplayMode("map")} type="button">
+      <button
+        className={displayMode === "map" ? "is-active" : ""}
+        onClick={() => {
+          normalizeWorkspacePath({ displayMode: "map" });
+          setDisplayMode("map");
+        }}
+        type="button"
+      >
         <MapIcon size={14} strokeWidth={2} />
         <span>Map</span>
       </button>
-      <button className={displayMode === "list" ? "is-active" : ""} onClick={() => setDisplayMode("list")} type="button">
+      <button
+        className={displayMode === "list" ? "is-active" : ""}
+        onClick={() => {
+          normalizeWorkspacePath({ displayMode: "list" });
+          setDisplayMode("list");
+        }}
+        type="button"
+      >
         <List size={14} strokeWidth={2} />
         <span>List</span>
       </button>
@@ -516,11 +714,12 @@ export function DiscoveryPage({
           ? venues.map((venue) => (
               <button
                 className={`browse-listing ${selectedVenue?.id === venue.id ? "is-selected" : ""}`}
-                key={venue.id}
-                onClick={() => {
-                  setSelectedVenue(venue);
-                  setSelectedMeeting(null);
-                  setSelectedMeetingCluster(null);
+                      key={venue.id}
+                      onClick={() => {
+                        normalizeWorkspacePath({ selectedVenueId: venue.id, selectedMeetingId: null, selectedGroupId: null, selectedMeetingClusterMeetingIds: [] });
+                        setSelectedVenue(venue);
+                        setSelectedMeeting(null);
+                        setSelectedMeetingCluster(null);
                   setSelectedGroup(null);
                 }}
                 type="button"
@@ -543,6 +742,7 @@ export function DiscoveryPage({
                       className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
                       key={group.id}
                       onClick={() => {
+                        normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
                         setSelectedGroup(group);
                         setSelectedMeeting(null);
                         setSelectedMeetingCluster(null);
@@ -571,6 +771,7 @@ export function DiscoveryPage({
                   className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
                   key={group.id}
                   onClick={() => {
+                    normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
                     setSelectedGroup(group);
                     setSelectedMeeting(null);
                     setSelectedMeetingCluster(null);
@@ -609,12 +810,17 @@ export function DiscoveryPage({
               mode={itemMode}
               onBackgroundClick={handleMapBackgroundClick}
               onBoundsChange={(mapBounds) =>
-                setBounds((current) => ({
-                  ...current,
-                  ...mapBounds,
-                }))
+                setBounds((current) => {
+                  const next = {
+                    ...current,
+                    ...mapBounds,
+                  };
+                  normalizeWorkspacePath({ bounds: next });
+                  return next;
+                })
               }
               onGroupSelect={(group) => {
+                normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
                 setSelectedGroup(group);
                 setSelectedMeeting(null);
                 setSelectedMeetingCluster(null);
@@ -622,6 +828,14 @@ export function DiscoveryPage({
                 setShowMobileFilters(false);
               }}
               onMeetingClusterSelect={(cluster) => {
+                normalizeWorkspacePath({
+                  selectedGroupId: null,
+                  selectedMeetingCluster: cluster,
+                  selectedMeetingClusterMeetingIds: cluster.meetings.map((meeting) => meeting.id),
+                  selectedMeetingClusterTitle: cluster.title,
+                  selectedMeetingId: null,
+                  selectedVenueId: null,
+                });
                 setSelectedMeetingCluster(cluster);
                 setSelectedMeeting(null);
                 setSelectedGroup(null);
@@ -629,6 +843,7 @@ export function DiscoveryPage({
                 setShowMobileFilters(false);
               }}
               onMeetingSelect={(meeting) => {
+                normalizeWorkspacePath({ selectedMeetingId: meeting.id, selectedGroupId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
                 setSelectedMeeting(meeting);
                 setSelectedMeetingCluster(null);
                 setSelectedGroup(null);
@@ -636,6 +851,7 @@ export function DiscoveryPage({
                 setShowMobileFilters(false);
               }}
               onVenueSelect={(venue) => {
+                normalizeWorkspacePath({ selectedVenueId: venue.id, selectedMeetingId: null, selectedGroupId: null, selectedMeetingClusterMeetingIds: [] });
                 setSelectedVenue(venue);
                 setSelectedMeeting(null);
                 setSelectedMeetingCluster(null);
@@ -649,16 +865,7 @@ export function DiscoveryPage({
             />
             {hasSelection ? (
               <aside className="mobile-details-drawer is-open">
-                <div className="mobile-details-drawer__header">
-                  <span className="panel-caption">Details</span>
-                  <button
-                    className="button-secondary button-inline"
-                    onClick={clearSelection}
-                    type="button"
-                  >
-                    Close
-                  </button>
-                </div>
+                <div className="mobile-details-drawer__header">{selectionHeaderActions}</div>
                 <div className="mobile-details-drawer__body">{selectionPanel}</div>
               </aside>
             ) : null}
@@ -676,16 +883,7 @@ export function DiscoveryPage({
             {listContent}
             {hasSelection ? (
               <aside className="mobile-details-drawer is-open">
-                <div className="mobile-details-drawer__header">
-                  <span className="panel-caption">Details</span>
-                  <button
-                    className="button-secondary button-inline"
-                    onClick={clearSelection}
-                    type="button"
-                  >
-                    Close
-                  </button>
-                </div>
+                <div className="mobile-details-drawer__header">{selectionHeaderActions}</div>
                 <div className="mobile-details-drawer__body">{selectionPanel}</div>
               </aside>
             ) : null}
@@ -695,11 +893,25 @@ export function DiscoveryPage({
       left={
         <div className="stack-panel">
           <div className="workspace-segmented workspace-segmented--column">
-            <button className={displayMode === "map" ? "is-active" : ""} onClick={() => setDisplayMode("map")} type="button">
+            <button
+              className={displayMode === "map" ? "is-active" : ""}
+              onClick={() => {
+                normalizeWorkspacePath({ displayMode: "map" });
+                setDisplayMode("map");
+              }}
+              type="button"
+            >
               <MapIcon size={14} strokeWidth={2} />
               <span>Map</span>
             </button>
-            <button className={displayMode === "list" ? "is-active" : ""} onClick={() => setDisplayMode("list")} type="button">
+            <button
+              className={displayMode === "list" ? "is-active" : ""}
+              onClick={() => {
+                normalizeWorkspacePath({ displayMode: "list" });
+                setDisplayMode("list");
+              }}
+              type="button"
+            >
               <List size={14} strokeWidth={2} />
               <span>List</span>
             </button>
@@ -725,12 +937,15 @@ export function DiscoveryPage({
           <div className="time-filter-group">
               {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
                 <button
-                  className={timePreset === preset ? "is-active" : ""}
-                  key={preset}
-                  onClick={() => setTimePreset(preset)}
-                  type="button"
-                >
-                  {timePresetLabel(preset)}
+                className={timePreset === preset ? "is-active" : ""}
+                key={preset}
+                onClick={() => {
+                  normalizeWorkspacePath({ timePreset: preset });
+                  setTimePreset(preset);
+                }}
+                type="button"
+              >
+                {timePresetLabel(preset)}
                 </button>
               ))}
             </div>
@@ -738,11 +953,27 @@ export function DiscoveryPage({
               <div className="custom-range-grid">
                 <label className="field-stack">
                   <span className="field-label">From</span>
-                  <input className="field-input" onChange={(event) => setCustomStartAt(event.target.value)} type="datetime-local" value={customStartAt} />
+                  <input
+                    className="field-input"
+                    onChange={(event) => {
+                      normalizeWorkspacePath({ customStartAt: event.target.value });
+                      setCustomStartAt(event.target.value);
+                    }}
+                    type="datetime-local"
+                    value={customStartAt}
+                  />
                 </label>
                 <label className="field-stack">
                   <span className="field-label">To</span>
-                  <input className="field-input" onChange={(event) => setCustomEndAt(event.target.value)} type="datetime-local" value={customEndAt} />
+                  <input
+                    className="field-input"
+                    onChange={(event) => {
+                      normalizeWorkspacePath({ customEndAt: event.target.value });
+                      setCustomEndAt(event.target.value);
+                    }}
+                    type="datetime-local"
+                    value={customEndAt}
+                  />
                 </label>
               </div>
             ) : null}
@@ -750,26 +981,40 @@ export function DiscoveryPage({
               checked={bounds.pricing !== "paid"}
               label="Free"
               onChange={(checked) =>
-                setBounds((current) => ({
-                  ...current,
-                  pricing: checked ? (current.pricing === "paid" ? "all" : current.pricing) : "paid",
-                }))
+                setBounds((current) => {
+                  const next: DiscoveryBounds = {
+                    ...current,
+                    pricing: checked ? (current.pricing === "paid" ? "all" : current.pricing) : "paid",
+                  };
+                  normalizeWorkspacePath({ bounds: next });
+                  return next;
+                })
               }
             />
             <FilterCheckbox
               checked={bounds.pricing !== "free"}
               label="Paid"
               onChange={(checked) =>
-                setBounds((current) => ({
-                  ...current,
-                  pricing: checked ? (current.pricing === "free" ? "all" : current.pricing) : "free",
-                }))
+                setBounds((current) => {
+                  const next: DiscoveryBounds = {
+                    ...current,
+                    pricing: checked ? (current.pricing === "free" ? "all" : current.pricing) : "free",
+                  };
+                  normalizeWorkspacePath({ bounds: next });
+                  return next;
+                })
               }
             />
             <FilterCheckbox
               checked={bounds.openOnly}
               label="Free spots only"
-              onChange={(checked) => setBounds((current) => ({ ...current, openOnly: checked }))}
+              onChange={(checked) =>
+                setBounds((current) => {
+                  const next = { ...current, openOnly: checked };
+                  normalizeWorkspacePath({ bounds: next });
+                  return next;
+                })
+              }
             />
           </div>
 
@@ -791,16 +1036,7 @@ export function DiscoveryPage({
       mobileCollapsePanels
       onLogOut={onLogOut}
       right={selectionPanel}
-      rightHeader={
-        <div className="workspace-panel-header-row">
-          <span className="panel-caption">Details</span>
-          {hasSelection ? (
-            <button className="button-secondary button-inline" onClick={clearSelection} type="button">
-              Close
-            </button>
-          ) : null}
-        </div>
-      }
+      rightHeader={hasSelection ? selectionHeaderActions : undefined}
       theme={theme}
       title={selectedTitle}
       toggleTheme={toggleTheme}
