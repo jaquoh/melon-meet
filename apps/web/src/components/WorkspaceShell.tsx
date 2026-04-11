@@ -11,6 +11,7 @@ interface WorkspaceShellProps {
   left: ReactNode;
   leftHeader: ReactNode;
   mobileCollapsePanels?: boolean;
+  profileLinkState?: unknown;
   right: ReactNode;
   rightHeader: ReactNode;
   theme: ThemeMode;
@@ -28,12 +29,14 @@ export function WorkspaceShell({
   left,
   leftHeader,
   mobileCollapsePanels = false,
+  profileLinkState,
   right,
   rightHeader,
   theme,
   toggleTheme,
   viewer,
   onLogOut,
+  topCenter,
 }: WorkspaceShellProps) {
   const navigate = useNavigate();
 
@@ -73,26 +76,14 @@ export function WorkspaceShell({
         {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
       </button>
       {viewer ? (
-        <details className="workspace-user-menu">
-          <summary className="workspace-action workspace-action--primary">
-            <span className="workspace-user-pill">
-              <span className="workspace-user-pill__avatar">
-                {viewer.avatarUrl ? <img alt={viewer.displayName} src={viewer.avatarUrl} /> : viewer.displayName.slice(0, 1)}
-              </span>
-              <span>{viewer.displayName}</span>
+        <Link className="workspace-action workspace-action--primary" state={profileLinkState} to={`/profile/${viewer.id}`}>
+          <span className="workspace-user-pill">
+            <span className="workspace-user-pill__avatar">
+              {viewer.avatarUrl ? <img alt={viewer.displayName} src={viewer.avatarUrl} /> : viewer.displayName.slice(0, 1)}
             </span>
-          </summary>
-          <div className="workspace-user-menu__panel">
-            <Link className="workspace-menu-link" to={`/profile/${viewer.id}`}>
-              Profile
-            </Link>
-            {onLogOut ? (
-              <button className="workspace-menu-link" onClick={onLogOut} type="button">
-                Sign out
-              </button>
-            ) : null}
-          </div>
-        </details>
+            <span>{viewer.displayName}</span>
+          </span>
+        </Link>
       ) : (
         <Link className="workspace-action workspace-action--primary" to="/">
           Sign in
@@ -104,7 +95,7 @@ export function WorkspaceShell({
   return (
     <div className={`workspace-page ${mobileCollapsePanels ? "workspace-page--collapse" : ""}`.trim()}>
       <div
-        className={`workspace-frame ${mobileCollapsePanels ? "workspace-frame--collapse" : ""} ${detailCloseTo ? "workspace-frame--detail" : ""}`.trim()}
+        className={`workspace-frame ${topCenter ? "workspace-frame--unified" : ""} ${mobileCollapsePanels ? "workspace-frame--collapse" : ""} ${detailCloseTo ? "workspace-frame--detail" : ""}`.trim()}
       >
         <div className="workspace-shell">
           <div className="workspace-cell workspace-cell--mobile-top">
@@ -128,9 +119,11 @@ export function WorkspaceShell({
             </div>
           </Link>
 
+          {topCenter ? <div className="workspace-cell workspace-cell--top workspace-cell--top-center">{topCenter}</div> : null}
+
           <div className="workspace-cell workspace-cell--top workspace-cell--top-right">{actions}</div>
 
-          {detailCloseTo ? null : (
+          {detailCloseTo || topCenter ? null : (
             <section
               className={`workspace-cell workspace-cell--panel ${leftHeader ? "" : "workspace-cell--panel-no-header"} workspace-cell--left`.trim()}
             >

@@ -1103,7 +1103,7 @@ export function createApp() {
            description = COALESCE(?, description),
            visibility = COALESCE(?, visibility),
            activity_label = COALESCE(?, activity_label),
-           messenger_url = COALESCE(?, messenger_url),
+           messenger_url = CASE WHEN ? THEN messenger_url ELSE ? END,
            hero_image_url = COALESCE(?, hero_image_url),
            updated_at = ?
        WHERE id = ?`,
@@ -1112,6 +1112,7 @@ export function createApp() {
       input.description ?? null,
       input.visibility ?? null,
       input.activityLabel === undefined ? null : normalizeOptionalText(input.activityLabel ?? null),
+      input.messengerUrl === undefined ? 1 : 0,
       input.messengerUrl === undefined ? null : normalizeOptionalText(input.messengerUrl ?? null),
       input.heroImageUrl === undefined ? null : normalizeOptionalText(input.heroImageUrl ?? null),
       nowIso(),

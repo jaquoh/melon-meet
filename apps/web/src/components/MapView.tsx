@@ -115,18 +115,24 @@ function badgeIconId(theme: "dark" | "light", label: string, accent: string) {
 }
 
 function badgeAccent(theme: "dark" | "light", label: string) {
-  return label === "Free" ? "#2c8b61" : theme === "dark" ? "#fff7f5" : "#231d1c";
+  const palette = currentThemePalette(theme);
+  if (label === "Free") {
+    return palette.badgeFreeText;
+  }
+  if (label === "Paid" || label.includes("€")) {
+    return palette.badgePaidText;
+  }
+  return palette.badgeCountText;
 }
 
 function badgeSvg(theme: "dark" | "light", label: string, accent: string) {
   const width = Math.max(30, Math.round(label.length * 7.4 + 16));
   const pixelWidth = width * 2;
   const pixelHeight = 40;
-  const fill = theme === "dark" ? "#1e1719" : "#fffdfa";
-  const stroke = theme === "dark" ? "#4a383d" : "#e5d6d0";
+  const palette = currentThemePalette(theme);
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${pixelHeight}" viewBox="0 0 ${width} 20" fill="none">
-      <rect x="0.75" y="0.75" width="${width - 1.5}" height="18.5" rx="9.25" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <rect x="0.75" y="0.75" width="${width - 1.5}" height="18.5" rx="9.25" fill="${palette.badgeFill}" stroke="${palette.badgeStroke}" stroke-width="1.5"/>
       <text x="${width / 2}" y="13.1" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="${accent}">${label}</text>
     </svg>
   `;
@@ -194,15 +200,54 @@ function formatSessionPopupLine(prefix: string, meeting: MeetingSummary | null |
 function currentThemePalette(theme: "dark" | "light") {
   return theme === "dark"
     ? {
-        circleStroke: "#120f11",
-        halo: "#120f11",
-        labelColor: "#fff7f5",
+        badgeCountText: "#fff7f2",
+        badgeFill: "#172023",
+        badgeFreeText: "#87d7a1",
+        badgePaidText: "#ffb2c1",
+        badgeStroke: "#365056",
+        circleStroke: "#0f1517",
+        group: "#527078",
+        halo: "#0f1517",
+        labelColor: "#fff7f2",
+        selected: "#ff728e",
+        session: "#ff728e",
+        venue: "#2f9f7b",
+        viewerAttending: "#87d7a1",
       }
     : {
+        badgeCountText: "#231d1c",
+        badgeFill: "#fffdfa",
+        badgeFreeText: "#2c8b61",
+        badgePaidText: "#d54762",
+        badgeStroke: "#e5d6d0",
         circleStroke: "#fffdfa",
+        group: "#20352a",
         halo: "#fffdfa",
         labelColor: "#231d1c",
+        selected: "#f05f78",
+        session: "#f05f78",
+        venue: "#2c8b61",
+        viewerAttending: "#2c8b61",
       };
+}
+
+function markerColorExpression(palette: ReturnType<typeof currentThemePalette>): maplibregl.ExpressionSpecification {
+  return [
+    "case",
+    ["==", ["get", "selected"], 1],
+    palette.selected,
+    ["==", ["get", "attending"], 1],
+    palette.viewerAttending,
+    [
+      "match",
+      ["get", "kind"],
+      "venue",
+      palette.venue,
+      "session",
+      palette.session,
+      palette.group,
+    ],
+  ];
 }
 
 function mapStyleUrl(theme: "dark" | "light") {
@@ -372,6 +417,7 @@ function buildFeatureCollection({
 function updateLayerTheme(map: maplibregl.Map, theme: "dark" | "light") {
   const palette = currentThemePalette(theme);
   if (map.getLayer(LAYER_BASE_ID)) {
+    map.setPaintProperty(LAYER_BASE_ID, "circle-color", markerColorExpression(palette));
     map.setPaintProperty(LAYER_BASE_ID, "circle-stroke-color", palette.circleStroke);
   }
   if (map.getLayer(LAYER_LABEL_ID)) {
@@ -396,25 +442,19 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
   map.addLayer({
     id: LAYER_BASE_ID,
     paint: {
-      "circle-color": [
+      "circle-color": markerColorExpression(palette),
+      "circle-radius": [
         "case",
         ["==", ["get", "selected"], 1],
-        "#f05f78",
-        ["==", ["get", "attending"], 1],
-        "#2c8b61",
-        [
-          "match",
-          ["get", "kind"],
-          "venue",
-          "#2a8b72",
-          "session",
-          "#2f4f80",
-          "#6b5c8f",
-        ],
+        21,
+        ["==", ["get", "kind"], "venue"],
+        18,
+        ["==", ["get", "kind"], "group"],
+        17,
+        16,
       ],
-      "circle-radius": ["case", ["==", ["get", "selected"], 1], 18, 16],
       "circle-stroke-color": palette.circleStroke,
-      "circle-stroke-width": 2,
+      "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4, 2.5],
     },
     source: SOURCE_ID,
     type: "circle",

@@ -1,20 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowRight, CalendarRange, Filter, List, Map as MapIcon, MapPin, Users, X } from "lucide-react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  CalendarRange,
+  Compass,
+  Edit3,
+  ExternalLink,
+  Filter,
+  Image as ImageIcon,
+  List,
+  Map as MapIcon,
+  MapPin,
+  MessageSquare,
+  Shield,
+  User,
+  Users,
+  X,
+} from "lucide-react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
+import { CopyTextButton } from "../components/CopyTextButton";
 import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
+import { GroupForm } from "../components/GroupForm";
 import { MapView } from "../components/MapView";
+import { MeetingForm } from "../components/MeetingForm";
+import { PostBoard } from "../components/PostBoard";
+import { ProfileForm } from "../components/ProfileForm";
+import type { ProfileFormValues } from "../components/ProfileForm";
 import { WorkspaceShell } from "../components/WorkspaceShell";
-import { claimMeeting, createMembershipRequest, getGroups, getMap, unclaimMeeting } from "../lib/api";
+import {
+  claimMeeting,
+  createGroupPost,
+  createMeeting,
+  createMeetingPost,
+  createMembershipRequest,
+  getGroup,
+  getGroups,
+  getMap,
+  getMeeting,
+  getProfile,
+  getVenue,
+  updateProfile,
+  updateGroup,
+  updateMeeting,
+  unclaimMeeting,
+} from "../lib/api";
+import { formatDateTimeWithWeekdayShort } from "../lib/format";
 import { createNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
 type DisplayMode = "list" | "map";
 type ItemMode = "groups" | "sessions" | "venues";
 type TimePreset = "all-sessions" | "custom" | "next-week" | "this-month" | "this-week" | "today" | "tomorrow";
+type EditingTarget = null | { kind: "group" } | { kind: "meeting"; mode: "series" | "single" };
 
 interface DiscoveryWorkspaceState {
   bounds: DiscoveryBounds;
@@ -110,6 +149,14 @@ function windowForPreset(preset: TimePreset, customStartAt: string, customEndAt:
   };
 }
 
+function workspaceRouteKind(pathname: string) {
+  if (pathname.startsWith("/sessions/")) return "session";
+  if (pathname.startsWith("/groups/")) return "group";
+  if (pathname.startsWith("/profile/")) return "profile";
+  if (pathname.startsWith("/venues/")) return "venue";
+  return null;
+}
+
 export function DiscoveryPage({
   initialDisplayMode,
   initialItemMode,
@@ -127,18 +174,25 @@ export function DiscoveryPage({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { groupId: routeGroupId, meetingId: routeMeetingId, profileId: routeProfileId, venueId: routeVenueId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const workspaceState =
-    location.state && typeof location.state === "object" && "discoveryWorkspace" in location.state
-      ? (location.state as { discoveryWorkspace?: DiscoveryWorkspaceState }).discoveryWorkspace
-      : undefined;
+  const locationState =
+    location.state && typeof location.state === "object"
+      ? (location.state as { discoveryWorkspace?: DiscoveryWorkspaceState; previousWorkspacePath?: string; workspaceReturnStack?: string[] })
+      : {};
+  const workspaceState = locationState.discoveryWorkspace;
+  const workspaceReturnStack = Array.isArray(locationState.workspaceReturnStack)
+    ? locationState.workspaceReturnStack
+    : typeof locationState.previousWorkspacePath === "string"
+      ? [locationState.previousWorkspacePath]
+      : [];
   const defaultCustomStartAt = formatDateInput(new Date());
   const defaultCustomEndAt = formatDateInput(new Date(Date.now() + 2 * 60 * 60 * 1000));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(workspaceState?.displayMode ?? initialDisplayMode);
   const [itemMode, setItemMode] = useState<ItemMode>(workspaceState?.itemMode ?? initialItemMode);
   const [bounds, setBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
   const [queryBounds, setQueryBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
-  const [timePreset, setTimePreset] = useState<TimePreset>(workspaceState?.timePreset ?? "this-week");
+  const [timePreset, setTimePreset] = useState<TimePreset>(workspaceState?.timePreset ?? "all-sessions");
   const [customStartAt, setCustomStartAt] = useState(workspaceState?.customStartAt ?? defaultCustomStartAt);
   const [customEndAt, setCustomEndAt] = useState(workspaceState?.customEndAt ?? defaultCustomEndAt);
   const [showMobileFilters, setShowMobileFilters] = useState(workspaceState?.showMobileFilters ?? false);
@@ -150,6 +204,10 @@ export function DiscoveryPage({
   } | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<VenueSummary | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupSummary | null>(null);
+  const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
+  const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
       ? {
@@ -211,6 +269,9 @@ export function DiscoveryPage({
       meeting.viewerHasClaimed ? unclaimMeeting(meeting.id) : claimMeeting(meeting.id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["map"] });
+      if (selectedMeetingId) {
+        await queryClient.invalidateQueries({ queryKey: ["meeting", selectedMeetingId] });
+      }
     },
   });
 
@@ -237,43 +298,191 @@ export function DiscoveryPage({
   function buildWorkspaceState(
     overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
   ): DiscoveryWorkspaceState {
-    const cluster = overrides.selectedMeetingCluster ?? selectedMeetingCluster;
+    const hasOverride = (key: keyof DiscoveryWorkspaceState | "selectedMeetingCluster") =>
+      Object.prototype.hasOwnProperty.call(overrides, key);
+    const cluster = hasOverride("selectedMeetingCluster") ? overrides.selectedMeetingCluster : selectedMeetingCluster;
     return {
-      bounds,
-      customEndAt,
-      customStartAt,
-      displayMode,
-      itemMode,
-      selectedGroupId: overrides.selectedGroupId ?? selectedGroup?.id ?? null,
-      selectedMeetingClusterMeetingIds: overrides.selectedMeetingClusterMeetingIds ?? cluster?.meetings.map((meeting) => meeting.id) ?? [],
-      selectedMeetingClusterTitle: overrides.selectedMeetingClusterTitle ?? cluster?.title ?? null,
-      selectedMeetingId: overrides.selectedMeetingId ?? selectedMeeting?.id ?? null,
-      selectedVenueId: overrides.selectedVenueId ?? selectedVenue?.id ?? null,
-      showMobileFilters,
-      timePreset,
+      bounds: hasOverride("bounds") ? overrides.bounds ?? bounds : bounds,
+      customEndAt: hasOverride("customEndAt") ? overrides.customEndAt ?? customEndAt : customEndAt,
+      customStartAt: hasOverride("customStartAt") ? overrides.customStartAt ?? customStartAt : customStartAt,
+      displayMode: hasOverride("displayMode") ? overrides.displayMode ?? displayMode : displayMode,
+      itemMode: hasOverride("itemMode") ? overrides.itemMode ?? itemMode : itemMode,
+      selectedGroupId: hasOverride("selectedGroupId") ? overrides.selectedGroupId ?? null : routeGroupId ?? selectedGroup?.id ?? null,
+      selectedMeetingClusterMeetingIds: hasOverride("selectedMeetingClusterMeetingIds")
+        ? overrides.selectedMeetingClusterMeetingIds ?? []
+        : cluster?.meetings.map((meeting) => meeting.id) ?? [],
+      selectedMeetingClusterTitle: hasOverride("selectedMeetingClusterTitle")
+        ? overrides.selectedMeetingClusterTitle ?? null
+        : cluster?.title ?? null,
+      selectedMeetingId: hasOverride("selectedMeetingId")
+        ? overrides.selectedMeetingId ?? null
+        : routeMeetingId ?? selectedMeeting?.id ?? null,
+      selectedVenueId: hasOverride("selectedVenueId") ? overrides.selectedVenueId ?? null : routeVenueId ?? selectedVenue?.id ?? null,
+      showMobileFilters: hasOverride("showMobileFilters") ? Boolean(overrides.showMobileFilters) : showMobileFilters,
+      timePreset: hasOverride("timePreset") ? overrides.timePreset ?? timePreset : timePreset,
     };
+  }
+
+  function workspaceSearchWithoutLegacyVenue() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("venue");
+    const search = next.toString();
+    return search ? `?${search}` : "";
   }
 
   function normalizeWorkspacePath(
     overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
   ) {
-    if (location.pathname === "/discover") {
-      return;
-    }
-    const search = searchParams.toString();
     navigate(
       {
-        pathname: "/discover",
-        search: search ? `?${search}` : "",
+        pathname: location.pathname,
+        search: workspaceSearchWithoutLegacyVenue(),
       },
       {
         replace: true,
         state: {
-          ...(location.state && typeof location.state === "object" ? location.state : {}),
+          ...locationState,
           discoveryWorkspace: buildWorkspaceState(overrides),
         },
       },
     );
+  }
+
+  function workspaceRouteState(
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+    returnStack = workspaceReturnStack,
+  ) {
+    return {
+      ...locationState,
+      discoveryWorkspace: buildWorkspaceState(overrides),
+      previousWorkspacePath: returnStack[returnStack.length - 1],
+      workspaceReturnStack: returnStack,
+    };
+  }
+
+  function returnStackForDetailNavigation() {
+    if (!workspaceRouteKind(location.pathname)) {
+      return workspaceReturnStack;
+    }
+    const lastPath = workspaceReturnStack[workspaceReturnStack.length - 1];
+    return lastPath === location.pathname ? workspaceReturnStack : [...workspaceReturnStack, location.pathname];
+  }
+
+  function detailNavigationState(
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+  ) {
+    return workspaceRouteState(overrides, returnStackForDetailNavigation());
+  }
+
+  function navigateToWorkspacePath(
+    pathname: string,
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+  ) {
+    navigate(
+      {
+        pathname,
+        search: workspaceSearchWithoutLegacyVenue(),
+      },
+      {
+        state: workspaceRouteState(overrides, workspaceRouteKind(pathname) ? returnStackForDetailNavigation() : workspaceReturnStack),
+      },
+    );
+  }
+
+  function headerProfileLinkState() {
+    const currentPath = location.pathname;
+    const nextReturnStack = workspaceRouteKind(currentPath)
+      ? returnStackForDetailNavigation()
+      : workspaceReturnStack[workspaceReturnStack.length - 1] === currentPath
+        ? workspaceReturnStack
+        : [...workspaceReturnStack, currentPath];
+    return workspaceRouteState({}, nextReturnStack);
+  }
+
+  function createProfileDraft(profile: ViewerSummary): ProfileFormValues {
+    return {
+      avatarUrl: profile.avatarUrl ?? "",
+      bio: profile.bio,
+      displayName: profile.displayName,
+      homeArea: profile.homeArea,
+      isProfilePublic: profile.isProfilePublic,
+      showEmailPublicly: profile.showEmailPublicly,
+    };
+  }
+
+  function selectMeeting(meeting: MeetingSummary) {
+    navigateToWorkspacePath(`/sessions/${meeting.id}`, {
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: meeting.id,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedMeeting(meeting);
+    setSelectedMeetingCluster(null);
+    setSelectedVenue(null);
+    setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
+  function selectVenue(venue: VenueSummary) {
+    navigateToWorkspacePath(`/venues/${venue.id}`, {
+      itemMode: "venues",
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: venue.id,
+      showMobileFilters: false,
+    });
+    setSelectedVenue(venue);
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
+  function selectGroup(group: GroupSummary) {
+    navigateToWorkspacePath(`/groups/${group.id}`, {
+      itemMode: "groups",
+      selectedGroupId: group.id,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedGroup(group);
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedVenue(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
+  function selectMeetingCluster(cluster: { lookupKey: string; meetings: MeetingSummary[]; title: string }) {
+    navigateToWorkspacePath("/discover", {
+      selectedGroupId: null,
+      selectedMeetingCluster: cluster,
+      selectedMeetingClusterMeetingIds: cluster.meetings.map((meeting) => meeting.id),
+      selectedMeetingClusterTitle: cluster.title,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedMeetingCluster(cluster);
+    setSelectedMeeting(null);
+    setSelectedGroup(null);
+    setSelectedVenue(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
   }
 
   function setItemModeSafely(nextMode: ItemMode) {
@@ -283,6 +492,38 @@ export function DiscoveryPage({
     }
     setItemMode(nextMode);
   }
+
+  useEffect(() => {
+    const baseMode =
+      location.pathname === "/groups" ? "groups" : location.pathname === "/sessions" ? "sessions" : location.pathname === "/venues" ? "venues" : null;
+    if (!baseMode) {
+      return;
+    }
+
+    const overrides = {
+      displayMode: "list" as const,
+      itemMode: baseMode,
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    } satisfies Partial<DiscoveryWorkspaceState>;
+    setDisplayMode("list");
+    setItemMode(baseMode);
+    setShowMobileFilters(false);
+    navigate(
+      {
+        pathname: "/discover",
+        search: workspaceSearchWithoutLegacyVenue(),
+      },
+      {
+        replace: true,
+        state: workspaceRouteState(overrides, []),
+      },
+    );
+  }, [location.pathname]);
 
   const venueMeetingsById = useMemo(
     () =>
@@ -325,6 +566,136 @@ export function DiscoveryPage({
         .filter((value): value is NonNullable<typeof value> => Boolean(value)),
     [groupMeetingsById, publicGroups],
   );
+
+  useEffect(() => {
+    if (!showMobileFilters) {
+      return;
+    }
+
+    function handleDocumentPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && filterDropdownRef.current?.contains(target)) {
+        return;
+      }
+      setShowMobileFilters(false);
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    return () => document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  }, [showMobileFilters]);
+
+  useEffect(() => {
+    if (!routeProfileId) {
+      return;
+    }
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedVenue(null);
+    setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setProfileDraft(null);
+  }, [routeProfileId]);
+
+  useEffect(() => {
+    if (routeProfileId) {
+      return;
+    }
+    if (routeMeetingId) {
+      setSelectedMeeting(meetings.find((meeting) => meeting.id === routeMeetingId) ?? null);
+      setSelectedMeetingCluster(null);
+      setSelectedVenue(null);
+      setSelectedGroup(null);
+      setEditingTarget(null);
+      return;
+    }
+    if (routeVenueId) {
+      setSelectedVenue(venues.find((venue) => venue.id === routeVenueId) ?? null);
+      setSelectedMeeting(null);
+      setSelectedMeetingCluster(null);
+      setSelectedGroup(null);
+      setEditingTarget(null);
+      return;
+    }
+    if (routeGroupId) {
+      setSelectedGroup(groups.find((group) => group.id === routeGroupId) ?? null);
+      setSelectedMeeting(null);
+      setSelectedMeetingCluster(null);
+      setSelectedVenue(null);
+      setEditingTarget(null);
+    }
+  }, [groups, meetings, routeGroupId, routeMeetingId, routeVenueId, venues]);
+
+  const selectedMeetingId = routeMeetingId ?? selectedMeeting?.id ?? null;
+  const selectedVenueId = routeVenueId ?? selectedVenue?.id ?? null;
+  const selectedGroupId = routeGroupId ?? selectedGroup?.id ?? null;
+  const selectedProfileId = routeProfileId ?? null;
+
+  const selectedMeetingDetailQuery = useQuery({
+    enabled: Boolean(selectedMeetingId),
+    queryFn: () => getMeeting(selectedMeetingId as string),
+    queryKey: ["meeting", selectedMeetingId],
+  });
+
+  const selectedVenueDetailQuery = useQuery({
+    enabled: Boolean(selectedVenueId),
+    queryFn: () => getVenue(selectedVenueId as string),
+    queryKey: ["venue", selectedVenueId],
+  });
+
+  const selectedGroupDetailQuery = useQuery({
+    enabled: Boolean(selectedGroupId),
+    queryFn: () => getGroup(selectedGroupId as string),
+    queryKey: ["group", selectedGroupId],
+  });
+
+  const selectedProfileDetailQuery = useQuery({
+    enabled: Boolean(selectedProfileId),
+    queryFn: () => getProfile(selectedProfileId as string),
+    queryKey: ["profile", selectedProfileId],
+  });
+
+  const updateGroupMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => updateGroup(selectedGroupId as string, payload),
+    onSuccess: async () => {
+      setEditingTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["group", selectedGroupId] });
+      await queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+
+  const updateMeetingMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => updateMeeting(selectedMeetingId as string, payload),
+    onSuccess: async () => {
+      setEditingTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["meeting", selectedMeetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => updateProfile(selectedProfileId as string, payload),
+    onSuccess: async () => {
+      setEditingProfile(false);
+      setProfileDraft(null);
+      await queryClient.invalidateQueries({ queryKey: ["profile", selectedProfileId] });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+
+  const groupPostMutation = useMutation({
+    mutationFn: (content: string) => createGroupPost(selectedGroupId as string, content),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["group", selectedGroupId] });
+    },
+  });
+
+  const meetingPostMutation = useMutation({
+    mutationFn: (content: string) => createMeetingPost(selectedMeetingId as string, content),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", selectedMeetingId] });
+    },
+  });
 
   useEffect(() => {
     if (!selectedVenueIdFromQuery) {
@@ -400,27 +771,119 @@ export function DiscoveryPage({
     }
   }, [groups, meetings, pendingSelectionState, selectedVenueIdFromQuery, venues]);
 
+  const selectedMeetingDetail = selectedMeetingDetailQuery.data?.meeting ?? selectedMeeting;
+  const selectedVenueDetail = selectedVenueDetailQuery.data?.venue ?? selectedVenue;
+  const selectedGroupDetail = selectedGroupDetailQuery.data?.group ?? selectedGroup;
+  const selectedProfileDetail =
+    selectedProfileDetailQuery.data?.profile ?? (selectedProfileId && viewer?.id === selectedProfileId ? viewer : null);
+  const selectedProfileMemberships = selectedProfileDetailQuery.data?.memberships ?? [];
+  const selectedProfileAttending = selectedProfileDetailQuery.data?.attending ?? [];
+  const selectedProfileResponsible = selectedProfileDetailQuery.data?.responsible ?? [];
+  const selectedMeetingClaims = selectedMeetingDetailQuery.data?.claims ?? [];
+  const isOwnProfile = Boolean(selectedProfileId && viewer?.id === selectedProfileId);
+  const activeProfileDraft = profileDraft ?? (selectedProfileDetail ? createProfileDraft(selectedProfileDetail) : null);
   const selectedTitle =
-    selectedMeeting?.title ?? selectedMeetingCluster?.title ?? selectedVenue?.name ?? selectedGroup?.name ?? "";
-  const listHeading = itemMode === "groups" ? "Groups:" : itemMode === "venues" ? "Venues:" : "Sessions:";
+    selectedMeetingDetail?.title ??
+    selectedMeetingCluster?.title ??
+    selectedVenueDetail?.name ??
+    selectedGroupDetail?.name ??
+    selectedProfileDetail?.displayName ??
+    "";
+  const listHeading = itemMode === "groups" ? "Groups" : itemMode === "venues" ? "Venues" : "Sessions";
   const navState = createNavigationState(location, "Workspace");
-  const selectedVenueMeetings = selectedVenue ? venueMeetingsById[selectedVenue.id] ?? [] : [];
-  const selectedGroupMeetings = selectedGroup ? groupMeetingsById[selectedGroup.id] ?? [] : [];
-  const hasSelection = Boolean(selectedMeeting || selectedMeetingCluster || selectedVenue || selectedGroup);
+  const selectedVenueMeetings = selectedVenueDetailQuery.data?.meetings ?? (selectedVenueId ? venueMeetingsById[selectedVenueId] ?? [] : []);
+  const selectedGroupMeetings = selectedGroupDetailQuery.data?.meetings ?? (selectedGroupId ? groupMeetingsById[selectedGroupId] ?? [] : []);
+  const hasSelection = Boolean(selectedMeetingId || selectedMeetingCluster || selectedVenueId || selectedGroupId || selectedProfileId);
+  const showUpcomingSessions = displayMode === "map" || itemMode !== "sessions";
+  const returnPath = workspaceReturnStack[workspaceReturnStack.length - 1];
+  const returnRouteKind = returnPath ? workspaceRouteKind(returnPath) : null;
+  const emptySelectionState = {
+    selectedGroupId: null,
+    selectedMeetingClusterMeetingIds: [],
+    selectedMeetingClusterTitle: null,
+    selectedMeetingId: null,
+    selectedVenueId: null,
+  } satisfies Partial<DiscoveryWorkspaceState>;
   const clearSelection = () => {
-    normalizeWorkspacePath({
-      selectedGroupId: null,
-      selectedMeetingClusterMeetingIds: [],
-      selectedMeetingClusterTitle: null,
-      selectedMeetingId: null,
-      selectedVenueId: null,
-    });
+    if (!routeGroupId && !routeMeetingId && !routeVenueId && !routeProfileId) {
+      normalizeWorkspacePath(emptySelectionState);
+    }
     setSelectedMeeting(null);
     setSelectedMeetingCluster(null);
     setSelectedVenue(null);
     setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setProfileDraft(null);
     clearVenueQueryParam();
   };
+
+  const handleSelectionClose = () => {
+    if (routeGroupId || routeMeetingId || routeVenueId || routeProfileId) {
+      setSelectedMeeting(null);
+      setSelectedMeetingCluster(null);
+      setSelectedVenue(null);
+      setSelectedGroup(null);
+      setEditingTarget(null);
+      setEditingProfile(false);
+      setProfileDraft(null);
+
+      const goToPrevious =
+        typeof returnPath === "string" &&
+        (routeProfileId ||
+        ((routeMeetingId && (returnRouteKind === "group" || returnRouteKind === "venue")) ||
+          ((routeGroupId || routeVenueId) && Boolean(returnRouteKind))));
+
+      if (goToPrevious) {
+        if (
+          typeof window !== "undefined" &&
+          window.history.state &&
+          typeof window.history.state.idx === "number" &&
+          window.history.state.idx > 0
+        ) {
+          navigate(-1);
+          return;
+        }
+
+        const nextReturnStack = workspaceReturnStack.slice(0, -1);
+        navigate(
+          {
+            pathname: returnPath,
+            search: workspaceSearchWithoutLegacyVenue(),
+          },
+          {
+            replace: true,
+            state: workspaceRouteState(emptySelectionState, nextReturnStack),
+          },
+        );
+        return;
+      }
+
+      navigate(
+        {
+          pathname: "/discover",
+          search: workspaceSearchWithoutLegacyVenue(),
+        },
+        {
+          replace: true,
+          state: workspaceRouteState(emptySelectionState, []),
+        },
+      );
+      return;
+    }
+
+    clearSelection();
+  };
+
+  useEffect(() => {
+    const selectors = [
+      ".workspace-frame--unified .workspace-cell--right .workspace-panel__body",
+      ".mobile-details-drawer__body",
+    ];
+    for (const selector of selectors) {
+      document.querySelector<HTMLElement>(selector)?.scrollTo({ top: 0 });
+    }
+  }, [selectedGroupId, selectedMeetingCluster?.lookupKey, selectedMeetingId, selectedProfileId, selectedVenueId]);
   const handleMapBackgroundClick = () => {
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches) {
       clearSelection();
@@ -428,159 +891,600 @@ export function DiscoveryPage({
     }
   };
 
-  const selectionTarget = selectedMeeting
-    ? { label: "Go to Session", to: `/sessions/${selectedMeeting.id}` }
-    : selectedVenue
-      ? { label: "Go to Venue", to: `/venues/${selectedVenue.id}` }
-      : selectedGroup
-        ? { label: "Go to Group", to: `/groups/${selectedGroup.id}` }
-        : null;
-
   const selectionHeaderActions = hasSelection ? (
     <div className="workspace-panel-header-actions">
-      {selectionTarget ? (
-        <Link className="button-secondary workspace-panel-header-link" state={navState} to={selectionTarget.to}>
-          <span>{selectionTarget.label}</span>
-          <ArrowRight size={14} strokeWidth={2} />
-        </Link>
-      ) : null}
-      <button className="button-secondary workspace-panel-close-square" onClick={clearSelection} type="button">
+      <button className="button-secondary workspace-panel-close-square" onClick={handleSelectionClose} type="button" aria-label="Clear selection">
         <X size={16} strokeWidth={2} />
       </button>
     </div>
   ) : null;
 
-  const selectionPanel = selectedMeetingCluster ? (
-    <div className="stack-panel">
-      <div className="detail-card detail-card--selected">
+  async function handleMeetingSave(payload: Record<string, unknown>) {
+    const { seriesDates, ...basePayload } = payload as Record<string, unknown> & {
+      seriesDates?: Array<{ endsAt: string; startsAt: string }>;
+    };
+    const editingSeries = editingTarget?.kind === "meeting" && editingTarget.mode === "series";
+
+    if (editingSeries) {
+      await updateMeetingMutation.mutateAsync({
+        ...basePayload,
+        applyToSeries: true,
+        seriesDates,
+      });
+      return;
+    }
+
+    if (!seriesDates || seriesDates.length === 0) {
+      await updateMeetingMutation.mutateAsync(basePayload);
+      return;
+    }
+
+    const sortedDates = [...seriesDates].sort(
+      (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+    );
+    const [primary, ...rest] = sortedDates;
+    if (!primary || !selectedMeetingDetail) {
+      return;
+    }
+
+    await updateMeetingMutation.mutateAsync({
+      ...basePayload,
+      endsAt: primary.endsAt,
+      startsAt: primary.startsAt,
+    });
+
+    for (const slot of rest) {
+      await createMeeting({
+        activityLabel: basePayload.activityLabel,
+        capacity: basePayload.capacity,
+        costPerPerson: basePayload.costPerPerson,
+        description: basePayload.description,
+        endsAt: slot.endsAt,
+        groupId: selectedMeetingDetail.groupId,
+        heroImageUrl: basePayload.heroImageUrl,
+        latitude: basePayload.latitude,
+        locationAddress: basePayload.locationAddress,
+        locationName: basePayload.locationName,
+        longitude: basePayload.longitude,
+        pricing: basePayload.pricing,
+        recurrence: { type: "once" },
+        shortName: basePayload.shortName,
+        startsAt: slot.startsAt,
+        title: basePayload.title,
+        venueId: basePayload.venueId,
+      });
+    }
+    await queryClient.invalidateQueries({ queryKey: ["map"] });
+  }
+
+  const editPanel =
+    editingTarget?.kind === "group" && selectedGroupDetail ? (
+      <div className="workspace-edit-surface">
+        <div className="screen-heading">
+          <p className="eyebrow">Edit</p>
+          <h2 className="screen-heading__title">Group</h2>
+        </div>
+        <GroupForm
+          formId="workspace-group-edit-form"
+          initialValues={{
+            activityLabel: selectedGroupDetail.activityLabel,
+            description: selectedGroupDetail.description,
+            heroImageUrl: selectedGroupDetail.heroImageUrl,
+            messengerUrl: selectedGroupDetail.messengerUrl,
+            name: selectedGroupDetail.name,
+            slug: selectedGroupDetail.slug,
+            visibility: selectedGroupDetail.visibility,
+          }}
+          onSubmit={async (payload) => updateGroupMutation.mutateAsync(payload)}
+        />
+        <div className="editor-action-row">
+          <div className="editor-action-row__right">
+            <button className="button-secondary" onClick={() => setEditingTarget(null)} type="button">
+              Cancel
+            </button>
+            <button className="button-primary" form="workspace-group-edit-form" type="submit">
+              Save group
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : editingTarget?.kind === "meeting" && selectedMeetingDetail ? (
+      <div className="workspace-edit-surface">
+        <div className="screen-heading">
+          <p className="eyebrow">Edit</p>
+          <h2 className="screen-heading__title">{editingTarget.mode === "series" ? "Session Series" : "Session"}</h2>
+        </div>
+        <MeetingForm
+          formId="workspace-meeting-edit-form"
+          groups={groupsQuery.data?.groups ?? []}
+          initialMeeting={selectedMeetingDetail}
+          initialSeriesDates={(selectedMeetingDetailQuery.data?.seriesMeetings ?? []).map((entry) => ({
+            endsAt: entry.endsAt,
+            startsAt: entry.startsAt,
+          }))}
+          onSubmit={handleMeetingSave}
+          seriesMode={editingTarget.mode === "series"}
+        />
+        <div className="editor-action-row">
+          <div className="editor-action-row__right">
+            <button className="button-secondary" onClick={() => setEditingTarget(null)} type="button">
+              Cancel
+            </button>
+            <button className="button-primary" form="workspace-meeting-edit-form" type="submit">
+              Save session
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  const selectionPanel = selectedProfileId ? (
+    selectedProfileDetail ? (
+      <div className="info-panel">
+        <div className="info-panel__sticky-title">
+          {selectionHeaderActions}
+          <div className="detail-card__eyebrow">
+            <Users size={14} strokeWidth={2} />
+            <span className="panel-caption">Profile</span>
+          </div>
+          <h2 className="info-panel__title">{selectedProfileDetail.displayName}</h2>
+          <div className="info-tags">
+            <span className="mini-chip">{selectedProfileDetail.isProfilePublic ? "public" : "private"}</span>
+            {selectedProfileMemberships.length > 0 ? <span className="mini-chip">{selectedProfileMemberships.length} groups</span> : null}
+            {selectedProfileAttending.length > 0 ? <span className="mini-chip">{selectedProfileAttending.length} attending</span> : null}
+          </div>
+        </div>
+        <div className={`detail-hero__media info-panel__hero ${selectedProfileDetail.avatarUrl ? "has-image" : ""}`.trim()}>
+          {selectedProfileDetail.avatarUrl ? (
+            <img alt={selectedProfileDetail.displayName} className="detail-hero__image" src={selectedProfileDetail.avatarUrl} />
+          ) : null}
+          <div className="detail-hero__fallback profile-avatar-fallback" aria-hidden={Boolean(selectedProfileDetail.avatarUrl)}>
+            <User size={48} strokeWidth={1.8} />
+          </div>
+        </div>
+        {editingProfile && isOwnProfile ? (
+          activeProfileDraft ? (
+          <>
+            <ProfileForm
+              formId="workspace-profile-edit-form"
+              onChange={setProfileDraft}
+              onSubmit={async (payload) => updateProfileMutation.mutateAsync(payload)}
+              profile={activeProfileDraft}
+            />
+            <div className="editor-action-row">
+              <div className="editor-action-row__right">
+                <button
+                  className="button-secondary"
+                  onClick={() => {
+                    setEditingProfile(false);
+                    setProfileDraft(null);
+                  }}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button className="button-primary" form="workspace-profile-edit-form" type="submit">
+                  Save profile
+                </button>
+              </div>
+            </div>
+          </>
+          ) : null
+        ) : (
+          <>
+            {selectedProfileDetailQuery.data?.profileIsPrivate && !isOwnProfile ? (
+              <p className="muted-copy">This profile is private.</p>
+            ) : (
+              <>
+                <p className="detail-quote detail-quote--hero">{selectedProfileDetail.bio || "No bio yet."}</p>
+                <section className="info-grid">
+                  {selectedProfileDetail.homeArea ? (
+                    <div>
+                      <span className="panel-caption">Home area</span>
+                      <strong>{selectedProfileDetail.homeArea}</strong>
+                    </div>
+                  ) : null}
+                  {selectedProfileDetail.email ? (
+                    <div>
+                      <span className="panel-caption">Email</span>
+                      <strong>{selectedProfileDetail.email}</strong>
+                    </div>
+                  ) : null}
+                </section>
+                {selectedProfileMemberships.length > 0 ? (
+                  <div className="stack-panel">
+                    <p className="panel-caption">Groups</p>
+                    <div className="subtle-action-row">
+                      {selectedProfileMemberships.map((membership) => (
+                        <Link
+                          className="mini-link"
+                          key={membership.id}
+                          state={detailNavigationState({
+                            itemMode: "groups",
+                            selectedGroupId: membership.id,
+                            selectedMeetingClusterMeetingIds: [],
+                            selectedMeetingClusterTitle: null,
+                            selectedMeetingId: null,
+                            selectedVenueId: null,
+                          })}
+                          to={`/groups/${membership.id}`}
+                        >
+                          {membership.name} · {membership.role}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="subtle-action-row">
+                  {isOwnProfile ? (
+                    <button
+                      className="button-secondary button-inline"
+                      onClick={() => {
+                        setProfileDraft(createProfileDraft(selectedProfileDetail));
+                        setEditingProfile(true);
+                      }}
+                      type="button"
+                    >
+                      <Edit3 size={14} strokeWidth={2} />
+                      Edit
+                    </button>
+                  ) : null}
+                  {isOwnProfile ? (
+                    <button className="button-danger button-inline" onClick={onLogOut} type="button">
+                      Sign out
+                    </button>
+                  ) : null}
+                </div>
+                {selectedProfileAttending.length > 0 ? (
+                  <EventTimeline
+                    contextLabel="Profile"
+                    emptyLabel="No upcoming sessions."
+                    heading="Attending"
+                    meetings={selectedProfileAttending}
+                    onSelectMeeting={selectMeeting}
+                    secondaryMeta="location"
+                    showGroupLabel
+                  />
+                ) : null}
+                {selectedProfileResponsible.length > 0 ? (
+                  <EventTimeline
+                    contextLabel="Profile"
+                    emptyLabel="No hosted sessions."
+                    heading="Your Sessions"
+                    meetings={selectedProfileResponsible}
+                    onSelectMeeting={selectMeeting}
+                    secondaryMeta="location"
+                    showGroupLabel
+                  />
+                ) : null}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    ) : selectedProfileDetailQuery.isLoading ? (
+      <div className="info-panel info-panel--empty">
+        <MessageSquare size={18} strokeWidth={2} />
+        <h2 className="info-panel__title">Loading profile...</h2>
+      </div>
+    ) : (
+      <div className="info-panel info-panel--empty">
+        <MessageSquare size={18} strokeWidth={2} />
+        <h2 className="info-panel__title">Profile not found.</h2>
+      </div>
+    )
+  ) : selectedMeetingCluster ? (
+    <div className="info-panel">
+      <div className="info-panel__sticky-title">
+        {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
           <span className="panel-caption">Session cluster</span>
         </div>
-        <h3>{selectedMeetingCluster.title}</h3>
-        <p>{selectedMeetingCluster.meetings.length} sessions at this location</p>
+        <h2 className="info-panel__title">{selectedMeetingCluster.title}</h2>
+        <p className="muted-copy">{selectedMeetingCluster.meetings.length} sessions at this location</p>
       </div>
       <EventTimeline
         contextLabel="Workspace"
         emptyLabel="No sessions at this location."
         heading="Sessions at this location"
         meetings={selectedMeetingCluster.meetings}
-        onSelectMeeting={(meeting) => {
-          setSelectedMeeting(meeting);
-          setSelectedMeetingCluster(null);
-          setSelectedVenue(null);
-          setSelectedGroup(null);
-        }}
+        onSelectMeeting={selectMeeting}
       />
     </div>
-  ) : selectedMeeting ? (
-    <div className="stack-panel">
-      <div className="detail-card detail-card--selected">
+  ) : selectedMeetingDetail ? (
+    <div className="info-panel">
+      <div className="info-panel__sticky-title">
+        {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
           <span className="panel-caption">Session</span>
         </div>
-        <h3 className={selectedMeeting.status === "cancelled" ? "session-title--cancelled" : ""}>{selectedMeeting.title}</h3>
-        <p>{selectedMeeting.groupName}</p>
-        <p>{selectedMeeting.locationName}</p>
-        <div className="detail-card__session-tags">
-          <div className="detail-card__session-tags-main">
-            {selectedMeeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
-            <span className="mini-chip">{formatSessionPrice(selectedMeeting)}</span>
-            <span className="mini-chip">{`${selectedMeeting.claimedSpots}/${selectedMeeting.capacity}`}</span>
-          </div>
-          {selectedMeeting.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Claimed</span> : null}
+        <h2 className={`info-panel__title ${selectedMeetingDetail.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}>
+          {selectedMeetingDetail.title}
+        </h2>
+        <div className="info-tags">
+          {selectedMeetingDetail.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
+          <span className="mini-chip">{selectedMeetingDetail.groupVisibility}</span>
+          <span className="mini-chip">{formatSessionPrice(selectedMeetingDetail)}</span>
+          {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Claimed</span> : null}
         </div>
       </div>
-      <div className="workspace-button-row">
+      <div className={`detail-hero__media info-panel__hero ${selectedMeetingDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
+        {selectedMeetingDetail.heroImageUrl ? <img alt={selectedMeetingDetail.title} className="detail-hero__image" src={selectedMeetingDetail.heroImageUrl} /> : null}
+        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedMeetingDetail.heroImageUrl)}>
+          <ImageIcon size={24} strokeWidth={1.8} />
+        </div>
+      </div>
+      <p className="detail-quote detail-quote--hero">{selectedMeetingDetail.description || "No description yet."}</p>
+      <section className="availability-callout">
+        <span className="panel-caption">Availability</span>
+        <strong>{selectedMeetingDetail.openSpots} spots open</strong>
+        <span>{selectedMeetingDetail.claimedSpots}/{selectedMeetingDetail.capacity} claimed</span>
         {viewer ? (
-          <button className="button-primary" onClick={() => claimMutation.mutate(selectedMeeting)} type="button">
-            {selectedMeeting.viewerHasClaimed ? "Release" : "Claim spot"}
-          </button>
+          <div className="availability-callout__actions">
+            {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--success">You are attending</span> : null}
+            <button className="button-primary button-inline" onClick={() => claimMutation.mutate(selectedMeetingDetail)} type="button">
+              <Users size={14} strokeWidth={2} />
+              {selectedMeetingDetail.viewerHasClaimed ? "Release your spot" : "Claim your spot"}
+            </button>
+          </div>
+        ) : null}
+      </section>
+      <section className="info-grid">
+        <div>
+          <span className="panel-caption">Time</span>
+          <strong>{formatDateTimeWithWeekdayShort(selectedMeetingDetail.startsAt)}</strong>
+        </div>
+        <div>
+          <span className="panel-caption">Venue</span>
+          <Link
+            state={
+              selectedMeetingDetail.venueId
+                ? detailNavigationState({
+                    itemMode: "venues",
+                    selectedGroupId: null,
+                    selectedMeetingClusterMeetingIds: [],
+                    selectedMeetingClusterTitle: null,
+                    selectedMeetingId: null,
+                    selectedVenueId: selectedMeetingDetail.venueId,
+                  })
+                : undefined
+            }
+            to={selectedMeetingDetail.venueId ? `/venues/${selectedMeetingDetail.venueId}` : `/map?venue=${selectedMeetingDetail.venueId ?? ""}`}
+          >
+            {selectedMeetingDetail.locationName}
+          </Link>
+        </div>
+        <div>
+          <span className="panel-caption">Group</span>
+          <Link
+            state={detailNavigationState({
+              itemMode: "groups",
+              selectedGroupId: selectedMeetingDetail.groupId,
+              selectedMeetingClusterMeetingIds: [],
+              selectedMeetingClusterTitle: null,
+              selectedMeetingId: null,
+              selectedVenueId: null,
+            })}
+            to={`/groups/${selectedMeetingDetail.groupId}`}
+          >
+            {selectedMeetingDetail.groupName}
+          </Link>
+        </div>
+        <div>
+          <span className="panel-caption">Address</span>
+          <strong>{selectedMeetingDetail.locationAddress}</strong>
+        </div>
+      </section>
+      <section className="stack-panel">
+        <span className="panel-caption">Attending</span>
+        {selectedMeetingClaims.length > 0 ? (
+          <div className="subtle-action-row">
+            {selectedMeetingClaims.map((claim) => (
+              <Link className="mini-link" key={claim.id} state={detailNavigationState()} to={`/profile/${claim.id}`}>
+                {claim.displayName}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="muted-copy">Nobody has claimed a spot yet.</p>
+        )}
+      </section>
+      <div className="subtle-action-row">
+        <CopyTextButton label="Copy address" value={selectedMeetingDetail.locationAddress} />
+        <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMeetingDetail.locationAddress)}`} rel="noreferrer" target="_blank">
+          <ExternalLink size={14} strokeWidth={2} />
+          <Compass size={14} strokeWidth={2} />
+          <span>Maps</span>
+        </a>
+        {selectedMeetingDetail.viewerCanEdit ? (
+          <>
+            <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "meeting", mode: "single" })} type="button">
+              <Edit3 size={14} strokeWidth={2} />
+              Edit
+            </button>
+            {selectedMeetingDetail.seriesId ? (
+              <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "meeting", mode: "series" })} type="button">
+                <Shield size={14} strokeWidth={2} />
+                Edit Series
+              </button>
+            ) : null}
+          </>
         ) : null}
       </div>
+      {selectedMeetingDetailQuery.data ? (
+        <PostBoard
+          buttonLabel="Post update"
+          canPost={Boolean(viewer)}
+          compact
+          emptyLabel="No updates yet."
+          onSubmit={async (content) => meetingPostMutation.mutateAsync(content)}
+          posts={selectedMeetingDetailQuery.data.posts}
+          title="Updates"
+        />
+      ) : null}
     </div>
-  ) : selectedVenue ? (
-    <div className="stack-panel">
-      <div className="detail-card detail-card--selected">
+  ) : selectedVenueDetail ? (
+    <div className="info-panel">
+      <div className="info-panel__sticky-title">
+        {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <MapPin size={14} strokeWidth={2} />
           <span className="panel-caption">Venue</span>
         </div>
-        <h3>{selectedVenue.name}</h3>
-        <p>{selectedVenue.address}</p>
-        <p>{selectedVenue.description}</p>
+        <h2 className="info-panel__title">{selectedVenueDetail.name}</h2>
+        <div className="info-tags">
+          <span className="mini-chip">{selectedVenueDetail.pricing}</span>
+          <span className="mini-chip">{selectedVenueMeetings.length} sessions</span>
+        </div>
+      </div>
+      <div className={`detail-hero__media info-panel__hero ${selectedVenueDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
+        {selectedVenueDetail.heroImageUrl ? <img alt={selectedVenueDetail.name} className="detail-hero__image" src={selectedVenueDetail.heroImageUrl} /> : null}
+        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedVenueDetail.heroImageUrl)}>
+          <ImageIcon size={24} strokeWidth={1.8} />
+        </div>
+      </div>
+      <p className="detail-quote detail-quote--hero">{selectedVenueDetail.description || "No description yet."}</p>
+      <section className="info-grid">
+        <div>
+          <span className="panel-caption">Address</span>
+          <strong>{selectedVenueDetail.address}</strong>
+        </div>
+        <div>
+          <span className="panel-caption">Opening hours</span>
+          <strong>{selectedVenueDetail.openingHoursText || "Check source before you go"}</strong>
+        </div>
+      </section>
+      <div className="subtle-action-row">
+        <CopyTextButton label="Copy address" value={selectedVenueDetail.address} />
+        <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedVenueDetail.address)}`} rel="noreferrer" target="_blank">
+          <ExternalLink size={14} strokeWidth={2} />
+          <Compass size={14} strokeWidth={2} />
+          <span>Maps</span>
+        </a>
+        {selectedVenueDetail.bookingUrl ? <a className="button-secondary button-inline" href={selectedVenueDetail.bookingUrl} rel="noreferrer" target="_blank">Booking</a> : null}
+        {selectedVenueDetail.sourceUrl ? <a className="button-secondary button-inline" href={selectedVenueDetail.sourceUrl} rel="noreferrer" target="_blank">Website</a> : null}
       </div>
       <EventTimeline
         contextLabel="Venue"
         emptyLabel="No sessions at this venue yet."
-        heading={`Sessions @${selectedVenue.name}`}
+        heading={`Sessions @${selectedVenueDetail.name}`}
         meetings={selectedVenueMeetings}
+        onSelectMeeting={selectMeeting}
         secondaryMeta="group"
         showGroupLabel
       />
     </div>
-  ) : selectedGroup ? (
-    <div className="stack-panel">
-      <div className="detail-card detail-card--selected">
+  ) : selectedGroupDetail ? (
+    <div className="info-panel">
+      <div className="info-panel__sticky-title">
+        {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <Users size={14} strokeWidth={2} />
           <span className="panel-caption">Group</span>
         </div>
-        <h3>{selectedGroup.name}</h3>
-        <p>{selectedGroup.description}</p>
-        <div className="mini-meta-row">
-          <span className="mini-chip">{selectedGroup.visibility}</span>
-          <span className="mini-chip">{selectedGroup.publicSessionCount} sessions</span>
+        <h2 className="info-panel__title">{selectedGroupDetail.name}</h2>
+        <div className="info-tags">
+          <span className="mini-chip">{selectedGroupDetail.visibility}</span>
+          <span className="mini-chip">{selectedGroupMeetings.length} sessions</span>
+          {selectedGroupDetail.viewerRole ? <span className="mini-chip mini-chip--accent">{selectedGroupDetail.viewerRole}</span> : null}
         </div>
       </div>
-      <div className="workspace-button-row">
-        {!selectedGroup.viewerRole && viewer ? (
-          <button className="button-primary" onClick={() => membershipMutation.mutate(selectedGroup.id)} type="button">
+      <div className={`detail-hero__media info-panel__hero ${selectedGroupDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
+        {selectedGroupDetail.heroImageUrl ? <img alt={selectedGroupDetail.name} className="detail-hero__image" src={selectedGroupDetail.heroImageUrl} /> : null}
+        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedGroupDetail.heroImageUrl)}>
+          <ImageIcon size={24} strokeWidth={1.8} />
+        </div>
+      </div>
+      <p className="detail-quote">{selectedGroupDetail.description || "No description yet."}</p>
+      <section className="info-grid">
+        <div>
+          <span className="panel-caption">Activity</span>
+          <strong>{selectedGroupDetail.activityLabel || "Beach volleyball"}</strong>
+        </div>
+        <div>
+          <span className="panel-caption">Members</span>
+          <strong>{selectedGroupDetailQuery.data?.members.length ?? selectedGroup?.memberCount ?? 0}</strong>
+        </div>
+      </section>
+      <div className="subtle-action-row">
+        {!selectedGroupDetail.viewerRole && viewer ? (
+          <button className="button-primary button-inline" onClick={() => membershipMutation.mutate(selectedGroupDetail.id)} type="button">
             Request membership
           </button>
         ) : null}
+        {selectedGroupDetail.messengerUrl ? <a className="button-secondary button-inline" href={selectedGroupDetail.messengerUrl} rel="noreferrer" target="_blank">Messenger</a> : null}
+        {"viewerCanEditGroup" in selectedGroupDetail && selectedGroupDetail.viewerCanEditGroup ? (
+          <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "group" })} type="button">
+            <Edit3 size={14} strokeWidth={2} />
+            Edit
+          </button>
+        ) : null}
       </div>
+      {selectedGroupDetailQuery.data ? (
+        <PostBoard
+          buttonLabel="Post to group"
+          canPost={Boolean(selectedGroupDetailQuery.data.group.viewerRole)}
+          compact
+          emptyLabel="No posts yet."
+          onSubmit={async (content) => groupPostMutation.mutateAsync(content)}
+          posts={selectedGroupDetailQuery.data.posts}
+          title="Updates"
+        />
+      ) : null}
       <EventTimeline
         contextLabel="Group"
         emptyLabel="No sessions created by this group yet."
-        heading={`Sessions from ${selectedGroup.name}`}
+        heading={`Sessions from ${selectedGroupDetail.name}`}
         meetings={selectedGroupMeetings}
+        onSelectMeeting={selectMeeting}
         secondaryMeta="location"
         showGroupLabel={false}
       />
     </div>
   ) : (
-    <EventTimeline
-      contextLabel="Workspace"
-      emptyLabel="No sessions available."
-      heading="Upcoming sessions"
-      meetings={meetings}
-    />
+    <div className="info-panel info-panel--empty">
+      <MessageSquare size={18} strokeWidth={2} />
+      <h2 className="info-panel__title">Pick a court, group, or session.</h2>
+      <p className="muted-copy">Details, sessions, actions, and updates appear here.</p>
+      {showUpcomingSessions ? (
+        <EventTimeline contextLabel="Workspace" emptyLabel="No sessions available." heading="Upcoming sessions" meetings={meetings} />
+      ) : null}
+    </div>
   );
 
-  const mobileFilterPanel = (
-    <div className="filter-dropdown">
-      <button className="workspace-ghost-button" onClick={() => setShowMobileFilters((current) => !current)} type="button">
+  const renderFilterPanel = () => (
+    <div className="filter-dropdown" ref={filterDropdownRef}>
+      <button className="workspace-ghost-button workspace-ghost-button--filter" onClick={() => setShowMobileFilters((current) => !current)} type="button">
         <Filter size={14} strokeWidth={2} />
         <span>Filter</span>
       </button>
       {showMobileFilters ? (
         <div className="filter-dropdown__panel">
-          <div className="workspace-segmented workspace-segmented--column">
-            <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemModeSafely("sessions")} type="button">
-              <CalendarRange size={14} strokeWidth={2} />
-              <span>Sessions</span>
-            </button>
-            <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
-              <Users size={14} strokeWidth={2} />
-              <span>Groups</span>
-            </button>
-            <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
-              <MapPin size={14} strokeWidth={2} />
-              <span>Venues</span>
-            </button>
+          <p className="panel-caption">Price</p>
+          <div className="workspace-segmented workspace-segmented--fit filter-price-group">
+            {(["all", "free", "paid"] as const).map((pricing) => (
+              <button
+                className={bounds.pricing === pricing ? "is-active" : ""}
+                key={pricing}
+                onClick={() =>
+                  setBounds((current) => {
+                    const next: DiscoveryBounds = {
+                      ...current,
+                      pricing,
+                    };
+                    normalizeWorkspacePath({ bounds: next });
+                    return next;
+                  })
+                }
+                type="button"
+              >
+                {pricing}
+              </button>
+            ))}
           </div>
+          <p className="panel-caption">Time</p>
           <div className="time-filter-group">
             {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
               <button
@@ -624,74 +1528,65 @@ export function DiscoveryPage({
               </label>
             </div>
           ) : null}
-          <FilterCheckbox
-            checked={bounds.pricing !== "paid"}
-            label="Free"
-              onChange={(checked) =>
+          <p className="panel-caption">Availability</p>
+          <button
+            className={`filter-chip ${bounds.openOnly ? "is-active" : ""}`}
+            onClick={() =>
               setBounds((current) => {
-                const next: DiscoveryBounds = {
-                  ...current,
-                  pricing: checked ? (current.pricing === "paid" ? "all" : current.pricing) : "paid",
-                };
+                const next = { ...current, openOnly: !current.openOnly };
                 normalizeWorkspacePath({ bounds: next });
                 return next;
               })
             }
-          />
-          <FilterCheckbox
-            checked={bounds.pricing !== "free"}
-            label="Paid"
-              onChange={(checked) =>
-              setBounds((current) => {
-                const next: DiscoveryBounds = {
-                  ...current,
-                  pricing: checked ? (current.pricing === "free" ? "all" : current.pricing) : "free",
-                };
-                normalizeWorkspacePath({ bounds: next });
-                return next;
-              })
-            }
-          />
-          <FilterCheckbox
-            checked={bounds.openOnly}
-            label="Free spots only"
-            onChange={(checked) =>
-              setBounds((current) => {
-                const next = { ...current, openOnly: checked };
-                normalizeWorkspacePath({ bounds: next });
-                return next;
-              })
-            }
-          />
+            type="button"
+          >
+            Free spots only
+          </button>
         </div>
       ) : null}
     </div>
   );
 
-  const mobileDisplaySwitch = (
-    <div className="workspace-segmented workspace-segmented--floating">
-      <button
-        className={displayMode === "map" ? "is-active" : ""}
-        onClick={() => {
-          normalizeWorkspacePath({ displayMode: "map" });
-          setDisplayMode("map");
-        }}
-        type="button"
-      >
-        <MapIcon size={14} strokeWidth={2} />
-        <span>Map</span>
+  const renderDisplaySwitch = () => (
+    <button
+      className="workspace-ghost-button workspace-ghost-button--display"
+      onClick={() => {
+        const nextDisplayMode = displayMode === "map" ? "list" : "map";
+        normalizeWorkspacePath({ displayMode: nextDisplayMode });
+        setDisplayMode(nextDisplayMode);
+      }}
+      type="button"
+    >
+      {displayMode === "map" ? <List size={14} strokeWidth={2} /> : <MapIcon size={14} strokeWidth={2} />}
+      <span>{displayMode === "map" ? "List" : "Map"}</span>
+    </button>
+  );
+
+  const renderModeSwitch = () => (
+    <div className="workspace-segmented workspace-segmented--fit workspace-segmented--mode">
+      <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
+        <MapPin size={14} strokeWidth={2} />
+        <span>Venues</span>
+      </button>
+      <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
+        <Users size={14} strokeWidth={2} />
+        <span>Groups</span>
       </button>
       <button
-        className={displayMode === "list" ? "is-active" : ""}
-        onClick={() => {
-          normalizeWorkspacePath({ displayMode: "list" });
-          setDisplayMode("list");
-        }}
+        className={itemMode === "sessions" ? "is-active" : ""}
+        onClick={() => setItemModeSafely("sessions")}
         type="button"
       >
-        <List size={14} strokeWidth={2} />
-        <span>List</span>
+        <CalendarRange size={14} strokeWidth={2} />
+        <span>Sessions</span>
       </button>
+    </div>
+  );
+
+  const renderWorkspaceControls = () => (
+    <div className="workspace-control-row">
+      {renderFilterPanel()}
+      {renderDisplaySwitch()}
     </div>
   );
 
@@ -701,27 +1596,16 @@ export function DiscoveryPage({
         contextLabel="Workspace"
         emptyLabel="No sessions match the current filters."
         meetings={meetings}
-        onSelectMeeting={(meeting) => {
-          setSelectedMeeting(meeting);
-          setSelectedMeetingCluster(null);
-          setSelectedVenue(null);
-          setSelectedGroup(null);
-        }}
+        onSelectMeeting={selectMeeting}
       />
     ) : (
       <div className="stack-list stack-list--compact">
         {itemMode === "venues"
           ? venues.map((venue) => (
               <button
-                className={`browse-listing ${selectedVenue?.id === venue.id ? "is-selected" : ""}`}
-                      key={venue.id}
-                      onClick={() => {
-                        normalizeWorkspacePath({ selectedVenueId: venue.id, selectedMeetingId: null, selectedGroupId: null, selectedMeetingClusterMeetingIds: [] });
-                        setSelectedVenue(venue);
-                        setSelectedMeeting(null);
-                        setSelectedMeetingCluster(null);
-                  setSelectedGroup(null);
-                }}
+                className={`browse-listing browse-listing--venue ${selectedVenue?.id === venue.id ? "is-selected" : ""}`}
+                key={venue.id}
+                onClick={() => selectVenue(venue)}
                 type="button"
               >
                 <div className="browse-listing__row">
@@ -741,13 +1625,7 @@ export function DiscoveryPage({
                     <button
                       className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
                       key={group.id}
-                      onClick={() => {
-                        normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
-                        setSelectedGroup(group);
-                        setSelectedMeeting(null);
-                        setSelectedMeetingCluster(null);
-                        setSelectedVenue(null);
-                      }}
+                      onClick={() => selectGroup(group)}
                       type="button"
                     >
                       <div className="browse-listing__row">
@@ -770,13 +1648,7 @@ export function DiscoveryPage({
                 <button
                   className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
                   key={group.id}
-                  onClick={() => {
-                    normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
-                    setSelectedGroup(group);
-                    setSelectedMeeting(null);
-                    setSelectedMeetingCluster(null);
-                    setSelectedVenue(null);
-                  }}
+                  onClick={() => selectGroup(group)}
                   type="button"
                 >
                   <div className="browse-listing__row">
@@ -795,15 +1667,22 @@ export function DiscoveryPage({
       </div>
     );
 
+  const topCenterControls = (
+    <div className="workspace-top-switches">
+    </div>
+  );
+
   return (
     <WorkspaceShell
       center={
-        displayMode === "map" ? (
+        editPanel ? (
+          editPanel
+        ) : displayMode === "map" ? (
           <div className="workspace-map-center">
             <div className="map-overlay-controls">
-              {mobileFilterPanel}
-              {mobileDisplaySwitch}
+              {renderWorkspaceControls()}
             </div>
+            <div className="mode-overlay-controls">{renderModeSwitch()}</div>
             <MapView
               groupPins={groupPins}
               meetings={meetings}
@@ -819,53 +1698,17 @@ export function DiscoveryPage({
                   return next;
                 })
               }
-              onGroupSelect={(group) => {
-                normalizeWorkspacePath({ selectedGroupId: group.id, selectedMeetingId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
-                setSelectedGroup(group);
-                setSelectedMeeting(null);
-                setSelectedMeetingCluster(null);
-                setSelectedVenue(null);
-                setShowMobileFilters(false);
-              }}
-              onMeetingClusterSelect={(cluster) => {
-                normalizeWorkspacePath({
-                  selectedGroupId: null,
-                  selectedMeetingCluster: cluster,
-                  selectedMeetingClusterMeetingIds: cluster.meetings.map((meeting) => meeting.id),
-                  selectedMeetingClusterTitle: cluster.title,
-                  selectedMeetingId: null,
-                  selectedVenueId: null,
-                });
-                setSelectedMeetingCluster(cluster);
-                setSelectedMeeting(null);
-                setSelectedGroup(null);
-                setSelectedVenue(null);
-                setShowMobileFilters(false);
-              }}
-              onMeetingSelect={(meeting) => {
-                normalizeWorkspacePath({ selectedMeetingId: meeting.id, selectedGroupId: null, selectedVenueId: null, selectedMeetingClusterMeetingIds: [] });
-                setSelectedMeeting(meeting);
-                setSelectedMeetingCluster(null);
-                setSelectedGroup(null);
-                setSelectedVenue(null);
-                setShowMobileFilters(false);
-              }}
-              onVenueSelect={(venue) => {
-                normalizeWorkspacePath({ selectedVenueId: venue.id, selectedMeetingId: null, selectedGroupId: null, selectedMeetingClusterMeetingIds: [] });
-                setSelectedVenue(venue);
-                setSelectedMeeting(null);
-                setSelectedMeetingCluster(null);
-                setSelectedGroup(null);
-                setShowMobileFilters(false);
-              }}
-              selectedKey={selectedMeetingCluster?.lookupKey ?? selectedMeeting?.id ?? selectedVenue?.id ?? selectedGroup?.id}
+              onGroupSelect={selectGroup}
+              onMeetingClusterSelect={selectMeetingCluster}
+              onMeetingSelect={selectMeeting}
+              onVenueSelect={selectVenue}
+              selectedKey={selectedMeetingCluster?.lookupKey ?? selectedMeetingId ?? selectedVenueId ?? selectedGroupId}
               theme={theme}
               venueMeetingsById={venueMeetingsById}
               venues={venues}
             />
             {hasSelection ? (
               <aside className="mobile-details-drawer is-open">
-                <div className="mobile-details-drawer__header">{selectionHeaderActions}</div>
                 <div className="mobile-details-drawer__body">{selectionPanel}</div>
               </aside>
             ) : null}
@@ -873,17 +1716,18 @@ export function DiscoveryPage({
         ) : (
           <div className="workspace-list-center">
             <div className="map-overlay-controls">
-              {mobileFilterPanel}
-              {mobileDisplaySwitch}
+              {renderWorkspaceControls()}
             </div>
-            <div className="workspace-list-heading">
-              <p className="eyebrow">Browse</p>
-              <h2 className="section-title typewriter-title">{listHeading}</h2>
+            <div className="mode-overlay-controls">{renderModeSwitch()}</div>
+            <div className="workspace-list-scroll">
+              <div className="workspace-list-heading">
+                <p className="eyebrow">Browse</p>
+                <h2 className="section-title typewriter-title">{listHeading}</h2>
+              </div>
+              {listContent}
             </div>
-            {listContent}
             {hasSelection ? (
               <aside className="mobile-details-drawer is-open">
-                <div className="mobile-details-drawer__header">{selectionHeaderActions}</div>
                 <div className="mobile-details-drawer__body">{selectionPanel}</div>
               </aside>
             ) : null}
@@ -1035,12 +1879,13 @@ export function DiscoveryPage({
       leftHeader={undefined}
       mobileCollapsePanels
       onLogOut={onLogOut}
+      profileLinkState={headerProfileLinkState()}
       right={selectionPanel}
-      rightHeader={hasSelection ? selectionHeaderActions : undefined}
+      rightHeader={undefined}
       theme={theme}
       title={selectedTitle}
       toggleTheme={toggleTheme}
-      topCenter={null}
+      topCenter={topCenterControls}
       viewer={viewer}
     />
   );

@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
 import { DiscoveryPage } from "./pages/DiscoveryPage";
-import { GroupPage } from "./pages/GroupPage";
 import { LandingPage } from "./pages/LandingPage";
-import { MeetingPage } from "./pages/MeetingPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { VenuePage } from "./pages/VenuePage";
 
 export type ThemeMode = "light" | "dark";
 
@@ -93,6 +89,19 @@ function AppShell() {
         }
       />
       <Route
+        path="/venues"
+        element={
+          <DiscoveryPage
+            initialDisplayMode="list"
+            initialItemMode="venues"
+            onLogOut={() => logoutMutation.mutate()}
+            theme={theme}
+            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            viewer={viewer}
+          />
+        }
+      />
+      <Route
         path="/discover"
         element={
           <DiscoveryPage
@@ -105,11 +114,13 @@ function AppShell() {
           />
         }
       />
-      <Route path="/meetings/:meetingId" element={<Navigate replace to="/sessions/:meetingId" />} />
+      <Route path="/meetings/:meetingId" element={<MeetingRedirect />} />
       <Route
         path="/groups/:groupId"
         element={
-          <GroupPage
+          <DiscoveryPage
+            initialDisplayMode="map"
+            initialItemMode="groups"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
             toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -120,7 +131,9 @@ function AppShell() {
       <Route
         path="/sessions/:meetingId"
         element={
-          <MeetingPage
+          <DiscoveryPage
+            initialDisplayMode="map"
+            initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
             toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -131,7 +144,9 @@ function AppShell() {
       <Route
         path="/profile/:profileId"
         element={
-          <ProfilePage
+          <DiscoveryPage
+            initialDisplayMode="map"
+            initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
             toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -142,7 +157,9 @@ function AppShell() {
       <Route
         path="/venues/:venueId"
         element={
-          <VenuePage
+          <DiscoveryPage
+            initialDisplayMode="map"
+            initialItemMode="venues"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
             toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -152,6 +169,11 @@ function AppShell() {
       />
     </Routes>
   );
+}
+
+function MeetingRedirect() {
+  const { meetingId } = useParams();
+  return <Navigate replace to={meetingId ? `/sessions/${meetingId}` : "/sessions"} />;
 }
 
 export default function App() {

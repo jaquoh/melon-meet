@@ -5,6 +5,7 @@ import { PanelCard } from "./PanelCard";
 interface PostBoardProps {
   buttonLabel?: string;
   canPost: boolean;
+  compact?: boolean;
   emptyLabel: string;
   onSubmit: (content: string) => Promise<unknown>;
   posts: Array<{
@@ -19,6 +20,7 @@ interface PostBoardProps {
 export function PostBoard({
   buttonLabel = "Post",
   canPost,
+  compact = false,
   emptyLabel,
   onSubmit,
   posts,
@@ -40,14 +42,14 @@ export function PostBoard({
   }
 
   return (
-    <PanelCard className="stack-md">
-      <div>
+    <PanelCard className={`stack-md ${compact ? "pinboard pinboard--compact" : "pinboard"}`.trim()}>
+      <div className="pinboard__header">
         <p className="eyebrow">Pinboard</p>
         <h3 className="detail-title">{title}</h3>
       </div>
 
       {canPost ? (
-        <form className="stack-sm" onSubmit={handleSubmit}>
+        <form className="stack-sm pinboard__form" onSubmit={handleSubmit}>
           <textarea
             className="field-area"
             onChange={(event) => setContent(event.target.value)}
@@ -62,7 +64,7 @@ export function PostBoard({
         </form>
       ) : null}
 
-      <div className="stack-sm">
+      <div className="stack-sm pinboard__posts">
         {posts.length === 0 ? (
           <p className="empty-state">{emptyLabel}</p>
         ) : (
@@ -72,7 +74,7 @@ export function PostBoard({
                 <p className="terminal-item__title">{post.author.displayName}</p>
                 <p className="terminal-item__meta">{formatDateTime(post.createdAt)}</p>
               </div>
-              <p className="muted-copy" style={{ whiteSpace: "pre-wrap" }}>
+              <p className="pinboard__message">
                 {post.content}
               </p>
             </article>

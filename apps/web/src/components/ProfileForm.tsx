@@ -1,13 +1,23 @@
 import { useState } from "react";
-import type { ViewerSummary } from "../../../../packages/shared/src";
 import { FilterCheckbox } from "./FilterCheckbox";
+
+export interface ProfileFormValues {
+  avatarUrl: string;
+  bio: string;
+  displayName: string;
+  homeArea: string;
+  isProfilePublic: boolean;
+  showEmailPublicly: boolean;
+}
 
 export function ProfileForm({
   formId,
+  onChange,
   profile,
   onSubmit,
 }: {
   formId?: string;
+  onChange: (next: ProfileFormValues) => void;
   onSubmit: (payload: {
     avatarUrl: string;
     bio: string;
@@ -16,21 +26,15 @@ export function ProfileForm({
     isProfilePublic: boolean;
     showEmailPublicly: boolean;
   }) => Promise<unknown>;
-  profile: ViewerSummary;
+  profile: ProfileFormValues;
 }) {
-  const [displayName, setDisplayName] = useState(profile.displayName);
-  const [bio, setBio] = useState(profile.bio);
-  const [homeArea, setHomeArea] = useState(profile.homeArea);
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
-  const [isProfilePublic, setIsProfilePublic] = useState(profile.isProfilePublic);
-  const [showEmailPublicly, setShowEmailPublicly] = useState(profile.showEmailPublicly);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit({ avatarUrl, bio, displayName, homeArea, isProfilePublic, showEmailPublicly });
+      await onSubmit(profile);
     } finally {
       setSubmitting(false);
     }
@@ -40,32 +44,49 @@ export function ProfileForm({
     <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">Display name</span>
-        <input className="field-input" onChange={(event) => setDisplayName(event.target.value)} required value={displayName} />
+        <input
+          className="field-input"
+          onChange={(event) => onChange({ ...profile, displayName: event.target.value })}
+          required
+          value={profile.displayName}
+        />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Home area</span>
-        <input className="field-input" onChange={(event) => setHomeArea(event.target.value)} value={homeArea} />
+        <input className="field-input" onChange={(event) => onChange({ ...profile, homeArea: event.target.value })} value={profile.homeArea} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">Avatar URL</span>
-        <input className="field-input" onChange={(event) => setAvatarUrl(event.target.value)} type="url" value={avatarUrl} />
+        <input
+          className="field-input"
+          onChange={(event) => onChange({ ...profile, avatarUrl: event.target.value })}
+          type="url"
+          value={profile.avatarUrl}
+        />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">Bio</span>
-        <textarea className="field-area" onChange={(event) => setBio(event.target.value)} value={bio} />
+        <textarea className="field-area" onChange={(event) => onChange({ ...profile, bio: event.target.value })} value={profile.bio} />
       </label>
 
       <div className="field-full">
-        <FilterCheckbox checked={isProfilePublic} label="Public profile" onChange={setIsProfilePublic} />
+        <FilterCheckbox
+          checked={profile.isProfilePublic}
+          label="Public profile"
+          onChange={(checked) => onChange({ ...profile, isProfilePublic: checked })}
+        />
       </div>
 
       <div className="field-full">
-        <FilterCheckbox checked={showEmailPublicly} label="Show email publicly" onChange={setShowEmailPublicly} />
+        <FilterCheckbox
+          checked={profile.showEmailPublicly}
+          label="Show email publicly"
+          onChange={(checked) => onChange({ ...profile, showEmailPublicly: checked })}
+        />
       </div>
-
     </form>
   );
 }

@@ -71,8 +71,8 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
                   <Link className="button-primary" to="/map">
                     Open map
                   </Link>
-                  <Link className="button-secondary" to={`/profile/${viewer.id}`}>
-                    Open profile
+                  <Link className="button-secondary" to="/sessions">
+                    Open sessions
                   </Link>
                 </div>
               </div>
