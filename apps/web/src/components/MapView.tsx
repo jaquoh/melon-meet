@@ -67,7 +67,7 @@ const LAYER_BADGE_ID = "melon-map-badge";
 const LAYER_LABEL_ID = "melon-map-label";
 const LAYER_HIT_ID = "melon-map-hit";
 const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
-const DEFAULT_DARK_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json";
+const DEFAULT_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
 function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
   return `<div class="map-popup">${
@@ -250,11 +250,15 @@ function markerColorExpression(palette: ReturnType<typeof currentThemePalette>):
   ];
 }
 
-function mapStyleUrl(theme: "dark" | "light") {
+function mapStyle(theme: "dark" | "light"): string | maplibregl.StyleSpecification {
   if (theme === "dark") {
     return import.meta.env.VITE_MAP_STYLE_URL_DARK ?? DEFAULT_DARK_STYLE;
   }
   return import.meta.env.VITE_MAP_STYLE_URL ?? DEFAULT_LIGHT_STYLE;
+}
+
+function mapStyleKey(style: string | maplibregl.StyleSpecification) {
+  return typeof style === "string" ? style : "melon-default-dark";
 }
 
 function buildFeatureCollection({
@@ -426,13 +430,58 @@ function updateLayerTheme(map: maplibregl.Map, theme: "dark" | "light") {
   }
 }
 
+function applyTransitBoost(map: maplibregl.Map, theme: "dark" | "light") {
+  const transitColor = theme === "dark" ? "#66d9ff" : "#087bb8";
+  const transitHalo = theme === "dark" ? "#071114" : "#ffffff";
+  const stationText = theme === "dark" ? "#d7f6ff" : "#075b88";
+  const railLayerIds = [
+    "road_transit_rail",
+    "road_transit_rail_hatching",
+    "bridge_transit_rail",
+    "bridge_transit_rail_hatching",
+    "tunnel_transit_rail",
+    "tunnel_transit_rail_hatching",
+  ];
+
+  for (const layerId of railLayerIds) {
+    if (!map.getLayer(layerId)) {
+      continue;
+    }
+    map.setPaintProperty(layerId, "line-color", transitColor);
+    map.setPaintProperty(layerId, "line-opacity", theme === "dark" ? 0.94 : 0.86);
+    map.setPaintProperty(layerId, "line-width", [
+      "interpolate",
+      ["exponential", 1.35],
+      ["zoom"],
+      10,
+      layerId.includes("hatching") ? 0 : 0.5,
+      13,
+      layerId.includes("hatching") ? 2.4 : 1.3,
+      16,
+      layerId.includes("hatching") ? 5 : 3.2,
+      20,
+      layerId.includes("hatching") ? 10 : 7,
+    ]);
+  }
+
+  if (map.getLayer("poi_transit")) {
+    map.setLayoutProperty("poi_transit", "icon-size", ["interpolate", ["linear"], ["zoom"], 10, 0.7, 14, 0.9, 17, 1.1]);
+    map.setLayoutProperty("poi_transit", "text-size", ["interpolate", ["linear"], ["zoom"], 11, 11, 14, 12.5, 17, 14]);
+    map.setPaintProperty("poi_transit", "text-color", stationText);
+    map.setPaintProperty("poi_transit", "text-halo-color", transitHalo);
+    map.setPaintProperty("poi_transit", "text-halo-width", theme === "dark" ? 1.6 : 1.8);
+  }
+}
+
 function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
   if (map.getSource(SOURCE_ID)) {
     updateLayerTheme(map, theme);
+    applyTransitBoost(map, theme);
     return;
   }
 
   const palette = currentThemePalette(theme);
+  applyTransitBoost(map, theme);
 
   map.addSource(SOURCE_ID, {
     data: { features: [], type: "FeatureCollection" },
@@ -561,7 +610,8 @@ export function MapView({
       }),
     [groupPins, meetings, mode, selectedKey, theme, venueMeetingsById, venues],
   );
-  const currentStyleUrl = mapStyleUrl(theme);
+  const currentStyle = mapStyle(theme);
+  const currentStyleKey = mapStyleKey(currentStyle);
   const sourceDataRef = useRef(sourceData);
   const themeRef = useRef(theme);
   sourceDataRef.current = sourceData;
@@ -576,10 +626,10 @@ export function MapView({
       attributionControl: { compact: true },
       center: BERLIN_CENTER,
       container: mapContainerRef.current,
-      style: currentStyleUrl,
+      style: currentStyle,
       zoom: 10.8,
     });
-    appliedStyleRef.current = currentStyleUrl;
+    appliedStyleRef.current = currentStyleKey;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
@@ -693,17 +743,17 @@ export function MapView({
       interactionsBoundRef.current = false;
       setMapReady(false);
     };
-  }, [currentStyleUrl]);
+  }, [currentStyle, currentStyleKey]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || appliedStyleRef.current === currentStyleUrl) {
+    if (!map || appliedStyleRef.current === currentStyleKey) {
       return;
     }
-    appliedStyleRef.current = currentStyleUrl;
+    appliedStyleRef.current = currentStyleKey;
     popupRef.current?.remove();
-    map.setStyle(currentStyleUrl);
-  }, [currentStyleUrl]);
+    map.setStyle(currentStyle);
+  }, [currentStyle, currentStyleKey]);
 
   useEffect(() => {
     const map = mapRef.current;

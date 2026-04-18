@@ -65,5 +65,6 @@ npm run deploy
 - Run `npm run db:migrate:remote` before the first production deploy.
 - If you want the demo content in a remote database, run `npm run db:seed:remote` after migrations.
 - `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
-- If you want a custom map style, define `VITE_MAP_STYLE_URL` for the frontend build.
+- If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).
+- Use [docs/venue-content-plan.md](/Users/jbot/IdeaProjects/melon-meet/docs/venue-content-plan.md) when expanding real venue data or adding user venue suggestions.
