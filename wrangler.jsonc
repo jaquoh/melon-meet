@@ -11,8 +11,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "melon-meet",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "melon-meet-db",
+      "database_id": "b9f3cdc9-ab89-475c-a570-4a5f74551cef",
       "migrations_dir": "./apps/api/migrations"
     }
   ],
