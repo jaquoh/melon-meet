@@ -12,9 +12,10 @@
     "preview": "vite preview --config apps/web/vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "db:migrate:local": "wrangler d1 migrations apply melon-meet --local --config wrangler.jsonc",
-    "db:seed:local": "wrangler d1 execute melon-meet --local --file=./apps/api/migrations/0002_seed.sql --config wrangler.jsonc",
-    "db:migrate:remote": "wrangler d1 migrations apply melon-meet --remote --config wrangler.jsonc",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
+    "db:seed:local": "wrangler d1 execute DB --local --file=./apps/api/seed.sql --config wrangler.jsonc",
+    "db:seed:remote": "wrangler d1 execute DB --remote --file=./apps/api/seed.sql --config wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "deploy": "npm run build && wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
