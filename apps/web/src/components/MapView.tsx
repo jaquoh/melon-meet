@@ -33,6 +33,8 @@ interface MapViewProps {
   venues: VenueSummary[];
 }
 
+type SelectedMarkerKey = null | string;
+
 type MarkerLookupEntry =
   | { kind: "group"; group: GroupSummary; popupLines: string[]; popupTitle: string }
   | { kind: "session-cluster"; meetings: MeetingSummary[]; popupLines: string[]; popupTitle: string; lookupKey: string }
@@ -59,6 +61,24 @@ type SimpleFeatureCollection = {
   type: "FeatureCollection";
 };
 
+type TransitFeatureCollection = {
+  features: Array<{
+    geometry:
+      | { coordinates: [number, number]; type: "Point" }
+      | { coordinates: Array<[number, number]>; type: "LineString" };
+    properties: {
+      color?: string;
+      colors?: string[];
+      mode?: "s-bahn" | "u-bahn";
+      name?: string;
+      ref?: string;
+      refs?: string[];
+    };
+    type: "Feature";
+  }>;
+  type: "FeatureCollection";
+};
+
 const BERLIN_CENTER: [number, number] = [13.405, 52.52];
 const SOURCE_ID = "melon-map-items";
 const LAYER_BASE_ID = "melon-map-base";
@@ -66,8 +86,14 @@ const LAYER_ICON_ID = "melon-map-icon";
 const LAYER_BADGE_ID = "melon-map-badge";
 const LAYER_LABEL_ID = "melon-map-label";
 const LAYER_HIT_ID = "melon-map-hit";
+const TRANSIT_SOURCE_ID = "berlin-transit-overlay";
+const TRANSIT_LINE_LAYER_ID = "berlin-transit-lines";
+const TRANSIT_STATION_HALO_LAYER_ID = "berlin-transit-station-halo";
+const TRANSIT_STATION_DOT_LAYER_ID = "berlin-transit-station-dot";
+const TRANSIT_STATION_LABEL_LAYER_ID = "berlin-transit-station-label";
 const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const DEFAULT_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
+const TRANSIT_OVERLAY_URL = "/transit/berlin-transit.geojson";
 
 function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
   return `<div class="map-popup">${
@@ -84,28 +110,30 @@ function svgDataUrl(svg: string) {
 function iconSvg(kind: "group" | "session" | "venue") {
   if (kind === "session") {
     return `
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="6.5" y="8.5" width="19" height="17" rx="4"/>
-        <path d="M10 5.5v5"/>
-        <path d="M22 5.5v5"/>
-        <path d="M7 13.5h18"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#fffaf4" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 7.2c4.9 0 8.9 3.6 8.9 8.2 0 5.8-5.7 9.4-8.9 9.4s-8.9-3.6-8.9-9.4c0-4.6 4-8.2 8.9-8.2Z"/>
+        <path d="M12.3 10.7c2.4 2.5 2.5 7.2.2 10"/>
+        <path d="M19.7 10.7c-2.4 2.5-2.5 7.2-.2 10"/>
+        <path d="M8.4 15.8h15.2"/>
       </svg>
     `;
   }
   if (kind === "venue") {
     return `
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M16 26.5c5.1-6 8-10.1 8-13.6a8 8 0 1 0-16 0c0 3.5 2.9 7.6 8 13.6Z"/>
-        <circle cx="16" cy="13" r="3.2"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#fffaf4" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 26.3c5.4-5.6 8.2-9.7 8.2-13.4a8.2 8.2 0 0 0-16.4 0c0 3.7 2.8 7.8 8.2 13.4Z"/>
+        <path d="M16 9.6c2.3 0 4.1 1.5 4.1 3.5 0 2.8-2.8 4.4-4.1 4.4s-4.1-1.6-4.1-4.4c0-2 1.8-3.5 4.1-3.5Z"/>
+        <path d="M13.4 12.7h5.2"/>
       </svg>
     `;
   }
   return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3.3"/>
-      <circle cx="20.5" cy="13.5" r="2.8"/>
-      <path d="M6.5 23c1.8-3.5 4.4-5.2 7.7-5.2S20.1 19.5 22 23"/>
-      <path d="M17.3 23c1.2-2.4 3.1-3.6 5.5-3.6 1.1 0 2.2.3 3.2.8"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="#fffaf4" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11.6 12.4c1.9 0 3.4-1.4 3.4-3.1s-1.5-3.1-3.4-3.1-3.4 1.4-3.4 3.1 1.5 3.1 3.4 3.1Z"/>
+      <path d="M20.7 14.1c1.7 0 3-1.2 3-2.8s-1.3-2.8-3-2.8-3 1.2-3 2.8 1.3 2.8 3 2.8Z"/>
+      <path d="M5.9 24.3c1.3-4.5 4.1-6.8 8.2-6.8 4 0 6.7 2.3 8.1 6.8"/>
+      <path d="M17 24.3c1-2.6 3.1-4 6.1-4 1.3 0 2.4.2 3.3.7"/>
+      <path d="M13.8 4.6c1.7.3 2.8 1 3.5 2.2"/>
     </svg>
   `;
 }
@@ -201,18 +229,18 @@ function currentThemePalette(theme: "dark" | "light") {
   return theme === "dark"
     ? {
         badgeCountText: "#fff7f2",
-        badgeFill: "#172023",
+        badgeFill: "#223033",
         badgeFreeText: "#87d7a1",
         badgePaidText: "#ffb2c1",
-        badgeStroke: "#365056",
-        circleStroke: "#0f1517",
-        group: "#527078",
+        badgeStroke: "#456066",
+        circleStroke: "#fff4df",
+        group: "#62a58e",
         halo: "#0f1517",
         labelColor: "#fff7f2",
-        selected: "#ff728e",
-        session: "#ff728e",
-        venue: "#2f9f7b",
-        viewerAttending: "#87d7a1",
+        selected: "#ffd166",
+        session: "#ff6b7f",
+        venue: "#35b97f",
+        viewerAttending: "#ffd166",
       }
     : {
         badgeCountText: "#231d1c",
@@ -220,14 +248,14 @@ function currentThemePalette(theme: "dark" | "light") {
         badgeFreeText: "#2c8b61",
         badgePaidText: "#d54762",
         badgeStroke: "#e5d6d0",
-        circleStroke: "#fffdfa",
-        group: "#20352a",
+        circleStroke: "#fff4df",
+        group: "#4d9a76",
         halo: "#fffdfa",
         labelColor: "#231d1c",
-        selected: "#f05f78",
+        selected: "#f6b73c",
         session: "#f05f78",
-        venue: "#2c8b61",
-        viewerAttending: "#2c8b61",
+        venue: "#20a669",
+        viewerAttending: "#f6b73c",
       };
 }
 
@@ -418,6 +446,46 @@ function buildFeatureCollection({
   return { featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection, lookup };
 }
 
+function selectedMarkerKeyForLookup(lookup: MarkerLookupEntry) {
+  if (lookup.kind === "venue") {
+    return lookup.venue.id;
+  }
+  if (lookup.kind === "group") {
+    return lookup.group.id;
+  }
+  if (lookup.kind === "session") {
+    return lookup.meeting.id;
+  }
+  return lookup.lookupKey;
+}
+
+function featureCollectionWithSelectedKey(
+  featureCollection: SimpleFeatureCollection,
+  selectedMarkerKey: SelectedMarkerKey,
+): SimpleFeatureCollection {
+  if (!selectedMarkerKey) {
+    return featureCollection;
+  }
+
+  return {
+    ...featureCollection,
+    features: featureCollection.features.map((feature) => {
+      const selected =
+        feature.properties.lookupKey === selectedMarkerKey ||
+        feature.properties.lookupKey.endsWith(`:${selectedMarkerKey}`)
+          ? 1
+          : 0;
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          selected,
+        },
+      };
+    }),
+  };
+}
+
 function updateLayerTheme(map: maplibregl.Map, theme: "dark" | "light") {
   const palette = currentThemePalette(theme);
   if (map.getLayer(LAYER_BASE_ID)) {
@@ -431,9 +499,9 @@ function updateLayerTheme(map: maplibregl.Map, theme: "dark" | "light") {
 }
 
 function applyTransitBoost(map: maplibregl.Map, theme: "dark" | "light") {
-  const transitColor = theme === "dark" ? "#66d9ff" : "#087bb8";
-  const transitHalo = theme === "dark" ? "#071114" : "#ffffff";
-  const stationText = theme === "dark" ? "#d7f6ff" : "#075b88";
+  const transitColor = theme === "dark" ? "#7baeba" : "#6f9aac";
+  const transitHalo = theme === "dark" ? "#10181a" : "#fff7f0";
+  const stationText = theme === "dark" ? "#abcdd5" : "#6d8790";
   const railLayerIds = [
     "road_transit_rail",
     "road_transit_rail_hatching",
@@ -448,40 +516,176 @@ function applyTransitBoost(map: maplibregl.Map, theme: "dark" | "light") {
       continue;
     }
     map.setPaintProperty(layerId, "line-color", transitColor);
-    map.setPaintProperty(layerId, "line-opacity", theme === "dark" ? 0.94 : 0.86);
+    map.setPaintProperty(layerId, "line-opacity", theme === "dark" ? 0.34 : 0.28);
     map.setPaintProperty(layerId, "line-width", [
       "interpolate",
       ["exponential", 1.35],
       ["zoom"],
       10,
-      layerId.includes("hatching") ? 0 : 0.5,
+      layerId.includes("hatching") ? 0 : 0.35,
       13,
-      layerId.includes("hatching") ? 2.4 : 1.3,
+      layerId.includes("hatching") ? 1.5 : 0.85,
       16,
-      layerId.includes("hatching") ? 5 : 3.2,
+      layerId.includes("hatching") ? 3.2 : 2.1,
       20,
-      layerId.includes("hatching") ? 10 : 7,
+      layerId.includes("hatching") ? 6.2 : 4.3,
     ]);
   }
 
   if (map.getLayer("poi_transit")) {
-    map.setLayoutProperty("poi_transit", "icon-size", ["interpolate", ["linear"], ["zoom"], 10, 0.7, 14, 0.9, 17, 1.1]);
-    map.setLayoutProperty("poi_transit", "text-size", ["interpolate", ["linear"], ["zoom"], 11, 11, 14, 12.5, 17, 14]);
+    map.setLayoutProperty("poi_transit", "icon-size", ["interpolate", ["linear"], ["zoom"], 10, 0.55, 14, 0.72, 17, 0.9]);
+    map.setLayoutProperty("poi_transit", "text-size", ["interpolate", ["linear"], ["zoom"], 11, 9.5, 14, 11, 17, 12.2]);
     map.setPaintProperty("poi_transit", "text-color", stationText);
     map.setPaintProperty("poi_transit", "text-halo-color", transitHalo);
-    map.setPaintProperty("poi_transit", "text-halo-width", theme === "dark" ? 1.6 : 1.8);
+    map.setPaintProperty("poi_transit", "text-opacity", theme === "dark" ? 0.58 : 0.46);
+    map.setPaintProperty("poi_transit", "icon-opacity", theme === "dark" ? 0.52 : 0.44);
+    map.setPaintProperty("poi_transit", "text-halo-width", theme === "dark" ? 1.15 : 1.25);
   }
 }
 
-function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
+function addTransitOverlay(
+  map: maplibregl.Map,
+  theme: "dark" | "light",
+  transitData: TransitFeatureCollection | null,
+) {
+  if (!transitData) {
+    return;
+  }
+
+  const existingSource = map.getSource(TRANSIT_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  if (existingSource) {
+    existingSource.setData(transitData);
+    return;
+  }
+
+  map.addSource(TRANSIT_SOURCE_ID, {
+    attribution: "VBB Verkehrsverbund Berlin-Brandenburg GmbH",
+    data: transitData as never,
+    type: "geojson",
+  });
+
+  map.addLayer({
+    filter: ["==", ["geometry-type"], "LineString"],
+    id: TRANSIT_LINE_LAYER_ID,
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+    },
+    paint: {
+      "line-color": ["coalesce", ["get", "color"], theme === "dark" ? "#66d9ff" : "#087bb8"],
+      "line-opacity": theme === "dark" ? 0.26 : 0.42,
+      "line-width": ["interpolate", ["exponential", 1.35], ["zoom"], 8, 0.75, 11, 1.2, 14, 2.1, 17, 3.4],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "line",
+  });
+
+  map.addLayer({
+    filter: ["==", ["geometry-type"], "Point"],
+    id: TRANSIT_STATION_HALO_LAYER_ID,
+    paint: {
+      "circle-color": theme === "dark" ? "#3c4b4d" : "#fff7ed",
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 8, 0, 9, theme === "dark" ? 0.5 : 0.58],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.8, 11, 4, 15, 5.6],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "circle",
+  });
+
+  map.addLayer({
+    filter: ["==", ["geometry-type"], "Point"],
+    id: TRANSIT_STATION_DOT_LAYER_ID,
+    paint: {
+      "circle-color": [
+        "case",
+        ["==", ["get", "mode"], "s-bahn"],
+        theme === "dark" ? "#4d6b59" : "#9ccfaf",
+        theme === "dark" ? "#4b6570" : "#9fc7da",
+      ],
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 8, 0.14, 9, theme === "dark" ? 0.5 : 0.62],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 11, 2.35, 15, 3.25],
+      "circle-stroke-color": theme === "dark" ? "#3c4b4d" : "#fff7ed",
+      "circle-stroke-width": 1.5,
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "circle",
+  });
+
+  map.addLayer({
+    filter: ["==", ["geometry-type"], "Point"],
+    id: TRANSIT_STATION_LABEL_LAYER_ID,
+    layout: {
+      "text-field": ["get", "name"],
+      "text-font": ["Noto Sans Regular", "Open Sans Regular"],
+      "text-max-width": 9,
+      "text-offset": [0, 0.9],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 9, 9.2, 12, 10.5, 15, 12],
+      "text-optional": true,
+    },
+    paint: {
+      "text-color": theme === "dark" ? "#6f8588" : "#4f727c",
+      "text-halo-color": theme === "dark" ? "#10181a" : "#fff7f0",
+      "text-halo-width": 1.25,
+      "text-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.32 : 0.6],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "symbol",
+  });
+}
+
+function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light") {
+  if (map.getLayer(TRANSIT_LINE_LAYER_ID)) {
+    map.setPaintProperty(TRANSIT_LINE_LAYER_ID, "line-opacity", theme === "dark" ? 0.26 : 0.42);
+  }
+  if (map.getLayer(TRANSIT_STATION_HALO_LAYER_ID)) {
+    map.setPaintProperty(TRANSIT_STATION_HALO_LAYER_ID, "circle-color", theme === "dark" ? "#3c4b4d" : "#fff7ed");
+    map.setPaintProperty(
+      TRANSIT_STATION_HALO_LAYER_ID,
+      "circle-opacity",
+      ["interpolate", ["linear"], ["zoom"], 8, 0, 9, theme === "dark" ? 0.5 : 0.58],
+    );
+  }
+  if (map.getLayer(TRANSIT_STATION_DOT_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_STATION_DOT_LAYER_ID,
+      "circle-color",
+      [
+        "case",
+        ["==", ["get", "mode"], "s-bahn"],
+        theme === "dark" ? "#4d6b59" : "#9ccfaf",
+        theme === "dark" ? "#4b6570" : "#9fc7da",
+      ],
+    );
+    map.setPaintProperty(
+      TRANSIT_STATION_DOT_LAYER_ID,
+      "circle-opacity",
+      ["interpolate", ["linear"], ["zoom"], 8, 0.14, 9, theme === "dark" ? 0.5 : 0.62],
+    );
+    map.setPaintProperty(TRANSIT_STATION_DOT_LAYER_ID, "circle-stroke-color", theme === "dark" ? "#3c4b4d" : "#fff7ed");
+  }
+  if (map.getLayer(TRANSIT_STATION_LABEL_LAYER_ID)) {
+    map.setPaintProperty(TRANSIT_STATION_LABEL_LAYER_ID, "text-color", theme === "dark" ? "#6f8588" : "#4f727c");
+    map.setPaintProperty(TRANSIT_STATION_LABEL_LAYER_ID, "text-halo-color", theme === "dark" ? "#10181a" : "#fff7f0");
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_LAYER_ID,
+      "text-opacity",
+      ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.32 : 0.6],
+    );
+  }
+}
+
+function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: TransitFeatureCollection | null) {
   if (map.getSource(SOURCE_ID)) {
     updateLayerTheme(map, theme);
     applyTransitBoost(map, theme);
+    addTransitOverlay(map, theme, transitData);
+    updateTransitOverlayTheme(map, theme);
     return;
   }
 
   const palette = currentThemePalette(theme);
   applyTransitBoost(map, theme);
+  addTransitOverlay(map, theme, transitData);
 
   map.addSource(SOURCE_ID, {
     data: { features: [], type: "FeatureCollection" },
@@ -495,15 +699,16 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
       "circle-radius": [
         "case",
         ["==", ["get", "selected"], 1],
-        21,
+        22,
         ["==", ["get", "kind"], "venue"],
-        18,
+        18.5,
         ["==", ["get", "kind"], "group"],
+        17.5,
         17,
-        16,
       ],
       "circle-stroke-color": palette.circleStroke,
-      "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4, 2.5],
+      "circle-stroke-opacity": 0.92,
+      "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4.5, 3],
     },
     source: SOURCE_ID,
     type: "circle",
@@ -515,7 +720,7 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
       "icon-allow-overlap": true,
       "icon-anchor": "center",
       "icon-image": ["get", "icon"],
-      "icon-size": 0.88,
+      "icon-size": 0.82,
     },
     source: SOURCE_ID,
     type: "symbol",
@@ -543,7 +748,7 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light") {
       "text-field": ["get", "label"],
       "text-font": ["Noto Sans Regular", "Open Sans Regular"],
       "text-max-width": 10,
-      "text-offset": [0, 2.35],
+      "text-offset": [0, 2.45],
       "text-size": 13,
     },
     paint: {
@@ -587,8 +792,10 @@ export function MapView({
   const lookupRef = useRef<Map<string, MarkerLookupEntry>>(new Map());
   const interactionsBoundRef = useRef(false);
   const appliedStyleRef = useRef<string | null>(null);
+  const optimisticSelectedKeyRef = useRef<SelectedMarkerKey>(null);
   const suppressBackgroundClickRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
 
   const emitBoundsChange = useEffectEvent(onBoundsChange);
   const emitBackgroundClick = useEffectEvent(onBackgroundClick ?? (() => undefined));
@@ -614,8 +821,37 @@ export function MapView({
   const currentStyleKey = mapStyleKey(currentStyle);
   const sourceDataRef = useRef(sourceData);
   const themeRef = useRef(theme);
+  const transitDataRef = useRef<TransitFeatureCollection | null>(null);
   sourceDataRef.current = sourceData;
   themeRef.current = theme;
+  transitDataRef.current = transitData;
+  optimisticSelectedKeyRef.current = selectedKey ?? null;
+
+  useEffect(() => {
+    let active = true;
+    fetch(TRANSIT_OVERLAY_URL)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: unknown) => {
+        if (
+          active &&
+          data &&
+          typeof data === "object" &&
+          "type" in data &&
+          data.type === "FeatureCollection"
+        ) {
+          setTransitData(data as TransitFeatureCollection);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setTransitData(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) {
@@ -643,11 +879,56 @@ export function MapView({
       });
     };
 
-    const handleMapClick = () => {
+    const applyOptimisticSelection = (nextSelectedKey: SelectedMarkerKey) => {
+      optimisticSelectedKeyRef.current = nextSelectedKey;
+      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      source?.setData(
+        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, nextSelectedKey) as never,
+      );
+      map.triggerRepaint();
+    };
+
+    const markerLayerIds = [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID];
+
+    const handleMapClick = (event: maplibregl.MapMouseEvent) => {
+      const hitBox = 32;
+      const features = map.queryRenderedFeatures(
+        [
+          [event.point.x - hitBox, event.point.y - hitBox],
+          [event.point.x + hitBox, event.point.y + hitBox],
+        ],
+        { layers: markerLayerIds.filter((layerId) => map.getLayer(layerId)) },
+      );
+      const feature = features.find((item) => item.properties?.lookupKey);
+      const lookupKey = feature?.properties?.lookupKey;
+
+      if (lookupKey) {
+        const lookup = lookupRef.current.get(String(lookupKey));
+        if (!lookup) {
+          return;
+        }
+        applyOptimisticSelection(selectedMarkerKeyForLookup(lookup));
+        if (lookup.kind === "session-cluster") {
+          emitMeetingClusterSelect({
+            lookupKey: lookup.lookupKey,
+            meetings: lookup.meetings,
+            title: lookup.popupTitle,
+          });
+        } else if (lookup.kind === "session") {
+          emitMeetingSelect(lookup.meeting);
+        } else if (lookup.kind === "venue") {
+          emitVenueSelect(lookup.venue);
+        } else {
+          emitGroupSelect(lookup.group);
+        }
+        return;
+      }
+
       if (suppressBackgroundClickRef.current) {
         suppressBackgroundClickRef.current = false;
         return;
       }
+      applyOptimisticSelection(null);
       emitBackgroundClick();
     };
 
@@ -682,43 +963,16 @@ export function MapView({
       popupRef.current?.remove();
     };
 
-    const handleFeatureClick = (event: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
-      suppressBackgroundClickRef.current = true;
-      const feature = event.features?.[0];
-      const lookupKey = feature?.properties?.lookupKey;
-      if (!lookupKey) {
-        return;
-      }
-      const lookup = lookupRef.current.get(String(lookupKey));
-      if (!lookup) {
-        return;
-      }
-      if (lookup.kind === "session-cluster") {
-        emitMeetingClusterSelect({
-          lookupKey: lookup.lookupKey,
-          meetings: lookup.meetings,
-          title: lookup.popupTitle,
-        });
-      } else if (lookup.kind === "session") {
-        emitMeetingSelect(lookup.meeting);
-      } else if (lookup.kind === "venue") {
-        emitVenueSelect(lookup.venue);
-      } else {
-        emitGroupSelect(lookup.group);
-      }
-    };
-
     const handleLoad = async () => {
       await ensureBaseAssets(map);
       await ensureBadgeAssets(map, sourceDataRef.current.featureCollection.features, themeRef.current);
-      addLayers(map, themeRef.current);
+      addLayers(map, themeRef.current, transitDataRef.current);
       const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
       source?.setData(sourceDataRef.current.featureCollection as never);
       popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
       if (!interactionsBoundRef.current) {
         map.on("click", handleMapClick);
         [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID].forEach((layerId) => {
-          map.on("click", layerId, handleFeatureClick);
           map.on("mousemove", layerId, handleHover);
           map.on("mouseleave", layerId, clearHover);
         });
@@ -752,7 +1006,11 @@ export function MapView({
     }
     appliedStyleRef.current = currentStyleKey;
     popupRef.current?.remove();
+    setMapReady(false);
     map.setStyle(currentStyle);
+    map.once("style.load", () => {
+      setMapReady(true);
+    });
   }, [currentStyle, currentStyleKey]);
 
   useEffect(() => {
@@ -761,13 +1019,35 @@ export function MapView({
       return;
     }
 
+    let active = true;
     lookupRef.current = sourceData.lookup;
-    void ensureBadgeAssets(map, sourceData.featureCollection.features, theme);
-    addLayers(map, theme);
-    updateLayerTheme(map, theme);
-    const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-    source?.setData(sourceData.featureCollection as never);
-  }, [mapReady, sourceData, theme]);
+    const selectedMarkerKey = selectedKey ?? null;
+    optimisticSelectedKeyRef.current = selectedMarkerKey;
+    const currentSource = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    currentSource?.setData(
+      featureCollectionWithSelectedKey(sourceData.featureCollection, selectedMarkerKey) as never,
+    );
+    map.triggerRepaint();
+
+    void (async () => {
+      await ensureBaseAssets(map);
+      await ensureBadgeAssets(map, sourceData.featureCollection.features, theme);
+      if (!active) {
+        return;
+      }
+      addLayers(map, theme, transitData);
+      updateLayerTheme(map, theme);
+      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      source?.setData(
+        featureCollectionWithSelectedKey(sourceData.featureCollection, optimisticSelectedKeyRef.current) as never,
+      );
+      map.triggerRepaint();
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [mapReady, sourceData, theme, transitData]);
 
   return <div className="map-stage" ref={mapContainerRef} />;
 }

@@ -56,6 +56,7 @@ npm test
 npm run build
 npm run db:migrate:remote
 npm run db:seed:remote
+npm run transit:generate
 npm run deploy
 ```
 
@@ -68,3 +69,4 @@ npm run deploy
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).
 - Use [docs/venue-content-plan.md](/Users/jbot/IdeaProjects/melon-meet/docs/venue-content-plan.md) when expanding real venue data or adding user venue suggestions.
+- Use [docs/transit-overlay.md](/Users/jbot/IdeaProjects/melon-meet/docs/transit-overlay.md) to generate the optional Berlin U-Bahn/S-Bahn overlay for local testing.

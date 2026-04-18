@@ -16,6 +16,7 @@
     "db:seed:local": "wrangler d1 execute DB --local --file=./apps/api/seed.sql --config wrangler.jsonc",
     "db:seed:remote": "wrangler d1 execute DB --remote --file=./apps/api/seed.sql --config wrangler.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
+    "transit:generate": "node scripts/generate-berlin-transit.mjs",
     "deploy": "npm run build && wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
