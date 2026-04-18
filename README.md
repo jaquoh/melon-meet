@@ -54,9 +54,14 @@ The seed includes:
 npm run typecheck
 npm test
 npm run build
+npm run db:migrate:remote
+npm run deploy
 ```
 
 ## Deployment notes
 
-- Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/Documents/private-docs/projects/melon-meet/wrangler.jsonc) with your real D1 database ID before deploying.
+- Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.
+- Run `npm run db:migrate:remote` before the first production deploy.
+- `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` for the frontend build.
+- Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).

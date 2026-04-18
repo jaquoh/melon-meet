@@ -100,6 +100,20 @@ img {
   padding: 1rem 0 2rem;
 }
 
+.info-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.info-page__inner {
+  width: min(56rem, 100%);
+  margin: 0 auto;
+}
+
+.info-page__card {
+  padding: 1.35rem;
+}
+
 .loading-shell,
 .error-shell {
   padding: 2rem 0;
@@ -1118,6 +1132,47 @@ img {
   background: var(--panel);
   overflow: hidden;
   box-shadow: var(--shadow);
+}
+
+.legal-footer {
+  width: min(96rem, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+.legal-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.legal-footer__copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.legal-footer__links {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.legal-footer__links a {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legal-footer__links a:hover {
+  color: var(--text);
 }
 
 .workspace-shell {

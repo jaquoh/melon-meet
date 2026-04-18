@@ -3,6 +3,7 @@ import { Moon, Sun, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { LegalFooter } from "./LegalFooter";
 
 type ThemeMode = "light" | "dark";
 
@@ -168,6 +169,7 @@ export function WorkspaceShell({
           </section>
         </div>
       </div>
+      <LegalFooter />
     </div>
   );
 }

@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "db:migrate:local": "wrangler d1 migrations apply melon-meet --local --config wrangler.jsonc",
-    "db:seed:local": "wrangler d1 execute melon-meet --local --file=./apps/api/migrations/0002_seed.sql --config wrangler.jsonc"
+    "db:seed:local": "wrangler d1 execute melon-meet --local --file=./apps/api/migrations/0002_seed.sql --config wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply melon-meet --remote --config wrangler.jsonc",
+    "deploy": "npm run build && wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",

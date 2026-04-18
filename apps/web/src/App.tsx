@@ -5,6 +5,7 @@ import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
 import { DiscoveryPage } from "./pages/DiscoveryPage";
+import { InfoPage } from "./pages/InfoPage";
 import { LandingPage } from "./pages/LandingPage";
 
 export type ThemeMode = "light" | "dark";
@@ -49,6 +50,9 @@ function AppShell() {
     <Routes>
       <Route path="/" element={<LandingPage viewer={viewer} />} />
       <Route path="/auth" element={<Navigate replace to="/" />} />
+      <Route path="/privacy" element={<InfoPage page="privacy" />} />
+      <Route path="/terms" element={<InfoPage page="terms" />} />
+      <Route path="/impressum" element={<InfoPage page="impressum" />} />
       <Route
         path="/map"
         element={

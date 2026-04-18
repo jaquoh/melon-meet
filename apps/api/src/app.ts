@@ -31,6 +31,7 @@ import {
 } from "./lib/auth";
 import { allRows, firstRow, runStatement } from "./lib/db";
 import { assertOrThrow } from "./lib/http";
+import { consumeRateLimit } from "./lib/rate-limit";
 import {
   durationMinutes,
   horizonDate,
@@ -44,6 +45,9 @@ import type { AppEnv } from "./types/env";
 
 type GroupRole = "owner" | "admin" | "member";
 type GroupVisibility = "public" | "private";
+
+const AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
 
 type ViewerRow = {
   avatar_url: string | null;
@@ -95,6 +99,49 @@ function maskViewerEmail(viewer: ReturnType<typeof mapViewerSummary>) {
 function buildGoogleMapsUrl(address: string, latitude: number, longitude: number) {
   const query = address || `${latitude},${longitude}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function getClientAddress(c: Context<AppEnv>) {
+  const forwardedIp = c.req.header("CF-Connecting-IP");
+  if (forwardedIp) {
+    return forwardedIp;
+  }
+
+  const xForwardedFor = c.req.header("X-Forwarded-For");
+  if (xForwardedFor) {
+    return xForwardedFor.split(",")[0]?.trim() ?? "unknown-ip";
+  }
+
+  return "unknown-ip";
+}
+
+async function enforceAuthRateLimit(
+  c: Context<AppEnv>,
+  scope: "auth:login" | "auth:signup",
+  email: string,
+) {
+  const rateLimit = await consumeRateLimit(c.env.DB, {
+    identifier: `${getClientAddress(c)}:${email.trim().toLowerCase()}`,
+    limit: AUTH_RATE_LIMIT_MAX_ATTEMPTS,
+    scope,
+    windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
+  });
+
+  c.header("X-RateLimit-Limit", String(AUTH_RATE_LIMIT_MAX_ATTEMPTS));
+  c.header("X-RateLimit-Remaining", String(rateLimit.remaining));
+  c.header("X-RateLimit-Reset", String(rateLimit.retryAfterSeconds));
+
+  if (!rateLimit.allowed) {
+    c.header("Retry-After", String(rateLimit.retryAfterSeconds));
+    return c.json(
+      {
+        error: "Too many authentication attempts. Please wait a few minutes and try again.",
+      },
+      429,
+    );
+  }
+
+  return null;
 }
 
 async function getGroupRole(
@@ -520,6 +567,14 @@ export function createApp() {
   const app = new Hono<AppEnv>();
 
   app.use("*", async (c, next) => {
+    await next();
+    c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("X-Frame-Options", "DENY");
+    c.header("Permissions-Policy", "geolocation=(self)");
+  });
+
+  app.use("*", async (c, next) => {
     const resolved = await resolveSessionViewer(c.env.DB, readSessionCookie(c));
     c.set("sessionId", resolved?.sessionId ?? null);
     c.set("viewer", resolved?.viewer ?? null);
@@ -539,6 +594,10 @@ export function createApp() {
 
   app.post("/api/auth/signup", zValidator("json", authSchema), async (c) => {
     const { email, password } = c.req.valid("json");
+    const limitedResponse = await enforceAuthRateLimit(c, "auth:signup", email);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
     const existing = await firstRow<{ id: string }>(
       c.env.DB,
       "SELECT id FROM users WHERE email = ?",
@@ -583,6 +642,10 @@ export function createApp() {
 
   app.post("/api/auth/login", zValidator("json", authSchema), async (c) => {
     const { email, password } = c.req.valid("json");
+    const limitedResponse = await enforceAuthRateLimit(c, "auth:login", email);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
     const row = await firstRow<{
       avatar_url: string | null;
       bio: string;

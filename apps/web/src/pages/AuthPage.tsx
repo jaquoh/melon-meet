@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { LegalFooter } from "../components/LegalFooter";
 import { PanelCard } from "../components/PanelCard";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -142,6 +143,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
           </form>
         </PanelCard>
       </section>
+      <LegalFooter />
     </div>
   );
 }
