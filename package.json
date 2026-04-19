@@ -13,8 +13,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
+    "db:reset:local": "rm -rf ./.wrangler/state/v3/d1 && npm run db:migrate:local && npm run db:seed:local",
     "db:seed:local": "wrangler d1 execute DB --local --file=./apps/api/seed.sql --config wrangler.jsonc",
-    "db:seed:remote": "wrangler d1 execute DB --remote --file=./apps/api/seed.sql --config wrangler.jsonc",
+    "db:seed:remote": "wrangler d1 execute DB --remote --file=./apps/api/seed-venues.sql --config wrangler.jsonc",
+    "db:seed:remote:demo": "wrangler d1 execute DB --remote --file=./apps/api/seed.sql --config wrangler.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "transit:generate": "node scripts/generate-berlin-transit.mjs",
     "deploy": "npm run build && wrangler deploy --config wrangler.jsonc"

@@ -7,7 +7,8 @@ This checklist is meant for the first public beta launch on Cloudflare.
 - Create the production Cloudflare D1 database.
 - Replace the placeholder `database_id` in `/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc`.
 - Apply remote migrations with `npm run db:migrate:remote`.
-- Seed the remote database only if you want the demo/sample content, using `npm run db:seed:remote`.
+- Seed production-safe venue data with `npm run db:seed:remote`.
+- Only seed full demo/sample content if you explicitly want it, using `npm run db:seed:remote:demo`.
 - Confirm the app is deployed with `npm run deploy`.
 - Verify deep links like `/map`, `/groups`, and `/sessions/<id>` work in production.
 

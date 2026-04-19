@@ -207,6 +207,7 @@ export function DiscoveryPage({
   const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
+  const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
@@ -389,6 +390,22 @@ export function DiscoveryPage({
     );
   }
 
+  function navigateToMapSelectionPath(
+    pathname: string,
+    overrides: Partial<DiscoveryWorkspaceState & { selectedMeetingCluster?: typeof selectedMeetingCluster }> = {},
+  ) {
+    navigate(
+      {
+        pathname,
+        search: workspaceSearchWithoutLegacyVenue(),
+      },
+      {
+        replace: true,
+        state: workspaceRouteState(overrides, []),
+      },
+    );
+  }
+
   function headerProfileLinkState() {
     const currentPath = location.pathname;
     const nextReturnStack = workspaceRouteKind(currentPath)
@@ -428,8 +445,45 @@ export function DiscoveryPage({
     setShowMobileFilters(false);
   }
 
+  function selectMeetingFromMap(meeting: MeetingSummary) {
+    navigateToMapSelectionPath(`/sessions/${meeting.id}`, {
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: meeting.id,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedMeeting(meeting);
+    setSelectedMeetingCluster(null);
+    setSelectedVenue(null);
+    setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
   function selectVenue(venue: VenueSummary) {
     navigateToWorkspacePath(`/venues/${venue.id}`, {
+      itemMode: "venues",
+      selectedGroupId: null,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: venue.id,
+      showMobileFilters: false,
+    });
+    setSelectedVenue(venue);
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedGroup(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
+  function selectVenueFromMap(venue: VenueSummary) {
+    navigateToMapSelectionPath(`/venues/${venue.id}`, {
       itemMode: "venues",
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -466,8 +520,46 @@ export function DiscoveryPage({
     setShowMobileFilters(false);
   }
 
+  function selectGroupFromMap(group: GroupSummary) {
+    navigateToMapSelectionPath(`/groups/${group.id}`, {
+      itemMode: "groups",
+      selectedGroupId: group.id,
+      selectedMeetingClusterMeetingIds: [],
+      selectedMeetingClusterTitle: null,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedGroup(group);
+    setSelectedMeeting(null);
+    setSelectedMeetingCluster(null);
+    setSelectedVenue(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
   function selectMeetingCluster(cluster: { lookupKey: string; meetings: MeetingSummary[]; title: string }) {
     navigateToWorkspacePath("/discover", {
+      selectedGroupId: null,
+      selectedMeetingCluster: cluster,
+      selectedMeetingClusterMeetingIds: cluster.meetings.map((meeting) => meeting.id),
+      selectedMeetingClusterTitle: cluster.title,
+      selectedMeetingId: null,
+      selectedVenueId: null,
+      showMobileFilters: false,
+    });
+    setSelectedMeetingCluster(cluster);
+    setSelectedMeeting(null);
+    setSelectedGroup(null);
+    setSelectedVenue(null);
+    setEditingTarget(null);
+    setEditingProfile(false);
+    setShowMobileFilters(false);
+  }
+
+  function selectMeetingClusterFromMap(cluster: { lookupKey: string; meetings: MeetingSummary[]; title: string }) {
+    navigateToMapSelectionPath("/discover", {
       selectedGroupId: null,
       selectedMeetingCluster: cluster,
       selectedMeetingClusterMeetingIds: cluster.meetings.map((meeting) => meeting.id),
@@ -781,6 +873,7 @@ export function DiscoveryPage({
   const selectedProfileResponsible = selectedProfileDetailQuery.data?.responsible ?? [];
   const selectedMeetingClaims = selectedMeetingDetailQuery.data?.claims ?? [];
   const isOwnProfile = Boolean(selectedProfileId && viewer?.id === selectedProfileId);
+  const createdSessionsHeading = isOwnProfile ? "Your created Sessions" : "Created Sessions";
   const activeProfileDraft = profileDraft ?? (selectedProfileDetail ? createProfileDraft(selectedProfileDetail) : null);
   const selectedTitle =
     selectedMeetingDetail?.title ??
@@ -793,6 +886,51 @@ export function DiscoveryPage({
   const navState = createNavigationState(location, "Workspace");
   const selectedVenueMeetings = selectedVenueDetailQuery.data?.meetings ?? (selectedVenueId ? venueMeetingsById[selectedVenueId] ?? [] : []);
   const selectedGroupMeetings = selectedGroupDetailQuery.data?.meetings ?? (selectedGroupId ? groupMeetingsById[selectedGroupId] ?? [] : []);
+  const visibleSessionClusterKey =
+    selectedMeetingDetail && itemMode === "sessions"
+      ? (() => {
+          const sameLocationMeetings = meetings.filter(
+            (meeting) =>
+              meeting.id !== selectedMeetingDetail.id &&
+              meeting.latitude.toFixed(5) === selectedMeetingDetail.latitude.toFixed(5) &&
+              meeting.longitude.toFixed(5) === selectedMeetingDetail.longitude.toFixed(5),
+          );
+          return sameLocationMeetings.length > 0
+            ? `session-cluster:${selectedMeetingDetail.latitude}:${selectedMeetingDetail.longitude}`
+            : null;
+        })()
+      : null;
+  const selectedMapKey =
+    selectedMeetingCluster?.lookupKey ??
+    visibleSessionClusterKey ??
+    selectedMeetingId ??
+    selectedVenueId ??
+    selectedGroupId;
+  const selectedMapLocation = selectedMeetingDetail
+    ? {
+        id: visibleSessionClusterKey ?? `meeting:${selectedMeetingDetail.id}`,
+        latitude: selectedMeetingDetail.latitude,
+        longitude: selectedMeetingDetail.longitude,
+      }
+    : selectedVenueDetail
+      ? {
+          id: `venue:${selectedVenueDetail.id}`,
+          latitude: selectedVenueDetail.latitude,
+          longitude: selectedVenueDetail.longitude,
+        }
+      : selectedGroupDetail && selectedGroupMeetings[0]
+        ? {
+            id: `group:${selectedGroupDetail.id}`,
+            latitude: selectedGroupMeetings[0].latitude,
+            longitude: selectedGroupMeetings[0].longitude,
+          }
+        : selectedGroup && groupMeetingsById[selectedGroup.id]?.[0]
+          ? {
+              id: `group:${selectedGroup.id}`,
+              latitude: groupMeetingsById[selectedGroup.id][0].latitude,
+              longitude: groupMeetingsById[selectedGroup.id][0].longitude,
+            }
+          : null;
   const hasSelection = Boolean(selectedMeetingId || selectedMeetingCluster || selectedVenueId || selectedGroupId || selectedProfileId);
   const showUpcomingSessions = displayMode === "map" || itemMode !== "sessions";
   const returnPath = workspaceReturnStack[workspaceReturnStack.length - 1];
@@ -805,6 +943,7 @@ export function DiscoveryPage({
     selectedVenueId: null,
   } satisfies Partial<DiscoveryWorkspaceState>;
   const clearSelection = () => {
+    setMapSelectionRevision((current) => current + 1);
     if (!routeGroupId && !routeMeetingId && !routeVenueId && !routeProfileId) {
       normalizeWorkspacePath(emptySelectionState);
     }
@@ -819,6 +958,7 @@ export function DiscoveryPage({
   };
 
   const handleSelectionClose = () => {
+    setMapSelectionRevision((current) => current + 1);
     if (routeGroupId || routeMeetingId || routeVenueId || routeProfileId) {
       setSelectedMeeting(null);
       setSelectedMeetingCluster(null);
@@ -831,8 +971,7 @@ export function DiscoveryPage({
       const goToPrevious =
         typeof returnPath === "string" &&
         (routeProfileId ||
-        ((routeMeetingId && (returnRouteKind === "group" || returnRouteKind === "venue")) ||
-          ((routeGroupId || routeVenueId) && Boolean(returnRouteKind))));
+          (routeMeetingId && (returnRouteKind === "group" || returnRouteKind === "venue")));
 
       if (goToPrevious) {
         if (
@@ -1150,7 +1289,7 @@ export function DiscoveryPage({
                   <EventTimeline
                     contextLabel="Profile"
                     emptyLabel="No hosted sessions."
-                    heading="Your Sessions"
+                    heading={createdSessionsHeading}
                     meetings={selectedProfileResponsible}
                     onSelectMeeting={selectMeeting}
                     secondaryMeta="location"
@@ -1698,11 +1837,13 @@ export function DiscoveryPage({
                   return next;
                 })
               }
-              onGroupSelect={selectGroup}
-              onMeetingClusterSelect={selectMeetingCluster}
-              onMeetingSelect={selectMeeting}
-              onVenueSelect={selectVenue}
-              selectedKey={selectedMeetingCluster?.lookupKey ?? selectedMeetingId ?? selectedVenueId ?? selectedGroupId}
+              onGroupSelect={selectGroupFromMap}
+              onMeetingClusterSelect={selectMeetingClusterFromMap}
+              onMeetingSelect={selectMeetingFromMap}
+              onVenueSelect={selectVenueFromMap}
+              selectionRevision={mapSelectionRevision}
+              selectedKey={selectedMapKey}
+              selectedLocation={selectedMapLocation}
               theme={theme}
               venueMeetingsById={venueMeetingsById}
               venues={venues}

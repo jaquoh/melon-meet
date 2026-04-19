@@ -4,7 +4,6 @@ import { CalendarDays, Map, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
-import { LegalFooter } from "../components/LegalFooter";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
 
@@ -147,7 +146,6 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
           </section>
         </div>
       </div>
-      <LegalFooter />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import type { GroupSummary, MeetingSummary, VenueSummary } from "../../../../packages/shared/src";
 
@@ -27,7 +27,9 @@ interface MapViewProps {
   onMeetingClusterSelect?: (payload: { lookupKey: string; meetings: MeetingSummary[]; title: string }) => void;
   onMeetingSelect: (meeting: MeetingSummary) => void;
   onVenueSelect: (venue: VenueSummary) => void;
+  selectionRevision?: number;
   selectedKey?: string | null;
+  selectedLocation?: { id: string; latitude: number; longitude: number } | null;
   theme: "dark" | "light";
   venueMeetingsById?: Record<string, MeetingSummary[]>;
   venues: VenueSummary[];
@@ -189,6 +191,35 @@ async function ensureBaseAssets(map: maplibregl.Map) {
     ensureMapIcon(map, "melon-icon-session", iconSvg("session")),
     ensureMapIcon(map, "melon-icon-venue", iconSvg("venue")),
   ]);
+}
+
+function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
+  if (!map.getSource(SOURCE_ID)) {
+    map.addSource(SOURCE_ID, {
+      data: { features: [], type: "FeatureCollection" },
+      type: "geojson",
+    });
+  }
+
+  if (!map.getLayer(LAYER_HIT_ID)) {
+    map.addLayer({
+      id: LAYER_HIT_ID,
+      paint: {
+        "circle-opacity": 0.01,
+        "circle-radius": 44,
+      },
+      source: SOURCE_ID,
+      type: "circle",
+    });
+  }
+}
+
+function moveAppMarkerLayersToTop(map: maplibregl.Map) {
+  [LAYER_BASE_ID, LAYER_ICON_ID, LAYER_BADGE_ID, LAYER_LABEL_ID, LAYER_HIT_ID].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.moveLayer(layerId);
+    }
+  });
 }
 
 async function ensureBadgeAssets(map: maplibregl.Map, features: SimpleFeature[], theme: "dark" | "light") {
@@ -463,16 +494,13 @@ function featureCollectionWithSelectedKey(
   featureCollection: SimpleFeatureCollection,
   selectedMarkerKey: SelectedMarkerKey,
 ): SimpleFeatureCollection {
-  if (!selectedMarkerKey) {
-    return featureCollection;
-  }
-
   return {
     ...featureCollection,
     features: featureCollection.features.map((feature) => {
       const selected =
-        feature.properties.lookupKey === selectedMarkerKey ||
-        feature.properties.lookupKey.endsWith(`:${selectedMarkerKey}`)
+        selectedMarkerKey &&
+        (feature.properties.lookupKey === selectedMarkerKey ||
+          feature.properties.lookupKey.endsWith(`:${selectedMarkerKey}`))
           ? 1
           : 0;
       return {
@@ -675,100 +703,90 @@ function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light")
 }
 
 function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: TransitFeatureCollection | null) {
-  if (map.getSource(SOURCE_ID)) {
-    updateLayerTheme(map, theme);
-    applyTransitBoost(map, theme);
-    addTransitOverlay(map, theme, transitData);
-    updateTransitOverlayTheme(map, theme);
-    return;
-  }
-
   const palette = currentThemePalette(theme);
   applyTransitBoost(map, theme);
   addTransitOverlay(map, theme, transitData);
+  updateTransitOverlayTheme(map, theme);
+  ensureMarkerSourceAndHitLayer(map);
 
-  map.addSource(SOURCE_ID, {
-    data: { features: [], type: "FeatureCollection" },
-    type: "geojson",
-  });
+  if (!map.getLayer(LAYER_BASE_ID)) {
+    map.addLayer({
+      id: LAYER_BASE_ID,
+      paint: {
+        "circle-color": markerColorExpression(palette),
+        "circle-radius": [
+          "case",
+          ["==", ["get", "selected"], 1],
+          22,
+          ["==", ["get", "kind"], "venue"],
+          18.5,
+          ["==", ["get", "kind"], "group"],
+          17.5,
+          17,
+        ],
+        "circle-stroke-color": palette.circleStroke,
+        "circle-stroke-opacity": 0.92,
+        "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4.5, 3],
+      },
+      source: SOURCE_ID,
+      type: "circle",
+    });
+  }
 
-  map.addLayer({
-    id: LAYER_BASE_ID,
-    paint: {
-      "circle-color": markerColorExpression(palette),
-      "circle-radius": [
-        "case",
-        ["==", ["get", "selected"], 1],
-        22,
-        ["==", ["get", "kind"], "venue"],
-        18.5,
-        ["==", ["get", "kind"], "group"],
-        17.5,
-        17,
-      ],
-      "circle-stroke-color": palette.circleStroke,
-      "circle-stroke-opacity": 0.92,
-      "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4.5, 3],
-    },
-    source: SOURCE_ID,
-    type: "circle",
-  });
+  if (!map.getLayer(LAYER_ICON_ID)) {
+    map.addLayer({
+      id: LAYER_ICON_ID,
+      layout: {
+        "icon-allow-overlap": true,
+        "icon-anchor": "center",
+        "icon-image": ["get", "icon"],
+        "icon-size": 0.82,
+      },
+      source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
 
-  map.addLayer({
-    id: LAYER_ICON_ID,
-    layout: {
-      "icon-allow-overlap": true,
-      "icon-anchor": "center",
-      "icon-image": ["get", "icon"],
-      "icon-size": 0.82,
-    },
-    source: SOURCE_ID,
-    type: "symbol",
-  });
+  if (!map.getLayer(LAYER_BADGE_ID)) {
+    map.addLayer({
+      filter: ["!=", ["get", "badge"], ""],
+      id: LAYER_BADGE_ID,
+      layout: {
+        "icon-allow-overlap": true,
+        "icon-anchor": "bottom-left",
+        "icon-image": ["get", "badgeIcon"],
+        "icon-offset": [7.2, -7.1],
+        "icon-size": 0.92,
+      },
+      source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
 
-  map.addLayer({
-    filter: ["!=", ["get", "badge"], ""],
-    id: LAYER_BADGE_ID,
-    layout: {
-      "icon-allow-overlap": true,
-      "icon-anchor": "bottom-left",
-      "icon-image": ["get", "badgeIcon"],
-      "icon-offset": [7.2, -7.1],
-      "icon-size": 0.92,
-    },
-    source: SOURCE_ID,
-    type: "symbol",
-  });
+  if (!map.getLayer(LAYER_LABEL_ID)) {
+    map.addLayer({
+      id: LAYER_LABEL_ID,
+      layout: {
+        "text-allow-overlap": true,
+        "text-anchor": "top",
+        "text-field": ["get", "label"],
+        "text-font": ["Noto Sans Regular", "Open Sans Regular"],
+        "text-max-width": 10,
+        "text-offset": [0, 2.45],
+        "text-size": 13,
+      },
+      paint: {
+        "text-color": palette.labelColor,
+        "text-halo-color": palette.halo,
+        "text-halo-width": 2.5,
+      },
+      source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
 
-  map.addLayer({
-    id: LAYER_LABEL_ID,
-    layout: {
-      "text-allow-overlap": true,
-      "text-anchor": "top",
-      "text-field": ["get", "label"],
-      "text-font": ["Noto Sans Regular", "Open Sans Regular"],
-      "text-max-width": 10,
-      "text-offset": [0, 2.45],
-      "text-size": 13,
-    },
-    paint: {
-      "text-color": palette.labelColor,
-      "text-halo-color": palette.halo,
-      "text-halo-width": 2.5,
-    },
-    source: SOURCE_ID,
-    type: "symbol",
-  });
-
-  map.addLayer({
-    id: LAYER_HIT_ID,
-    paint: {
-      "circle-opacity": 0,
-      "circle-radius": 34,
-    },
-    source: SOURCE_ID,
-    type: "circle",
-  });
+  updateLayerTheme(map, theme);
+  moveAppMarkerLayersToTop(map);
 }
 
 export function MapView({
@@ -781,7 +799,9 @@ export function MapView({
   onMeetingClusterSelect,
   onMeetingSelect,
   onVenueSelect,
+  selectionRevision = 0,
   selectedKey,
+  selectedLocation,
   theme,
   venueMeetingsById = {},
   venues,
@@ -793,6 +813,7 @@ export function MapView({
   const interactionsBoundRef = useRef(false);
   const appliedStyleRef = useRef<string | null>(null);
   const optimisticSelectedKeyRef = useRef<SelectedMarkerKey>(null);
+  const centeredSelectionRef = useRef<string | null>(null);
   const suppressBackgroundClickRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
@@ -825,7 +846,6 @@ export function MapView({
   sourceDataRef.current = sourceData;
   themeRef.current = theme;
   transitDataRef.current = transitData;
-  optimisticSelectedKeyRef.current = selectedKey ?? null;
 
   useEffect(() => {
     let active = true;
@@ -964,11 +984,21 @@ export function MapView({
     };
 
     const handleLoad = async () => {
+      ensureMarkerSourceAndHitLayer(map);
+      lookupRef.current = sourceDataRef.current.lookup;
+      const initialSource = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      initialSource?.setData(
+        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, optimisticSelectedKeyRef.current) as never,
+      );
       await ensureBaseAssets(map);
       await ensureBadgeAssets(map, sourceDataRef.current.featureCollection.features, themeRef.current);
       addLayers(map, themeRef.current, transitDataRef.current);
       const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(sourceDataRef.current.featureCollection as never);
+      source?.setData(
+        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, optimisticSelectedKeyRef.current) as never,
+      );
+      moveAppMarkerLayersToTop(map);
+      map.triggerRepaint();
       popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
       if (!interactionsBoundRef.current) {
         map.on("click", handleMapClick);
@@ -1001,6 +1031,24 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !mapReady || !selectedLocation) {
+      return;
+    }
+    if (centeredSelectionRef.current === selectedLocation.id) {
+      return;
+    }
+
+    centeredSelectionRef.current = selectedLocation.id;
+    map.easeTo({
+      center: [selectedLocation.longitude, selectedLocation.latitude],
+      duration: 650,
+      essential: true,
+      zoom: Math.max(map.getZoom(), 12.2),
+    });
+  }, [mapReady, selectedLocation]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || appliedStyleRef.current === currentStyleKey) {
       return;
     }
@@ -1013,7 +1061,7 @@ export function MapView({
     });
   }, [currentStyle, currentStyleKey]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !map.isStyleLoaded()) {
       return;
@@ -1035,19 +1083,21 @@ export function MapView({
       if (!active) {
         return;
       }
+      ensureMarkerSourceAndHitLayer(map);
       addLayers(map, theme, transitData);
       updateLayerTheme(map, theme);
       const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
       source?.setData(
         featureCollectionWithSelectedKey(sourceData.featureCollection, optimisticSelectedKeyRef.current) as never,
       );
+      moveAppMarkerLayersToTop(map);
       map.triggerRepaint();
     })();
 
     return () => {
       active = false;
     };
-  }, [mapReady, sourceData, theme, transitData]);
+  }, [mapReady, selectionRevision, selectedKey, sourceData, theme, transitData]);
 
   return <div className="map-stage" ref={mapContainerRef} />;
 }

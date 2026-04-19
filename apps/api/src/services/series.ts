@@ -28,6 +28,8 @@ export interface MeetingSeriesRow {
   status: "active" | "cancelled";
 }
 
+const coverageRuns = new Map<string, Promise<void>>();
+
 async function upsertOccurrence(
   db: D1Database,
   series: MeetingSeriesRow,
@@ -120,6 +122,19 @@ export async function ensureSeriesCoverage(
 ) {
   const fromDate = options?.fromDate ?? format(new Date(), "yyyy-MM-dd");
   const untilHorizon = options?.horizon ?? horizonDate();
+  const runKey = JSON.stringify({
+    fromDate,
+    horizon: untilHorizon,
+    seriesId: options?.seriesId ?? null,
+  });
+  const activeRun = coverageRuns.get(runKey);
+
+  if (activeRun) {
+    await activeRun;
+    return;
+  }
+
+  const runPromise = (async () => {
   const seriesRows = await allRows<MeetingSeriesRow>(
     db,
     `SELECT *
@@ -156,6 +171,17 @@ export async function ensureSeriesCoverage(
         series.id,
         series.until_date,
       );
+    }
+  }
+  })();
+
+  coverageRuns.set(runKey, runPromise);
+
+  try {
+    await runPromise;
+  } finally {
+    if (coverageRuns.get(runKey) === runPromise) {
+      coverageRuns.delete(runKey);
     }
   }
 }

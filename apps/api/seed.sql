@@ -9,6 +9,7 @@ INSERT OR REPLACE INTO venues (
   booking_url,
   opening_hours_text,
   source_url,
+  hero_image_url,
   created_at
 ) VALUES
   (
@@ -22,6 +23,7 @@ INSERT OR REPLACE INTO venues (
     'https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/',
     'Daily 09:00-22:00',
     'https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -35,6 +37,7 @@ INSERT OR REPLACE INTO venues (
     'https://www.beach61.de/',
     'Daily 10:00-22:00',
     'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -48,6 +51,7 @@ INSERT OR REPLACE INTO venues (
     NULL,
     'Varies by court booking',
     'https://berlin-beachvolleyball.de/beachvolleyball-berlin/',
+    'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -61,6 +65,7 @@ INSERT OR REPLACE INTO venues (
     'https://beach-zone.de/',
     'Daily 09:00-23:00',
     'https://beach-zone.de/',
+    'https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -74,6 +79,7 @@ INSERT OR REPLACE INTO venues (
     NULL,
     'Public outdoor courts',
     'https://berlin-beachvolleyball.de/en/volkspark-friedrichshain-6-courts-free-but-only-with-your-own-equipment/',
+    'https://images.unsplash.com/photo-1501959915551-4e8f83a1f0b5?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -87,6 +93,7 @@ INSERT OR REPLACE INTO venues (
     NULL,
     'Open park access',
     'https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/',
+    'https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   ),
   (
@@ -100,6 +107,7 @@ INSERT OR REPLACE INTO venues (
     NULL,
     'Seasonal opening hours',
     'https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z'
   );
 
@@ -138,6 +146,7 @@ INSERT OR REPLACE INTO app_groups (
   visibility,
   activity_label,
   messenger_url,
+  hero_image_url,
   created_at,
   updated_at
 ) VALUES
@@ -150,6 +159,7 @@ INSERT OR REPLACE INTO app_groups (
     'public',
     'Beach volleyball',
     'https://t.me/melonmeet_sunset',
+    'https://images.unsplash.com/photo-1508615070457-7baeba4003ab?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -162,6 +172,7 @@ INSERT OR REPLACE INTO app_groups (
     'private',
     'Beach volleyball',
     'https://chat.whatsapp.com/example-morning-sand',
+    'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   ),
@@ -174,6 +185,7 @@ INSERT OR REPLACE INTO app_groups (
     'public',
     'Mixed play',
     'https://t.me/melonmeet_open_city',
+    'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1600&q=80',
     '2026-04-03T00:00:00.000Z',
     '2026-04-03T00:00:00.000Z'
   );
@@ -237,12 +249,14 @@ INSERT OR REPLACE INTO meeting_series (
   title,
   description,
   activity_label,
+  hero_image_url,
   venue_id,
   location_name,
   location_address,
   latitude,
   longitude,
   pricing,
+  cost_per_person,
   capacity,
   timezone,
   weekday,
@@ -261,12 +275,14 @@ INSERT OR REPLACE INTO meeting_series (
   'Sunset Rally at BeachMitte',
   'Weekly after-work beach volleyball session for intermediate players who want steady games and a social hang afterwards.',
   'Beach volleyball',
+  'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1600&q=80',
   'venue-beachmitte',
   'BeachMitte',
   'Caroline-Michaelis-Str. 8, 10115 Berlin',
   52.5360,
   13.3924,
   'paid',
+  8,
   16,
   'Europe/Berlin',
   4,
@@ -288,12 +304,14 @@ INSERT OR REPLACE INTO meetings (
   title,
   description,
   activity_label,
+  hero_image_url,
   venue_id,
   location_name,
   location_address,
   latitude,
   longitude,
   pricing,
+  cost_per_person,
   capacity,
   starts_at,
   ends_at,
@@ -311,12 +329,14 @@ INSERT OR REPLACE INTO meetings (
     'Saturday Mixer at Monbijoupark',
     'Casual mixed-level pickup on the free city courts. Bring water and be ready to rotate in.',
     'Beach volleyball',
+    'https://images.unsplash.com/photo-1508615070457-7baeba4003ab?auto=format&fit=crop&w=1600&q=80',
     'venue-monbijoupark',
     'Monbijoupark Courts',
     'Monbijouplatz, 10178 Berlin',
     52.5233,
     13.3994,
     'free',
+    NULL,
     12,
     '2026-04-18T10:00:00.000Z',
     '2026-04-18T12:00:00.000Z',
@@ -334,12 +354,14 @@ INSERT OR REPLACE INTO meetings (
     'Morning Sand Crew Training',
     'Invite-only early session focused on serve receive and transition reps.',
     'Beach volleyball',
+    'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80',
     'venue-east61',
     'East61',
     'Wilhelm-Kabus-Str. 42, 10829 Berlin',
     52.4818,
     13.3669,
     'paid',
+    6,
     8,
     '2026-04-19T06:30:00.000Z',
     '2026-04-19T08:00:00.000Z',
@@ -357,12 +379,14 @@ INSERT OR REPLACE INTO meetings (
     'Weekday Open Session in Friedrichshain',
     'Friendly public evening games on the free courts. Good for drop-ins and meeting new players.',
     'Mixed play',
+    'https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1600&q=80',
     'venue-volkspark-friedrichshain',
     'Volkspark Friedrichshain Sandbox',
     'Paul-Heyse-Str. 1, 10407 Berlin',
     52.5297,
     13.4415,
     'free',
+    NULL,
     14,
     '2026-04-22T17:00:00.000Z',
     '2026-04-22T19:00:00.000Z',
@@ -380,12 +404,14 @@ INSERT OR REPLACE INTO meetings (
     'Sunset Rally at BeachMitte',
     'Weekly after-work beach volleyball session for intermediate players who want steady games and a social hang afterwards.',
     'Beach volleyball',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80',
     'venue-beachmitte',
     'BeachMitte',
     'Caroline-Michaelis-Str. 8, 10115 Berlin',
     52.5360,
     13.3924,
     'paid',
+    10,
     16,
     '2026-04-24T16:30:00.000Z',
     '2026-04-24T18:00:00.000Z',

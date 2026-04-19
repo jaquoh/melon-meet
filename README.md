@@ -25,6 +25,12 @@ npm run db:migrate:local
 npm run db:seed:local
 ```
 
+If you have pulled new migrations or your local D1 state has drifted, rebuild it from scratch with:
+
+```bash
+npm run db:reset:local
+```
+
 3. Start the API Worker and the Vite frontend together:
 
 ```bash
@@ -56,6 +62,7 @@ npm test
 npm run build
 npm run db:migrate:remote
 npm run db:seed:remote
+npm run db:seed:remote:demo
 npm run transit:generate
 npm run deploy
 ```
@@ -64,7 +71,10 @@ npm run deploy
 
 - Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.
 - Run `npm run db:migrate:remote` before the first production deploy.
-- If you want the demo content in a remote database, run `npm run db:seed:remote` after migrations.
+- `npm run db:seed:remote` is production-safe and inserts only venue data.
+- If you want the full demo content in a remote database, run `npm run db:seed:remote:demo` after migrations.
+- If local auth, venues, or meetings look out of sync after pulling changes, run `npm run db:reset:local`.
+- If remote migration or seed commands fail with Cloudflare authorization errors, re-authenticate Wrangler and confirm the configured account can access the D1 database.
 - `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).

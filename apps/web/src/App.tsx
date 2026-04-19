@@ -34,8 +34,17 @@ function AppShell() {
   const logoutMutation = useMutation({
     mutationFn: logOut,
     onSuccess: async () => {
+      await queryClient.cancelQueries();
+      queryClient.setQueryData(["me"], {
+        friends: [],
+        groups: [],
+        viewer: null,
+      });
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== "me",
+      });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate("/");
+      navigate("/", { replace: true });
     },
   });
 
@@ -45,14 +54,22 @@ function AppShell() {
   }, [theme]);
 
   const viewer = meQuery.data?.viewer ?? null;
+  const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
+  const infoPageProps = {
+    theme,
+    toggleTheme,
+    viewer,
+  };
 
   return (
     <Routes>
       <Route path="/" element={<LandingPage viewer={viewer} />} />
       <Route path="/auth" element={<Navigate replace to="/" />} />
-      <Route path="/privacy" element={<InfoPage page="privacy" />} />
-      <Route path="/terms" element={<InfoPage page="terms" />} />
-      <Route path="/impressum" element={<InfoPage page="impressum" />} />
+      <Route path="/info" element={<Navigate replace to="/about" />} />
+      <Route path="/about" element={<InfoPage page="info" {...infoPageProps} />} />
+      <Route path="/privacy" element={<InfoPage page="privacy" {...infoPageProps} />} />
+      <Route path="/terms" element={<InfoPage page="terms" {...infoPageProps} />} />
+      <Route path="/impressum" element={<InfoPage page="impressum" {...infoPageProps} />} />
       <Route
         path="/map"
         element={
@@ -61,7 +78,7 @@ function AppShell() {
             initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -74,7 +91,7 @@ function AppShell() {
             initialItemMode="groups"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -87,7 +104,7 @@ function AppShell() {
             initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -100,7 +117,7 @@ function AppShell() {
             initialItemMode="venues"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -113,7 +130,7 @@ function AppShell() {
             initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -127,7 +144,7 @@ function AppShell() {
             initialItemMode="groups"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -140,7 +157,7 @@ function AppShell() {
             initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -153,7 +170,7 @@ function AppShell() {
             initialItemMode="sessions"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }
@@ -166,7 +183,7 @@ function AppShell() {
             initialItemMode="venues"
             onLogOut={() => logoutMutation.mutate()}
             theme={theme}
-            toggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            toggleTheme={toggleTheme}
             viewer={viewer}
           />
         }

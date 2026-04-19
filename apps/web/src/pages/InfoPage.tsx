@@ -1,11 +1,21 @@
+import { X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { PanelCard } from "../components/PanelCard";
-import { LegalFooter } from "../components/LegalFooter";
+import type { ViewerSummary } from "../../../../packages/shared/src";
+import type { ThemeMode } from "../App";
+import { WorkspaceShell } from "../components/WorkspaceShell";
+
+const APP_DESCRIPTION = {
+  body: [
+    "Melon Meet is a Berlin-first community tool for discovering beach volleyball venues, public sessions, and small playing groups.",
+    "The product keeps public discovery open while giving signed-in users tools to claim spots, manage groups, and organise sessions.",
+  ],
+  title: "About Melon Meet",
+};
 
 const PAGE_CONTENT = {
   impressum: {
-    description:
-      "Public company/contact disclosure for Melon Meet.",
+    description: "Public company/contact disclosure for Melon Meet.",
+    eyebrow: "Company",
     sections: [
       {
         body: [
@@ -28,9 +38,34 @@ const PAGE_CONTENT = {
     ],
     title: "Impressum",
   },
+  info: {
+    description: "What Melon Meet is for, who it helps, and how public discovery and lightweight coordination fit together inside the app.",
+    eyebrow: "About",
+    sections: [
+      {
+        body: [
+          "Melon Meet started as a way to make Berlin beach volleyball easier to navigate without forcing every useful place into the same giant chat thread.",
+          "The app brings venues, groups, and sessions into one map-first board so people can move from discovering a court to understanding who plays there and when.",
+          "Public browsing stays lightweight on purpose. You should be able to open the app, scan the city, and get oriented before deciding whether you want an account.",
+        ],
+        title: "What It Is",
+      },
+      {
+        body: [
+          "Venues are the stable places: courts, clubs, and spots worth knowing. Sessions are the time-based layer on top, so a place can feel alive instead of static.",
+          "Groups help recurring crews organise themselves without losing the public discovery flow. Some can stay open and visible, others can remain private for smaller circles.",
+          "The map is meant to be the orienting surface: browse first, open details when something looks promising, and move between location, group, and session context without losing your sense of place.",
+          "Legal and company pages stay inside the same shell so the app still feels coherent when you step out of the map and into the informational side.",
+        ],
+        title: "How It Works",
+      },
+    ],
+    title: "About",
+  },
   privacy: {
     description:
       "How Melon Meet collects and uses account, group, and session data. This is a practical starter policy and should be reviewed before public launch.",
+    eyebrow: "Privacy",
     sections: [
       {
         body: [
@@ -65,6 +100,7 @@ const PAGE_CONTENT = {
   terms: {
     description:
       "Rules for using Melon Meet. This is a launch-ready starter draft, but it should be reviewed and tailored before opening the product broadly.",
+    eyebrow: "Terms",
     sections: [
       {
         body: [
@@ -100,42 +136,101 @@ const PAGE_CONTENT = {
 
 type InfoPageKey = keyof typeof PAGE_CONTENT;
 
-export function InfoPage({ page }: { page: InfoPageKey }) {
+const INFO_LINKS: Array<{ key: InfoPageKey; label: string; to: string }> = [
+  { key: "info", label: "About", to: "/about" },
+  { key: "privacy", label: "Privacy", to: "/privacy" },
+  { key: "terms", label: "Terms", to: "/terms" },
+  { key: "impressum", label: "Impressum", to: "/impressum" },
+];
+
+export function InfoPage({
+  page,
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  page: InfoPageKey;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const content = PAGE_CONTENT[page];
 
-  return (
-    <div className="page-wrap info-page">
-      <div className="info-page__inner">
-        <PanelCard className="stack-md info-page__card">
+  const infoNavigation = (
+    <div className="stack-md info-nav">
+      <div className="info-rail-header">
+        <Link aria-label="Back to map" className="button-secondary info-rail-close" to="/map">
+          <X size={18} strokeWidth={2} />
+        </Link>
+      </div>
+
+      <div className="stack-sm">
+        <p className="eyebrow">Melon Meet</p>
+        <h2 className="column-title">{APP_DESCRIPTION.title}</h2>
+        {APP_DESCRIPTION.body.map((paragraph) => (
+          <p className="muted-copy" key={paragraph}>
+            {paragraph}
+          </p>
+        ))}
+      </div>
+
+      <nav aria-label="Info and legal pages" className="info-nav__links">
+        {INFO_LINKS.map((link) => (
+          <Link className={`info-nav__link ${page === link.key ? "is-active" : ""}`} key={link.key} to={link.to}>
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+
+  const center = (
+    <div className="workspace-detail-scroll info-shell-main">
+      <div className="stack-md info-page__content">
+        {page !== "info" ? (
+          <div className="info-page__mobile-close">
+            <Link className="button-secondary button-inline" to="/about">
+              <X size={14} strokeWidth={2} />
+              <span>Close</span>
+            </Link>
+          </div>
+        ) : null}
+        {page !== "info" ? (
           <div className="stack-sm">
-            <p className="eyebrow">Public Info</p>
+            <p className="eyebrow">{content.eyebrow}</p>
             <h1 className="section-title">{content.title}</h1>
             <p className="muted-copy">{content.description}</p>
           </div>
+        ) : null}
 
-          {content.sections.map((section) => (
-            <section className="stack-sm" key={section.title}>
-              <h2 className="column-title">{section.title}</h2>
-              {section.body.map((paragraph) => (
-                <p className="muted-copy" key={paragraph}>
-                  {paragraph}
-                </p>
-              ))}
-            </section>
-          ))}
-
-          <div className="workspace-button-row">
-            <Link className="button-primary" to="/">
-              Back to home
-            </Link>
-            <Link className="button-secondary" to="/map">
-              Open app
-            </Link>
-          </div>
-        </PanelCard>
+        {content.sections.map((section) => (
+          <section className="stack-sm" key={section.title}>
+            <h2 className="column-title">{section.title}</h2>
+            {section.body.map((paragraph) => (
+              <p className="muted-copy" key={paragraph}>
+                {paragraph}
+              </p>
+            ))}
+          </section>
+        ))}
       </div>
-
-      <LegalFooter />
     </div>
+  );
+
+  return (
+    <WorkspaceShell
+      centerHeader={<div aria-hidden="true" />}
+      center={center}
+      layoutVariant={page === "info" ? "info-index" : "info-detail"}
+      left={null}
+      leftHeader={null}
+      profileLinkState={{ from: "Info" }}
+      right={infoNavigation}
+      rightHeader={undefined}
+      theme={theme}
+      toggleTheme={toggleTheme}
+      utilityNavigation="map"
+      viewer={viewer}
+    />
   );
 }
