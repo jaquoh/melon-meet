@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
@@ -137,24 +138,41 @@ const PAGE_CONTENT = {
 type InfoPageKey = keyof typeof PAGE_CONTENT;
 
 const INFO_LINKS: Array<{ key: InfoPageKey; label: string; to: string }> = [
-  { key: "info", label: "About", to: "/about" },
+  { key: "info", label: "About", to: "/about/details" },
   { key: "privacy", label: "Privacy", to: "/privacy" },
   { key: "terms", label: "Terms", to: "/terms" },
   { key: "impressum", label: "Impressum", to: "/impressum" },
 ];
 
 export function InfoPage({
+  activePage,
   page,
   theme,
   toggleTheme,
   viewer,
 }: {
+  activePage?: InfoPageKey | null;
   page: InfoPageKey;
   theme: ThemeMode;
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
   const content = PAGE_CONTENT[page];
+  const [isDesktopInfoLayout, setIsDesktopInfoLayout] = useState(() =>
+    typeof window === "undefined" ? true : window.matchMedia("(min-width: 901px)").matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 901px)");
+    const updateLayout = () => setIsDesktopInfoLayout(mediaQuery.matches);
+
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => mediaQuery.removeEventListener("change", updateLayout);
+  }, []);
+
+  const selectedPage = activePage === undefined ? page : activePage === null && isDesktopInfoLayout ? page : activePage;
+  const isDetailPage = selectedPage !== null;
 
   const infoNavigation = (
     <div className="stack-md info-nav">
@@ -176,7 +194,7 @@ export function InfoPage({
 
       <nav aria-label="Info and legal pages" className="info-nav__links">
         {INFO_LINKS.map((link) => (
-          <Link className={`info-nav__link ${page === link.key ? "is-active" : ""}`} key={link.key} to={link.to}>
+          <Link className={`info-nav__link ${selectedPage === link.key ? "is-active" : ""}`} key={link.key} to={link.to}>
             {link.label}
           </Link>
         ))}
@@ -187,7 +205,7 @@ export function InfoPage({
   const center = (
     <div className="workspace-detail-scroll info-shell-main">
       <div className="stack-md info-page__content">
-        {page !== "info" ? (
+        {isDetailPage ? (
           <div className="info-page__mobile-close">
             <Link className="button-secondary button-inline" to="/about">
               <X size={14} strokeWidth={2} />
@@ -221,7 +239,7 @@ export function InfoPage({
     <WorkspaceShell
       centerHeader={<div aria-hidden="true" />}
       center={center}
-      layoutVariant={page === "info" ? "info-index" : "info-detail"}
+      layoutVariant={isDetailPage ? "info-detail" : "info-index"}
       left={null}
       leftHeader={null}
       profileLinkState={{ from: "Info" }}
