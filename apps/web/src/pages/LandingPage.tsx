@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CalendarDays, Map, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -24,6 +25,9 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
   return (
     <div className="workspace-page landing-workspace-page">
       <div className="workspace-frame landing-shell-frame">
+        <div className="landing-scene" aria-hidden="true">
+          <img alt="" className="landing-scene__image" src={landingHeroMelon} />
+        </div>
         <div className="landing-shell landing-shell--auth">
           <section className="landing-shell__center landing-shell__center--welcome">
             <div className="landing-brand-lockup landing-brand-lockup--stacked">
@@ -34,28 +38,31 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
               </div>
             </div>
 
-            <div className="stack-sm landing-shell__intro">
-              <h2 className="landing-hero__title">Find Beachvolleyball courts, groups, and sessions.</h2>
-              <p className="landing-hero__text">
-                Explore courts and communities around Berlin, browse public sessions, and find the right place to play.
-              </p>
+            <div className="landing-hero-grid">
+              <div className="stack-sm landing-shell__intro">
+                <p className="landing-kicker">Beach courts, playful crews, sunny rallies</p>
+                <h2 className="landing-hero__title">Meet your sporty Mellows!</h2>
+                <p className="landing-hero__text">
+                  Find the court, catch the vibe, and jump into Berlin beach volleyball with people who are ready to play.
+                </p>
+              </div>
             </div>
 
             <div className="landing-entry-actions landing-entry-actions--single">
               <Link className="landing-entry-button" to="/map">
                 <Map size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Map</span>
-                <span className="landing-entry-button__copy">Courts, venues, sessions, and public groups on one board.</span>
+                <span className="landing-entry-button__title">Find your beach</span>
+                <span className="landing-entry-button__copy">Open the live melon map for courts, venues, nearby play, and public crews.</span>
               </Link>
               <Link className="landing-entry-button" to="/groups">
                 <Users size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Groups</span>
-                <span className="landing-entry-button__copy">Private groups first when signed in, then all public communities.</span>
+                <span className="landing-entry-button__title">Join the Mellows</span>
+                <span className="landing-entry-button__copy">Browse friendly crews, private circles, and public communities looking for players.</span>
               </Link>
               <Link className="landing-entry-button" to="/sessions">
                 <CalendarDays size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Sessions</span>
-                <span className="landing-entry-button__copy">See upcoming play in timeline order and jump straight into a session.</span>
+                <span className="landing-entry-button__title">Catch a rally</span>
+                <span className="landing-entry-button__copy">See upcoming sessions by time and claim a sandy spot when you are ready.</span>
               </Link>
             </div>
           </section>
