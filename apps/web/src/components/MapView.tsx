@@ -49,10 +49,13 @@ type SimpleFeature = {
     attending: 0 | 1;
     badge: string;
     badgeIcon: string;
+    cornerIcon: string;
     icon: string;
     kind: "group" | "session" | "venue";
     label: string;
     lookupKey: string;
+    owner: 0 | 1;
+    private: 0 | 1;
     selected: 0 | 1;
   };
   type: "Feature";
@@ -86,6 +89,7 @@ const SOURCE_ID = "melon-map-items";
 const LAYER_BASE_ID = "melon-map-base";
 const LAYER_ICON_ID = "melon-map-icon";
 const LAYER_BADGE_ID = "melon-map-badge";
+const LAYER_CORNER_ID = "melon-map-corner";
 const LAYER_LABEL_ID = "melon-map-label";
 const LAYER_HIT_ID = "melon-map-hit";
 const TRANSIT_SOURCE_ID = "berlin-transit-overlay";
@@ -140,6 +144,15 @@ function iconSvg(kind: "group" | "session" | "venue") {
   `;
 }
 
+function lockSvg() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffaf4" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="11" width="14" height="9" rx="2.5" fill="#1f2c2f" stroke="#fffaf4"/>
+      <path d="M8 11V8.7a4 4 0 0 1 8 0V11"/>
+    </svg>
+  `;
+}
+
 function badgeIconId(theme: "dark" | "light", label: string, accent: string) {
   return `melon-badge-${theme}-${accent.replace(/[^a-z0-9]/gi, "")}-${label.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
 }
@@ -188,6 +201,7 @@ async function ensureMapIcon(map: maplibregl.Map, id: string, svg: string, pixel
 async function ensureBaseAssets(map: maplibregl.Map) {
   await Promise.all([
     ensureMapIcon(map, "melon-icon-group", iconSvg("group")),
+    ensureMapIcon(map, "melon-icon-lock", lockSvg()),
     ensureMapIcon(map, "melon-icon-session", iconSvg("session")),
     ensureMapIcon(map, "melon-icon-venue", iconSvg("venue")),
   ]);
@@ -215,7 +229,7 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
 }
 
 function moveAppMarkerLayersToTop(map: maplibregl.Map) {
-  [LAYER_BASE_ID, LAYER_ICON_ID, LAYER_BADGE_ID, LAYER_LABEL_ID, LAYER_HIT_ID].forEach((layerId) => {
+  [LAYER_BASE_ID, LAYER_ICON_ID, LAYER_BADGE_ID, LAYER_CORNER_ID, LAYER_LABEL_ID, LAYER_HIT_ID].forEach((layerId) => {
     if (map.getLayer(layerId)) {
       map.moveLayer(layerId);
     }
@@ -266,6 +280,7 @@ function currentThemePalette(theme: "dark" | "light") {
         badgeStroke: "#456066",
         circleStroke: "#fff4df",
         group: "#62a58e",
+        groupOwner: "#ffd166",
         halo: "#0f1517",
         labelColor: "#fff7f2",
         selected: "#ffd166",
@@ -281,6 +296,7 @@ function currentThemePalette(theme: "dark" | "light") {
         badgeStroke: "#e5d6d0",
         circleStroke: "#fff4df",
         group: "#4d9a76",
+        groupOwner: "#d49e2f",
         halo: "#fffdfa",
         labelColor: "#231d1c",
         selected: "#f6b73c",
@@ -297,6 +313,8 @@ function markerColorExpression(palette: ReturnType<typeof currentThemePalette>):
     palette.selected,
     ["==", ["get", "attending"], 1],
     palette.viewerAttending,
+    ["all", ["==", ["get", "kind"], "group"], ["==", ["get", "owner"], 1]],
+    palette.groupOwner,
     [
       "match",
       ["get", "kind"],
@@ -362,10 +380,13 @@ function buildFeatureCollection({
           attending: 0,
           badge,
           badgeIcon: badgeIconId(theme, badge, accent),
+          cornerIcon: "",
           icon: "melon-icon-venue",
           kind: "venue",
           label: venue.name,
           lookupKey,
+          owner: 0,
+          private: 0,
           selected: selectedKey === lookupKey || selectedKey === venue.id ? 1 : 0,
         },
         type: "Feature",
@@ -395,10 +416,13 @@ function buildFeatureCollection({
           attending: 0,
           badge,
           badgeIcon: badgeIconId(theme, badge, accent),
+          cornerIcon: pin.group.visibility === "private" ? "melon-icon-lock" : "",
           icon: "melon-icon-group",
           kind: "group",
           label: pin.group.name,
           lookupKey,
+          owner: pin.group.viewerRole === "owner" ? 1 : 0,
+          private: pin.group.visibility === "private" ? 1 : 0,
           selected: selectedKey === lookupKey || selectedKey === pin.group.id ? 1 : 0,
         },
         type: "Feature",
@@ -464,10 +488,13 @@ function buildFeatureCollection({
         attending: sameLocation.some((item) => item.viewerHasClaimed) ? 1 : 0,
         badge,
         badgeIcon: badgeIconId(theme, badge, accent),
+        cornerIcon: "",
         icon: "melon-icon-session",
         kind: "session",
         label: sameLocation.length > 1 ? representative.locationName : representative.shortName || representative.title,
         lookupKey,
+        owner: 0,
+        private: 0,
         selected: selectedKey === lookupKey || sameLocation.some((item) => item.id === selectedKey) ? 1 : 0,
       },
       type: "Feature",
@@ -763,6 +790,22 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
     });
   }
 
+  if (!map.getLayer(LAYER_CORNER_ID)) {
+    map.addLayer({
+      filter: ["!=", ["get", "cornerIcon"], ""],
+      id: LAYER_CORNER_ID,
+      layout: {
+        "icon-allow-overlap": true,
+        "icon-anchor": "top-left",
+        "icon-image": ["get", "cornerIcon"],
+        "icon-offset": [6.8, 6.8],
+        "icon-size": 0.52,
+      },
+      source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
   if (!map.getLayer(LAYER_LABEL_ID)) {
     map.addLayer({
       id: LAYER_LABEL_ID,
@@ -908,7 +951,7 @@ export function MapView({
       map.triggerRepaint();
     };
 
-    const markerLayerIds = [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID];
+    const markerLayerIds = [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID, LAYER_CORNER_ID];
 
     const handleMapClick = (event: maplibregl.MapMouseEvent) => {
       const hitBox = 32;
@@ -1002,7 +1045,7 @@ export function MapView({
       popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
       if (!interactionsBoundRef.current) {
         map.on("click", handleMapClick);
-        [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID].forEach((layerId) => {
+        [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID, LAYER_CORNER_ID].forEach((layerId) => {
           map.on("mousemove", layerId, handleHover);
           map.on("mouseleave", layerId, clearHover);
         });
