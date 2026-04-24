@@ -158,6 +158,7 @@ export async function resolveSessionViewer(
     display_name: string;
     bio: string;
     home_area: string;
+    playing_level: string;
     avatar_url: string | null;
     is_profile_public: number;
     show_email_publicly: number;
@@ -170,6 +171,7 @@ export async function resolveSessionViewer(
        users.display_name,
        users.bio,
        users.home_area,
+       users.playing_level,
        users.avatar_url,
        users.is_profile_public,
        users.show_email_publicly
@@ -194,6 +196,7 @@ export async function resolveSessionViewer(
       email: row.email,
       homeArea: row.home_area,
       id: row.id,
+      playingLevel: row.playing_level,
       isProfilePublic: Boolean(row.is_profile_public),
       showEmailPublicly: Boolean(row.show_email_publicly),
     },

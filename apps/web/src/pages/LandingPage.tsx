@@ -1,18 +1,30 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { CalendarDays, Map, Users } from "lucide-react";
+import { CalendarDays, Info, Map, Moon, Sun, User, Users, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
+import type { ThemeMode } from "../App";
+import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
 import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
 
-export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
+export function LandingPage({
+  theme,
+  toggleTheme,
+  viewer,
+}: {
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  viewer: ViewerSummary | null;
+}) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [showAuthPanel, setShowAuthPanel] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const landingBackgroundImage = theme === "dark" ? landingHeroMelonDark : landingHeroMelon;
 
   const authMutation = useMutation({
     mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
@@ -26,7 +38,7 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
     <div className="workspace-page landing-workspace-page">
       <div className="workspace-frame landing-shell-frame">
         <div className="landing-scene" aria-hidden="true">
-          <img alt="" className="landing-scene__image" src={landingHeroMelon} />
+          <img alt="" className="landing-scene__image" src={landingBackgroundImage} />
         </div>
         <div className="landing-shell landing-shell--auth">
           <section className="landing-shell__center landing-shell__center--welcome">
@@ -40,7 +52,6 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
 
             <div className="landing-hero-grid">
               <div className="stack-sm landing-shell__intro">
-                <p className="landing-kicker">Beach courts, playful crews, sunny rallies</p>
                 <h2 className="landing-hero__title">Meet your sporty Mellows!</h2>
                 <p className="landing-hero__text">
                   Find the court, catch the vibe, and jump into Berlin beach volleyball with people who are ready to play.
@@ -68,23 +79,37 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
           </section>
 
           <section className="landing-shell__right">
-            {viewer ? (
-              <div className="panel-card stack-sm landing-auth-card">
-                <p className="eyebrow">Welcome back</p>
-                <p className="landing-hero__text">
-                  You are already signed in. Jump back into the board and keep organising sessions, venues, and groups.
-                </p>
-                <div className="workspace-button-row">
-                  <Link className="button-primary" to="/map">
-                    Open map
-                  </Link>
-                  <Link className="button-secondary" to="/sessions">
-                    Open sessions
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="panel-card stack-md landing-auth-card">
+            <div className="landing-shell__right-header">
+              <button
+                aria-label="Toggle theme"
+                className="landing-theme-toggle"
+                onClick={toggleTheme}
+                type="button"
+              >
+                {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+              </button>
+              <Link aria-label="About Melon Meet" className="landing-header-button" to="/about">
+                <Info size={16} strokeWidth={2} />
+              </Link>
+              {viewer ? (
+                <Link className="landing-header-button landing-header-button--label" to={`/profile/${viewer.id}`}>
+                  <User size={16} strokeWidth={2} />
+                  <span>Profile</span>
+                </Link>
+              ) : (
+                <button
+                  className="landing-header-button landing-header-button--label"
+                  onClick={() => setShowAuthPanel((current) => !current)}
+                  type="button"
+                >
+                  {showAuthPanel ? <X size={16} strokeWidth={2} /> : null}
+                  <span>{showAuthPanel ? "Close" : "Sign in"}</span>
+                </button>
+              )}
+            </div>
+
+            {viewer ? null : showAuthPanel ? (
+              <div className="landing-shell__right-body">
                 <div className="stack-sm">
                   <p className="eyebrow">Participation</p>
                   <p className="landing-hero__text typewriter-title">
@@ -149,7 +174,7 @@ export function LandingPage({ viewer }: { viewer: ViewerSummary | null }) {
                   </div>
                 </form>
               </div>
-            )}
+            ) : null}
           </section>
         </div>
       </div>

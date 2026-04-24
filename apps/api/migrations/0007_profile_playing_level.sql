@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN playing_level TEXT NOT NULL DEFAULT '';

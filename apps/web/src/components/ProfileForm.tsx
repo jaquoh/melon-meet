@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { FilterCheckbox } from "./FilterCheckbox";
 
+const PLAYING_LEVEL_PARTIAL_PATTERN = /^\d*(?:\.\d*)?(?:-\d*(?:\.\d*)?)?$/;
+
 export interface ProfileFormValues {
   avatarUrl: string;
   bio: string;
   displayName: string;
   homeArea: string;
   isProfilePublic: boolean;
+  playingLevel: string;
   showEmailPublicly: boolean;
 }
 
@@ -24,6 +27,7 @@ export function ProfileForm({
     displayName: string;
     homeArea: string;
     isProfilePublic: boolean;
+    playingLevel: string;
     showEmailPublicly: boolean;
   }) => Promise<unknown>;
   profile: ProfileFormValues;
@@ -55,6 +59,25 @@ export function ProfileForm({
       <label className="field-stack">
         <span className="field-label">Home area</span>
         <input className="field-input" onChange={(event) => onChange({ ...profile, homeArea: event.target.value })} value={profile.homeArea} />
+      </label>
+
+      <label className="field-stack">
+        <span className="field-label">Playing level</span>
+        <input
+          className="field-input"
+          inputMode="decimal"
+          onChange={(event) => {
+            const nextValue = event.target.value.trim();
+            if (PLAYING_LEVEL_PARTIAL_PATTERN.test(nextValue)) {
+              onChange({ ...profile, playingLevel: nextValue });
+            }
+          }}
+          pattern="^\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?$"
+          placeholder="3.5-4"
+          title="Use formats like 3, 3.5, 2-3, or 3.5-4."
+          value={profile.playingLevel}
+        />
+        <span className="field-hint">Use formats like `3`, `3.5`, `2-3`, or `3.5-4`.</span>
       </label>
 
       <label className="field-stack field-full">

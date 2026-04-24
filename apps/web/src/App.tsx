@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import landingHeroMelonDark from "./assets/landing-hero-melon-dark.png";
+import landingHeroMelonLight from "./assets/landing-hero-melon.png";
 import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
@@ -51,6 +53,10 @@ function AppShell() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem("melon-theme", theme);
+    document.documentElement.style.setProperty(
+      "--melon-app-bg-image",
+      `url("${theme === "dark" ? landingHeroMelonDark : landingHeroMelonLight}")`,
+    );
   }, [theme]);
 
   const viewer = meQuery.data?.viewer ?? null;
@@ -63,7 +69,7 @@ function AppShell() {
 
   return (
     <Routes>
-      <Route path="/" element={<LandingPage viewer={viewer} />} />
+      <Route path="/" element={<LandingPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
       <Route path="/auth" element={<Navigate replace to="/" />} />
       <Route path="/info" element={<Navigate replace to="/about" />} />
       <Route path="/about" element={<InfoPage activePage={null} page="info" {...infoPageProps} />} />

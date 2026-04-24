@@ -11,10 +11,13 @@ export const authSchema = z.object({
   password: z.string().min(8),
 });
 
+export const playingLevelPattern = /^(?:\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?)?$/;
+
 export const profileUpdateSchema = z.object({
   displayName: z.string().trim().min(2).max(60),
   bio: z.string().trim().max(500).default(""),
   homeArea: z.string().trim().max(120).default(""),
+  playingLevel: z.string().trim().max(20).regex(playingLevelPattern, "Use values like 3, 3.5, 2-3, or 3.5-4.").default(""),
   avatarUrl: z.string().url().optional().or(z.literal("")).nullable(),
   isProfilePublic: z.boolean().default(false),
   showEmailPublicly: z.boolean().default(false),
@@ -170,6 +173,7 @@ export interface ViewerSummary {
   displayName: string;
   bio: string;
   homeArea: string;
+  playingLevel: string;
   avatarUrl: string | null;
   isProfilePublic: boolean;
   showEmailPublicly: boolean;

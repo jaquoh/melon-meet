@@ -111,6 +111,11 @@ function formatSessionPrice(meeting: MeetingSummary) {
   return "Paid";
 }
 
+function formatPlayingLevelTag(level: string | null | undefined) {
+  const trimmed = level?.trim();
+  return `LVL ${trimmed && trimmed.length > 0 ? trimmed : "?"}`;
+}
+
 function timePresetLabel(preset: TimePreset) {
   if (preset === "all-sessions") return "All sessions";
   if (preset === "next-week") return "Next week";
@@ -423,6 +428,7 @@ export function DiscoveryPage({
       displayName: profile.displayName,
       homeArea: profile.homeArea,
       isProfilePublic: profile.isProfilePublic,
+      playingLevel: profile.playingLevel ?? "",
       showEmailPublicly: profile.showEmailPublicly,
     };
   }
@@ -640,7 +646,7 @@ export function DiscoveryPage({
 
   const groupPins = useMemo(
     () =>
-      publicGroups
+      groups
         .map((group) => {
           const filteredMeetings = groupMeetingsById[group.id] ?? [];
           const nextMeeting = filteredMeetings[0] ?? null;
@@ -656,7 +662,7 @@ export function DiscoveryPage({
           };
         })
         .filter((value): value is NonNullable<typeof value> => Boolean(value)),
-    [groupMeetingsById, publicGroups],
+    [groupMeetingsById, groups],
   );
 
   useEffect(() => {
@@ -1169,6 +1175,7 @@ export function DiscoveryPage({
           <h2 className="info-panel__title">{selectedProfileDetail.displayName}</h2>
           <div className="info-tags">
             <span className="mini-chip">{selectedProfileDetail.isProfilePublic ? "public" : "private"}</span>
+            <span className="mini-chip">{formatPlayingLevelTag(selectedProfileDetail.playingLevel)}</span>
             {selectedProfileMemberships.length > 0 ? <span className="mini-chip">{selectedProfileMemberships.length} groups</span> : null}
             {selectedProfileAttending.length > 0 ? <span className="mini-chip">{selectedProfileAttending.length} attending</span> : null}
           </div>
@@ -1417,12 +1424,22 @@ export function DiscoveryPage({
         </div>
       </section>
       <section className="stack-panel">
-        <span className="panel-caption">Attending</span>
+        <span className="panel-caption">Attending Players</span>
         {selectedMeetingClaims.length > 0 ? (
-          <div className="subtle-action-row">
+          <div className="attending-player-list">
             {selectedMeetingClaims.map((claim) => (
-              <Link className="mini-link" key={claim.id} state={detailNavigationState()} to={`/profile/${claim.id}`}>
-                {claim.displayName}
+              <Link className="attending-player-card" key={claim.id} state={detailNavigationState()} to={`/profile/${claim.id}`}>
+                {claim.avatarUrl ? (
+                  <img alt={claim.displayName} className="attending-player-card__avatar" src={claim.avatarUrl} />
+                ) : (
+                  <span className="attending-player-card__avatar attending-player-card__avatar--fallback" aria-hidden="true">
+                    <User size={16} strokeWidth={2} />
+                  </span>
+                )}
+                <span className="attending-player-card__copy">
+                  <span className="attending-player-card__name">{claim.displayName}</span>
+                  <span className="mini-chip">{formatPlayingLevelTag(claim.playingLevel)}</span>
+                </span>
               </Link>
             ))}
           </div>
@@ -1877,7 +1894,7 @@ export function DiscoveryPage({
       }
       left={
         <div className="stack-panel">
-          <div className="workspace-segmented workspace-segmented--column">
+          <div className="workspace-segmented workspace-segmented--column workspace-segmented--mode-nav">
             <button
               className={displayMode === "map" ? "is-active" : ""}
               onClick={() => {
@@ -1902,7 +1919,7 @@ export function DiscoveryPage({
             </button>
           </div>
 
-          <div className="workspace-segmented workspace-segmented--column">
+          <div className="workspace-segmented workspace-segmented--column workspace-segmented--mode-nav">
             <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
               <MapPin size={14} strokeWidth={2} />
               <span>Venues</span>

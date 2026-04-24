@@ -57,6 +57,7 @@ type ViewerRow = {
   home_area: string;
   id: string;
   is_profile_public?: number | boolean;
+  playing_level?: string | null;
   show_email_publicly?: number | boolean;
 };
 
@@ -85,6 +86,7 @@ function mapViewerSummary(row: ViewerRow) {
     homeArea: row.home_area,
     id: row.id,
     isProfilePublic: Boolean(row.is_profile_public),
+    playingLevel: row.playing_level?.trim() ?? "",
     showEmailPublicly: Boolean(row.show_email_publicly),
   };
 }
@@ -612,9 +614,9 @@ export function createApp() {
       c.env.DB,
       `INSERT INTO users (
          id, email, password_hash, display_name, bio, home_area, avatar_url,
-         is_profile_public, show_email_publicly, created_at, updated_at
+         is_profile_public, show_email_publicly, playing_level, created_at, updated_at
        )
-       VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, ?, ?)`,
+       VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, '', ?, ?)`,
       userId,
       email.toLowerCase(),
       passwordHash,
@@ -635,6 +637,7 @@ export function createApp() {
         homeArea: "",
         id: userId,
         isProfilePublic: false,
+        playingLevel: "",
         showEmailPublicly: false,
       },
     }, 201);
@@ -655,10 +658,11 @@ export function createApp() {
       id: string;
       is_profile_public: number;
       password_hash: string;
+      playing_level: string;
       show_email_publicly: number;
     }>(
       c.env.DB,
-      `SELECT id, email, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
+      `SELECT id, email, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly
        FROM users
        WHERE email = ?`,
       email.toLowerCase(),
@@ -754,6 +758,7 @@ export function createApp() {
     const row = await firstRow<ViewerRow>(
       c.env.DB,
       `SELECT id, email, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
+             , playing_level
        FROM users
        WHERE id = ?`,
       c.req.param("id"),
@@ -861,6 +866,7 @@ export function createApp() {
           bio: "",
           email: "",
           homeArea: "",
+          playingLevel: "",
         },
       profileIsPrivate: !canViewProfile,
       attending,
@@ -881,6 +887,7 @@ export function createApp() {
            home_area = ?,
            avatar_url = ?,
            is_profile_public = ?,
+           playing_level = ?,
            show_email_publicly = ?,
            updated_at = ?
        WHERE id = ?`,
@@ -889,6 +896,7 @@ export function createApp() {
       input.homeArea ?? "",
       normalizeOptionalText(input.avatarUrl ?? null),
       input.isProfilePublic ? 1 : 0,
+      input.playingLevel ?? "",
       input.showEmailPublicly ? 1 : 0,
       updatedAt,
       viewer.id,
@@ -902,6 +910,7 @@ export function createApp() {
         displayName: input.displayName,
         homeArea: input.homeArea ?? "",
         isProfilePublic: input.isProfilePublic,
+        playingLevel: input.playingLevel ?? "",
         showEmailPublicly: input.showEmailPublicly,
       },
     });
@@ -1702,10 +1711,11 @@ export function createApp() {
       display_name: string;
       email: string;
       home_area: string;
+      playing_level: string;
       user_id: string;
     }>(
       c.env.DB,
-      `SELECT u.id AS user_id, u.email, u.display_name, u.bio, u.home_area, u.avatar_url
+      `SELECT u.id AS user_id, u.email, u.display_name, u.bio, u.home_area, u.playing_level, u.avatar_url
        FROM meeting_claims mc
        JOIN users u ON u.id = mc.user_id
        WHERE mc.meeting_id = ?
@@ -1753,6 +1763,7 @@ export function createApp() {
           home_area: claim.home_area,
           id: claim.user_id,
           is_profile_public: 0,
+          playing_level: claim.playing_level,
           show_email_publicly: 0,
         }),
       })),
