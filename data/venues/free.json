@@ -1,0 +1,2033 @@
+[
+  {
+    "id": "venue-alexanderplatz",
+    "name": "Alexanderplatz",
+    "address": "Rathausstraße, 10178 Berlin",
+    "description": "A free public court near Alexanderplatz, close to the TV Tower. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.51975706751368,
+    "longitude": 13.40905323293103,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Alexanderplatz/443",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/DNwggsJ6Q1CZdfx4A",
+    "openingHoursText": "08:00 - 13:00  / 15:00 - 20:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "toilets",
+      "posted opening hours"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Alexanderplatz/443"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=ef2800b011ae3d77390c23f6e3a041bf70947950--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Alexanderplatz/443",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=8b9cce77cc9baf1746fc355598bcde7e4782fe3a--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Alexanderplatz/443",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: damaged net, rough surroundings"
+      ],
+      "parkInspectorScore": 39
+    }
+  },
+  {
+    "id": "venue-baseball-rams",
+    "name": "Baseball Rams",
+    "address": "Sachtlebenstraße 36, 14165 Berlin",
+    "description": "A quiet public court beside the Berlin Rams baseball grounds in Zehlendorf. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "mixed",
+    "environment": "outdoor",
+    "latitude": 52.412256484093206,
+    "longitude": 13.250357810079104,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Baseball-Rams/769",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/JVwQQUnA7hMbLcN69",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "club grounds",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Baseball-Rams/769"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=a402d950680cfd276ed135fecec753cd57fdea14--bild1_rams.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Baseball-Rams/769",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=3879f18927ae73041b52b2040bc8fc5aad44ba7e--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Baseball-Rams/769",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Positive: large playing area",
+        "Watch out: no benches"
+      ],
+      "parkInspectorScore": 30
+    }
+  },
+  {
+    "id": "venue-schlupfwinkel",
+    "name": "Beachvolleyballfeld Schlupfwinkel",
+    "address": "Kaiserin-Augusta-Allee 100, 10553 Berlin",
+    "description": "Community-listed free sand area next to Jugendclub Schlupfwinkel; bring a net and use hooks in the stone surround.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.526,
+    "longitude": 13.32,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": null,
+    "bookingUrl": null,
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Kaiserin-Augusta-Allee%20100%2010553%20Berlin%20Beachvolleyball",
+    "openingHoursText": "BeachUp notes nearby youth club open roughly 13:00-20:00; public court access not formally scheduled.",
+    "seasonalityText": "Outdoor community court, weather/daylight dependent.",
+    "amenities": [
+      "bring own net",
+      "hooks for net ropes",
+      "near youth club toilets by request"
+    ],
+    "sourceUrls": [
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-benn-wartenberg",
+    "name": "BENN Wartenberg",
+    "address": "Schweriner Ring 27, 13059 Berlin",
+    "description": "A small neighborhood beach volleyball court in Wartenberg. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.57752854123584,
+    "longitude": 13.509280148377163,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/q8ZaTVzBNcSRkFC5A",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=63bbc4ffab0dd7e4bf630f2472300f051a83d32d--Bild1_wartenberg.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=13ac29a54ee665cbad973b9de78b653ce1191efe--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: no seating"
+      ],
+      "parkInspectorScore": 28
+    }
+  },
+  {
+    "id": "venue-biesdorfer-baggersee",
+    "name": "Biesdorfer Baggersee",
+    "address": "Baggerseestraße, 12683 Berlin",
+    "description": "A public outdoor beach volleyball spot in Biesdorf. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.50254394960772,
+    "longitude": 13.546616355819872,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/J5whsd455iu8tVEj7",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "bathing lake",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=78c24dba1bdb9e8b1c20044b994493b8ec096329--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=fe2a83a68a9771793c2b1ae95b293c16b766e3dc--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Watch out: narrow net, Nicht, Originalhöhe"
+      ],
+      "parkInspectorScore": 40
+    }
+  },
+  {
+    "id": "venue-blucherstrasse-europa-kita",
+    "name": "Blücherstraße (Europa-Kita)",
+    "address": "Blücherstraße 46, 10961 Berlin",
+    "description": "A public outdoor beach volleyball spot in Kreuzberg. Parkinspector lists 2 courts here. The playing surface is well-kept sand. It has no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.49094402830924,
+    "longitude": 13.406586397906205,
+    "courtCountTotal": 2,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 2,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/eqiDHnoPUwEaRbyC8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "net posts, no boundary lines",
+      "campus location",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=0c8b96fa2405be072b7f12cb3e56510c8e5ea7bb--Bild1_Bl%C3%BCcherstra%C3%9Fe.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=451cb98ce5de59516b6ee1514e885f4bb80f47f7--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: Kein, Netz, no boundary lines"
+      ],
+      "parkInspectorScore": 39
+    }
+  },
+  {
+    "id": "venue-borussia-friedrichsfelde",
+    "name": "Borussia Friedrichsfelde",
+    "address": "Zachertstraße 30, 10315 Berlin",
+    "description": "A public outdoor beach volleyball spot in Friedrichsfelde. Parkinspector lists 2 courts here. The playing surface is hard rubber. It has a fixed net and boundary lines.",
+    "pricing": "free",
+    "accessType": "mixed",
+    "environment": "outdoor",
+    "latitude": 52.50320749661199,
+    "longitude": 13.505793854011563,
+    "courtCountTotal": 2,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 2,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/Sdpx8cvJEy9PU3me6",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "hard rubber surface",
+      "club grounds"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=7b0c5723d9fb2ea67bfeca36a6cc0306dbdb94fd--bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=a1dff46c9b5a294b657f1a438c336e831fb4ff8a--bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "hard rubber",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: large playing arean, Gute, Netze, Viele, Spiele",
+        "Watch out: Kein, Sand"
+      ],
+      "parkInspectorScore": 49
+    }
+  },
+  {
+    "id": "venue-britzer-damm",
+    "name": "Britzer Damm",
+    "address": "Britzer Damm 2, 12347 Berlin",
+    "description": "A public outdoor beach volleyball spot in Neukölln. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.46222108137782,
+    "longitude": 13.430286638114373,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Britzer-Damm/115",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/DsUw4yA1sXTm9H7LA",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Britzer-Damm/115"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=f0bbab772cf6024b43bacbb1b30da15cadc3ec71--Bild_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Britzer-Damm/115",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=52f1a9d4674e50aa5bbd639815b5d5554d5a7031--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Britzer-Damm/115",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "few players",
+      "areaNotes": [
+        "Watch out: Steinstufen, Gestrüpp"
+      ],
+      "parkInspectorScore": 38
+    }
+  },
+  {
+    "id": "venue-clara-zetkin-park",
+    "name": "Clara-Zetkin-Park",
+    "address": "Niemegker Str. 19-21, 12689 Berlin",
+    "description": "A public outdoor beach volleyball spot in Marzahn. Parkinspector lists one court here. The playing surface is grober sand. It has no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.56584765386938,
+    "longitude": 13.569908806355308,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/n3NeJS8MEGvBQfgQ6",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "coarse sand",
+      "no net, no boundary lines"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=70a3256efec19d333763a08df7ba3fa14bc53bd7--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=5346ed10ac5a600cfa3f984634c02cad57d223cd--Bild3a_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "grober sand",
+      "equipment": [
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [],
+      "parkInspectorScore": 20
+    }
+  },
+  {
+    "id": "venue-dolgenseestrasse",
+    "name": "Dolgenseestraße",
+    "address": "Dolgenseestraße 15-17, 10319 Berlin",
+    "description": "A green public sport spot in Friedrichsfelde with one sand court. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.4920210086378,
+    "longitude": 13.508528395283035,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/i5vL8ZzTqffXR1rg6",
+    "openingHoursText": "07:00 - 13:00  / 15:00 - 20:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "posted opening hours"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=8668eb6a15f429d611aba30689741c690f23d752--Bild1-min-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=35458950c635560392904dda4f1451d747eb25e3--q.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "few players",
+      "areaNotes": [],
+      "parkInspectorScore": 46
+    }
+  },
+  {
+    "id": "venue-elfiwiese",
+    "name": "Elfiwiese",
+    "address": "Ritterhufen 23A, 14165 Berlin",
+    "description": "A public outdoor beach volleyball spot in Zehlendorf. Parkinspector lists one court here. The playing surface is well-kept sand. It has no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.413873996430546,
+    "longitude": 13.264635191723846,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Elfiwiese/622",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/sGrvavXwphSKwdrQA",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "net posts, no boundary lines",
+      "basketball nearby",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Elfiwiese/622"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=b88e924faf6449204bf52e394c3674a978fe2cc4--Bild1_Elfwiese.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Elfiwiese/622",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=fcea8f124eb9d45753342e96c6c4ae547c60dfc0--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Elfiwiese/622",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: Dünne, Netzstange, no boundary lines"
+      ],
+      "parkInspectorScore": 29
+    }
+  },
+  {
+    "id": "venue-emdener-strasse",
+    "name": "Emdener Straße",
+    "address": "Oldenburger Str. 38, 10551 Berlin",
+    "description": "A public volleyball court on a neighborhood sport area in Moabit. Parkinspector lists one court here. The playing surface is hard rubber. It has a fixed net and boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.53013435942049,
+    "longitude": 13.335255349115565,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/T1SYPRsqPx2c2H4u6",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "hard rubber surface",
+      "table tennis nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=67e5cc143d278edff7f86d5d07a90d975a5fc340--bild1_emdener.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=893a420a104fc89f8aaacebca0aee377223b5b29--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "hard rubber",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Positive: large playing area",
+        "Watch out: narrow net, Kein, Sand"
+      ],
+      "parkInspectorScore": 35
+    }
+  },
+  {
+    "id": "venue-freizeitpark-marienfelde-amiberg",
+    "name": "Freizeitpark Marienfelde (Amiberg)",
+    "address": "Straße 478, 12277 Berlin",
+    "description": "A hidden hilltop court in Freizeitpark Marienfelde. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.40381845248915,
+    "longitude": 13.369409698946605,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/3B9DkqLCjcRZM9i4A",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=c5c9b449b40f988fc3b207806cfee3d287255d99--Bild1_cut-min-min%20(1).jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=1dda33d04d2b1978f9196efb180002037214d873--Bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Watch out: narrow net"
+      ],
+      "parkInspectorScore": 38
+    }
+  },
+  {
+    "id": "venue-freizeitpark-tegel-malche",
+    "name": "Freizeitpark Tegel (Malche)",
+    "address": "An der Malche, 13507 Berlin",
+    "description": "A simple public court by the north shore of Tegeler See. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.59325564658459,
+    "longitude": 13.267472886560908,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/d335YkVSgQ4fat6J8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "basketball nearby",
+      "calisthenics nearby",
+      "table tennis nearby",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=98789e579b59fc07b582d0e032f21f4291accef7--bild1_freizeitpark_tegel.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=1163b2784fac1133b999f323ff1b32055c53a3c5--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [],
+      "parkInspectorScore": 36
+    }
+  },
+  {
+    "id": "venue-freizeitsportanlage-sudpark",
+    "name": "Freizeitsportanlage Südpark",
+    "address": "Weverstraße 38, 13595 Berlin",
+    "description": "A public outdoor beach volleyball spot in Spandau. Parkinspector lists 2 courts here. The playing surface is well-kept sand. It has a fixed net and boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.51852506009895,
+    "longitude": 13.191615717391953,
+    "courtCountTotal": 2,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 2,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/3aogKD57QmGMrLZm9",
+    "openingHoursText": "10:00 - 20:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "Freizeitsportler",
+      "food nearby",
+      "toilets",
+      "posted opening hours",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=bb39903776d9b88cf338d1fd8155931e3567abcc--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=f5e0ee0add93d1cd49df6e54e9e89248d8fccad7--a%20%20.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "freizeitsportler",
+      "areaNotes": [],
+      "parkInspectorScore": 55
+    }
+  },
+  {
+    "id": "venue-grosser-spektesee",
+    "name": "Großer Spektesee",
+    "address": "Spekteweg, 13583 Berlin",
+    "description": "A popular Spandau lakeside spot with four free outdoor courts. Parkinspector lists 4 courts here. The playing surface is well-kept sand and grass. It has fixed nets and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.54405774106209,
+    "longitude": 13.167644336143693,
+    "courtCountTotal": 4,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 4,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/F4jbLq4YS3m7HLhb7",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "bathing lake",
+      "basketball nearby",
+      "calisthenics nearby",
+      "skatepark nearby",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=d7e021f6d0160937fab90bfac69f322885ab1b16--bild2_spektesee.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=7f8d82297a1474c0e8ba8cd83baac66931e2a088--start_spektesee.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand and grass",
+      "equipment": [
+        "fixed nets",
+        "no boundary lines"
+      ],
+      "playerLevel": "stronger regular players",
+      "areaNotes": [
+        "Positive: many players",
+        "Watch out: no benches"
+      ],
+      "parkInspectorScore": 55
+    }
+  },
+  {
+    "id": "venue-grunzug-britz",
+    "name": "Grünzug Britz",
+    "address": "Grünzug Britz, 12351 Berlin",
+    "description": "A public outdoor beach volleyball spot in Gropiusstadt. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.431559296886896,
+    "longitude": 13.451422117150829,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/gzEnYwusZTft8nNT8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "Wenige Sportler"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=00b82ed060070701de0808d354517fc532208215--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=920368b39471567d247ffe0477638c432059fde3--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "wenige sportler",
+      "areaNotes": [
+        "Positive: Minifeld, Gepflegt",
+        "Watch out: narrow net"
+      ],
+      "parkInspectorScore": 33
+    }
+  },
+  {
+    "id": "venue-hohensaatener-strasse",
+    "name": "Hohensaatener Straße",
+    "address": "Hohensaatener Str. 18, 12679 Berlin",
+    "description": "A public outdoor beach volleyball spot in Marzahn. Parkinspector lists one court here. The playing surface is grober sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.549405159501234,
+    "longitude": 13.576571928836024,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/tEUJTKxyfvQCQzVY8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "coarse sand",
+      "showers"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=9cacc4db6210fd4f33551263325d2b032ef74d23--Bild1-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=74dd1a0a5d718d350b8fa0952cce49cf7f4da925--Bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "grober sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: coarse sand, damaged net, little runout space"
+      ],
+      "parkInspectorScore": 19
+    }
+  },
+  {
+    "id": "venue-insulaner",
+    "name": "Insulaner",
+    "address": "Prellerweg 7, 12157 Berlin",
+    "description": "A family-friendly public court at Insulaner. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.45934799131837,
+    "longitude": 13.35024660108833,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Insulaner/123",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/oNwvT2D2rAhs3Pmx8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Insulaner/123"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=57c15eacdf3f4dcf27a6425bcd837580e096aca2--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Insulaner/123",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=dee5dac1e358be2b8f134b0c0ba1bd6b568db37f--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Insulaner/123",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Watch out: rough net"
+      ],
+      "parkInspectorScore": 43
+    }
+  },
+  {
+    "id": "venue-krusenick",
+    "name": "Krusenick",
+    "address": "An der Filmfabrik, 12555 Berlin",
+    "description": "A public outdoor beach volleyball spot in Köpenick. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.45031694416539,
+    "longitude": 13.586240596313118,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Krusenick/124",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/DyfYNx7CJTixDNzJ9",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Krusenick/124"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=a11ca5da00974e68dd248b10f9defd5191dbcd3c--Bild2_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Krusenick/124",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=3db2bb6bcc08542aff6386f735e90e4122ea1f29--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Krusenick/124",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [],
+      "parkInspectorScore": 43
+    }
+  },
+  {
+    "id": "venue-herrmann-dorner-allee",
+    "name": "Landschaftspark Johannisthal",
+    "address": "Hermann-Dorner-Allee, 12489 Berlin",
+    "description": "A neighborhood court in Landschaftspark Johannisthal. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.43587900650249,
+    "longitude": 13.522515735990114,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/5PxK5rntWZNTgitk9",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community court, weather/daylight dependent.",
+    "amenities": [
+      "near calisthenics park",
+      "hobby court",
+      "fixed net height reported low",
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/",
+      "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=dcfc1e43e50df4f4348a16bc73881da5f57bd5d7--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=dda394458cc34547883cc4b45cfaa8635eba75ac--Bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Landschaftspark Johannisthal (71) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "few players",
+      "areaNotes": [],
+      "parkInspectorScore": 39
+    }
+  },
+  {
+    "id": "venue-marchlewskistrasse",
+    "name": "Marchlewskistraße",
+    "address": "Marchlewskistraße 78, 10243 Berlin",
+    "description": "A public outdoor beach volleyball spot in Friedrichshain. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.5110182964395,
+    "longitude": 13.446734994390019,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/MMxa4BGu5CRUgfXe7",
+    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "posted opening hours"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=0e30cd409b07a19574fd5350af2e35a806f64489--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=4dd2d9c289ee365185004a1e9f68042449804c8e--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [],
+      "parkInspectorScore": 46
+    }
+  },
+  {
+    "id": "venue-mellowpark",
+    "name": "Mellowpark",
+    "address": "An der Wulheide 250, 12459 Berlin",
+    "description": "An idyllic riverside court at Mellowpark. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.45505157638395,
+    "longitude": 13.562450535556723,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Mellowpark/760",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://g.page/MellowparkBerlin?share",
+    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "food nearby",
+      "graffiti nearby",
+      "toilets",
+      "posted opening hours",
+      "skatepark nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Mellowpark/760"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=a3cc6fcb74e5687ff1fb9ac089211d05296bb639--bild1_mellow.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Mellowpark/760",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=0ed29fb0fe3cdd53088799f4eb918825896a96da--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Mellowpark/760",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: regulation-size court, supervised sport park, toilets, snack stand"
+      ],
+      "parkInspectorScore": 48
+    }
+  },
+  {
+    "id": "venue-monbijoupark",
+    "name": "Monbijoupark",
+    "address": "Monbijouplatz 8, 10178 Berlin",
+    "description": "A central public court near the Spree and Museum Island. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.52284885581503,
+    "longitude": 13.397861773560317,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://www.berlin.de/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/4Vdcso1Rw1tDP5MaA",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public courts, weather/daylight dependent.",
+    "amenities": [
+      "public park",
+      "free access",
+      "near Spree",
+      "near food and cafes",
+      "public outdoor court",
+      "basketball nearby",
+      "calisthenics nearby"
+    ],
+    "sourceUrls": [
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://parkinspector.de/parks/Beachen/Monbijoupark/33"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=e060c6d1c0f4cb8a0d456a15459dc57b55b94071--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Monbijoupark/33",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=2331c43b49f94764d180f9ccbd6a111d090d4333--Bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Monbijoupark/33",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Monbijoupark (33) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: high demand"
+      ],
+      "parkInspectorScore": 60
+    }
+  },
+  {
+    "id": "venue-neues-ufer",
+    "name": "Neues Ufer",
+    "address": "Kaiserin-Augusta-Allee 101, 10553 Berlin",
+    "description": "A public outdoor beach volleyball spot in Moabit. Parkinspector lists one court here. The playing surface is decent sand. It has no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.52518506502879,
+    "longitude": 13.319186743298255,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Neues-Ufer/136",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/sPTvCDGsik2hkZwy5",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "no net, no boundary lines"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Neues-Ufer/136"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=61febbb2d57bff3a5e6c80c502040011357247a0--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Neues-Ufer/136",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=0ecc53fd4840be0ce3dee821fd40a72411dc578e--Bild3a_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Neues-Ufer/136",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [],
+      "parkInspectorScore": 31
+    }
+  },
+  {
+    "id": "venue-esswirtschaft-adlershof",
+    "name": "Newtonstraße",
+    "address": "Newtonstraße, 12489 Berlin",
+    "description": "A public outdoor beach volleyball spot in Adlershof. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.43199550542794,
+    "longitude": 13.531462709923614,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Newtonstrasse/55",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/yS6TRi9ajMo2GPnc7",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community court, weather/daylight dependent.",
+    "amenities": [
+      "basketball nearby",
+      "table tennis nearby",
+      "food nearby",
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/",
+      "https://parkinspector.de/parks/Beachen/Newtonstrasse/55"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=d3a3d997ddf5ae5f5d0c99064eef3b0abcdf89e5--Bild2_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Newtonstrasse/55",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=52bccf848f5b6ada5743885359db2181800438b9--Bild3_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Newtonstrasse/55",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Newtonstraße (55) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [],
+      "parkInspectorScore": 41
+    }
+  },
+  {
+    "id": "venue-park-am-buschkrug",
+    "name": "Park am Buschkrug",
+    "address": "Buschkrugallee 110, 12359 Berlin",
+    "description": "A public outdoor beach volleyball spot in Britz. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.45408271796409,
+    "longitude": 13.450465246876874,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/B3Jso8XLGpJt6Ev99",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=b76f822f4b3253ecdd1fad3c4bee7d2071e742ff--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=ef41307011d4906bbd289434ecb3aaa8b7486a9a--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [],
+      "parkInspectorScore": 25
+    }
+  },
+  {
+    "id": "venue-park-trilogie",
+    "name": "Park-Trilogie",
+    "address": "Frohburger Str., 12627 Berlin",
+    "description": "A quiet single court in the Park-Trilogie green space. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.53015302376689,
+    "longitude": 13.617502248418532,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Parktrilogie/843",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/uUgQTyHCywPxFnWN7",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Parktrilogie/843"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=519993f488ee24b9024216d8fa61e1f3ec0fa131--bild1_trilogie.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Parktrilogie/843",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=027b0bf5f390bbca7f7cc1075dc8e098423dbec9--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Parktrilogie/843",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: no benches"
+      ],
+      "parkInspectorScore": 29
+    }
+  },
+  {
+    "id": "venue-poststadion",
+    "name": "Poststadion",
+    "address": "Lehrter Straße, 10557 Berlin",
+    "description": "A public outdoor beach volleyball spot in Moabit. Parkinspector lists one court here. The playing surface is well-kept sand. It has no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.52955979577257,
+    "longitude": 13.361628311657215,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Poststadion/178",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/cGUUvAbLuCXWJkSYA",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "net posts, no boundary lines"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Poststadion/178"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=afe28525e4d5fe6fac0a3884fcf1b725a611d596--20260313_160351.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Poststadion/178",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=39ce1d62d5a2c2af6f1dd20ce0a794cbcd8f594d--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Poststadion/178",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "no boundary lines"
+      ],
+      "playerLevel": "few players",
+      "areaNotes": [],
+      "parkInspectorScore": 39
+    }
+  },
+  {
+    "id": "venue-schendelpark",
+    "name": "Schendelpark",
+    "address": "Alte Schönhauser Str. 7-8, 10119 Berlin",
+    "description": "A tucked-away Mitte court in Schendelpark, close to cafes and hostels. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.527272718257024,
+    "longitude": 13.408507427646589,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://www.berlin.de/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/Zr9egNBwQrePr5yk7",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public court, weather/daylight dependent.",
+    "amenities": [
+      "public park",
+      "free access",
+      "net and posts reported available",
+      "near restaurants",
+      "public outdoor court"
+    ],
+    "sourceUrls": [
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://parkinspector.de/parks/Beachen/Schendelpark/31"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=ab3e1bf4e84a337fefae783e59b4790b41099b1e--Bild1_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Schendelpark/31",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=197f181085cbac7a758092c3c929e31fe8d0fe9b--Bild3-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Schendelpark/31",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Schendelpark (31) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: high demand",
+        "Watch out: narrow net"
+      ],
+      "parkInspectorScore": 55
+    }
+  },
+  {
+    "id": "venue-schreinerstrasse",
+    "name": "Schreinerstraße 46",
+    "address": "Schreinerstraße 46, 10247 Berlin",
+    "description": "A lovingly kept neighborhood sport area around Schreinerstraße. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.51706379902465,
+    "longitude": 13.467730261512441,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://www.berlin.de/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/hSqBjFLGz73qbBUv8",
+    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "seasonalityText": "Outdoor public court, weather/daylight dependent.",
+    "amenities": [
+      "public playground",
+      "free access",
+      "table tennis",
+      "seating",
+      "public outdoor court",
+      "posted opening hours",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://parkinspector.de/parks/Beachen/Schreinerstrasse-46/77"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=c75d1949daba3c4e6e6d95bb0ffa276a5766f069--Bild2_cut-mini.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Schreinerstrasse-46/77",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=caa2d926a8c9e240fee79f9921483ba2395edd97--Schreinerstra%C3%9Fe%2046-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Schreinerstrasse-46/77",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Schreinerstraße 46 (77) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "stronger regular players",
+      "areaNotes": [],
+      "parkInspectorScore": 55
+    }
+  },
+  {
+    "id": "venue-strandbad-muggelsee",
+    "name": "Strandbad Müggelsee",
+    "address": "Fürstenwalder Damm 838, 12589 Berlin",
+    "description": "A public outdoor beach volleyball spot in Rahnsdorf. Parkinspector lists 3 courts here. The playing surface is well-kept sand. It has no nets and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.44750169867551,
+    "longitude": 13.67506889227422,
+    "courtCountTotal": 3,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 3,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/Ep5NYFxy8HKhBGve9",
+    "openingHoursText": "Mon-Sun: 09:00 - 21:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "bathing lake",
+      "showers",
+      "toilets",
+      "posted opening hours",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=ee841c7ccd9dc2407a8f44cd9f8d22802a8a724d--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=09535256df64ea9ed49f4496cfcdeb6025605ab5--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "no nets",
+        "no boundary lines"
+      ],
+      "playerLevel": "stronger regular players",
+      "areaNotes": [
+        "Positive: many players, Gepflegtes, Seebad"
+      ],
+      "parkInspectorScore": 61
+    }
+  },
+  {
+    "id": "venue-vfl-tegel",
+    "name": "VfL Tegel",
+    "address": "Hatzfeldtallee 29, 13509 Berlin",
+    "description": "A large raised court behind the VfL Tegel clubhouse. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "mixed",
+    "environment": "outdoor",
+    "latitude": 52.593818636745596,
+    "longitude": 13.294753460031927,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Vfl-Tegel/998",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/JE2fVwH95zqsEk516",
+    "openingHoursText": "10:00 - 22:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "club grounds",
+      "posted opening hours",
+      "basketball nearby",
+      "calisthenics nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Vfl-Tegel/998"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=908c11cacc66cc19162e55a1f6e7a2bcce1a3024--20260318_152643.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Vfl-Tegel/998",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: Sehr, guter, Zustand,, Gepolstertes, Netz",
+        "Watch out: Öffnungszeiten"
+      ],
+      "parkInspectorScore": 48
+    }
+  },
+  {
+    "id": "venue-vinetaplatz",
+    "name": "Vinetaplatz",
+    "address": "Wolliner Str. 39, 13355 Berlin",
+    "description": "A large fenced public court near Vinetaplatz. Parkinspector lists one court here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.541472915951566,
+    "longitude": 13.399969719065918,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Vinetaplatz/101",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/6SndbMtTcTa56eSz8",
+    "openingHoursText": "08:00 - 21:00",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "posted opening hours",
+      "basketball nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Vinetaplatz/101"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=b33d757dfac70233c8fe16cd10325e875083e1bc--Bild1-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Vinetaplatz/101",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=13ffd851a12a3c31cec7c4d5809543e4c10c3eff--q.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Vinetaplatz/101",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [
+        "Positive: many players, sheltered from wind"
+      ],
+      "parkInspectorScore": 49
+    }
+  },
+  {
+    "id": "venue-volkspark-friedrichshain",
+    "name": "Volkspark Friedrichshain",
+    "address": "Margarete-Sommer-Straße, 10249 Berlin",
+    "description": "One of Berlin’s biggest free beach volleyball spots, with room for several courts. Parkinspector lists 7 courts here. The playing surface is well-kept sand. It has no nets and boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.52928312481538,
+    "longitude": 13.44352272344176,
+    "courtCountTotal": 7,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 7,
+    "websiteUrl": "https://www.berlin.de/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/4McoRng6xm9C4tTo8",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public play; usable in good weather and daylight. Bring all equipment.",
+    "amenities": [
+      "public park",
+      "free access",
+      "bring own net",
+      "bring own posts",
+      "near kiosk",
+      "no floodlights",
+      "public outdoor court",
+      "skatepark nearby"
+    ],
+    "sourceUrls": [
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/",
+      "https://berlin-beachvolleyball.de/en/volkspark-friedrichshain-6-courts-free-but-only-with-your-own-equipment/",
+      "https://parkinspector.de/parks/Beachen/Volkspark-Friedrichshain/26"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Volleyball_im_VF_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Volleyball_im_VF_01.jpg",
+        "credit": "Wikimedia Commons contributor",
+        "license": "Check file page before production use",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Volleyball_im_VF_02.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Volleyball_im_VF_02.jpg",
+        "credit": "Wikimedia Commons contributor",
+        "license": "Check file page before production use",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=d218690f885108323418ab39577506e4dd03fd07--20200702_190757.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Friedrichshain/26",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=c15abb10ae7bd1648aea469b66e942c9aa83ad51--Volkspark%20Friedrichshain-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Friedrichshain/26",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Merged Parkinspector Volkspark Friedrichshain (26) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "no nets",
+        "boundary lines"
+      ],
+      "playerLevel": "stronger regular players",
+      "areaNotes": [
+        "Positive: many players, social atmosphere",
+        "Watch out: no nets, no boundary lines"
+      ],
+      "parkInspectorScore": 78
+    }
+  },
+  {
+    "id": "venue-volkspark-jungfernheide",
+    "name": "Volkspark Jungfernheide",
+    "address": "Volkspark Jungfernheide, 13629 Berlin",
+    "description": "Two free public sand courts near the Jungfernheide lido area. Parkinspector lists 2 courts here. The playing surface is well-kept sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.543725996267746,
+    "longitude": 13.28370924232795,
+    "courtCountTotal": 2,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 2,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/irU7gzpf5S3v3ont5",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public courts, weather/daylight dependent; Parkinspector notes the free beach area is used year-round.",
+    "amenities": [
+      "public park",
+      "free access",
+      "fixed nets",
+      "no lines",
+      "badesee nearby",
+      "lido nearby",
+      "public outdoor court",
+      "bathing lake",
+      "water nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=cb84f56da362be991b591c4238e322cf680317bd--Bild2_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=a3a507d2de4712acd0d10486f8e79da157f78b85--a1.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "duplicateNotes": "Kept separate from Strandbad Jungfernheide because the Strandbad entry is a paid/bookable lido court offer, while this Parkinspector record describes the free public Volkspark Jungfernheide beach spot. Merged Parkinspector Volkspark Jungfernheide (505) into the existing canonical venue record.",
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [],
+      "parkInspectorScore": 51
+    }
+  },
+  {
+    "id": "venue-wiesenpark-wuhle",
+    "name": "Wiesenpark (Wuhle)",
+    "address": "Kyritzer Str. 35, 12629 Berlin",
+    "description": "A public outdoor beach volleyball spot in Hellersdorf. Parkinspector lists one court here. The playing surface is decent sand. It has a fixed net and no boundary lines.",
+    "pricing": "free",
+    "accessType": "public",
+    "environment": "outdoor",
+    "latitude": 52.54275229035617,
+    "longitude": 13.583697516563172,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Wiesenpark-Wuhle/887",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://maps.app.goo.gl/MBFgw6cH5a9uHC4s9",
+    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
+    "amenities": [
+      "public outdoor court",
+      "basketball nearby",
+      "skatepark nearby"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Wiesenpark-Wuhle/887"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=3231563c7546b1e20ca2b79c8f0ee2f78c54af64--20250412_175721.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Wiesenpark-Wuhle/887",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "decent sand",
+      "equipment": [
+        "fixed net",
+        "no boundary lines"
+      ],
+      "playerLevel": "very few players",
+      "areaNotes": [
+        "Watch out: narrow court"
+      ],
+      "parkInspectorScore": 28
+    }
+  }
+]

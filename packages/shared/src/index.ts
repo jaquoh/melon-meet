@@ -239,9 +239,35 @@ export interface VenueSummary {
   latitude: number;
   longitude: number;
   sourceUrl: string | null;
+  sourceUrls: string[];
+  websiteUrl: string | null;
+  googleMapsUrl: string | null;
   bookingUrl: string | null;
   openingHoursText: string | null;
   heroImageUrl: string | null;
+  courtCountTotal: number | null;
+  indoorCourtCount: number;
+  outdoorCourtCount: number;
+  accessType: "public" | "bookable" | "membership" | "entry_fee" | "mixed";
+  environment: "indoor" | "outdoor" | "indoor_outdoor";
+  seasonalityText: string | null;
+  facts: {
+    areaNotes: string[];
+    equipment: string[];
+    parkInspectorScore: number | null;
+    playerLevel: string | null;
+    surface: string | null;
+  };
+  amenities: string[];
+  imageGallery: Array<{
+    url: string;
+    sourceUrl: string;
+    credit: string;
+    license: string;
+    rightsStatus: "usable" | "requires_permission";
+  }>;
+  duplicateNotes: string | null;
+  researchedAt: string | null;
 }
 
 export interface GroupPost {

@@ -1,0 +1,1 @@
+ALTER TABLE venues ADD COLUMN facts_json TEXT NOT NULL DEFAULT '{}';

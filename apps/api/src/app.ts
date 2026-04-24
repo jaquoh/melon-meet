@@ -18,6 +18,7 @@ import {
   profileUpdateSchema,
   roleUpdateSchema,
   type MeetingSummary,
+  type VenueSummary,
 } from "../../../packages/shared/src";
 import {
   clearSessionCookie,
@@ -64,6 +65,117 @@ type ViewerRow = {
 type HeroImageRow = {
   hero_image_url?: string | null;
 };
+
+type VenueRow = {
+  access_type: VenueSummary["accessType"];
+  address: string;
+  amenities_json: string | null;
+  booking_url: string | null;
+  court_count_total: number | null;
+  description: string;
+  duplicate_notes: string | null;
+  environment: VenueSummary["environment"];
+  facts_json: string | null;
+  google_maps_url: string | null;
+  hero_image_url: string | null;
+  id: string;
+  image_gallery_json: string | null;
+  indoor_court_count: number | null;
+  latitude: number;
+  longitude: number;
+  name: string;
+  opening_hours_text: string | null;
+  outdoor_court_count: number | null;
+  pricing: "free" | "paid";
+  researched_at: string | null;
+  seasonality_text: string | null;
+  source_url: string | null;
+  source_urls_json: string | null;
+  website_url: string | null;
+};
+
+function parseJsonArray(value: string | null | undefined) {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseVenueFacts(value: string | null | undefined): VenueSummary["facts"] {
+  const fallback: VenueSummary["facts"] = {
+    areaNotes: [],
+    equipment: [],
+    parkInspectorScore: null,
+    playerLevel: null,
+    surface: null,
+  };
+
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object") {
+      return fallback;
+    }
+    const candidate = parsed as Partial<VenueSummary["facts"]>;
+    return {
+      areaNotes: Array.isArray(candidate.areaNotes) ? candidate.areaNotes.filter((entry): entry is string => typeof entry === "string") : [],
+      equipment: Array.isArray(candidate.equipment) ? candidate.equipment.filter((entry): entry is string => typeof entry === "string") : [],
+      parkInspectorScore: typeof candidate.parkInspectorScore === "number" ? candidate.parkInspectorScore : null,
+      playerLevel: typeof candidate.playerLevel === "string" ? candidate.playerLevel : null,
+      surface: typeof candidate.surface === "string" ? candidate.surface : null,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function mapVenueSummary(venue: VenueRow): VenueSummary {
+  return {
+    accessType: venue.access_type,
+    address: venue.address,
+    amenities: parseJsonArray(venue.amenities_json).filter((entry): entry is string => typeof entry === "string"),
+    bookingUrl: venue.booking_url,
+    courtCountTotal: venue.court_count_total,
+    description: venue.description,
+    duplicateNotes: venue.duplicate_notes,
+    environment: venue.environment,
+    facts: parseVenueFacts(venue.facts_json),
+    googleMapsUrl: venue.google_maps_url ?? buildGoogleMapsUrl(venue.address, Number(venue.latitude), Number(venue.longitude)),
+    heroImageUrl: venue.hero_image_url,
+    id: venue.id,
+    imageGallery: parseJsonArray(venue.image_gallery_json).filter(
+      (entry): entry is VenueSummary["imageGallery"][number] =>
+        Boolean(entry) &&
+        typeof entry === "object" &&
+        typeof (entry as { url?: unknown }).url === "string" &&
+        typeof (entry as { sourceUrl?: unknown }).sourceUrl === "string" &&
+        typeof (entry as { credit?: unknown }).credit === "string" &&
+        typeof (entry as { license?: unknown }).license === "string" &&
+        ((entry as { rightsStatus?: unknown }).rightsStatus === "usable" || (entry as { rightsStatus?: unknown }).rightsStatus === "requires_permission"),
+    ),
+    indoorCourtCount: Number(venue.indoor_court_count ?? 0),
+    latitude: Number(venue.latitude),
+    longitude: Number(venue.longitude),
+    name: venue.name,
+    openingHoursText: venue.opening_hours_text,
+    outdoorCourtCount: Number(venue.outdoor_court_count ?? 0),
+    pricing: venue.pricing,
+    researchedAt: venue.researched_at,
+    seasonalityText: venue.seasonality_text,
+    sourceUrl: venue.source_url,
+    sourceUrls: parseJsonArray(venue.source_urls_json).filter((entry): entry is string => typeof entry === "string"),
+    websiteUrl: venue.website_url,
+  };
+}
 
 function normalizeOptionalText(value: string | null | undefined) {
   if (!value) {
@@ -1448,38 +1560,16 @@ export function createApp() {
   });
 
   app.get("/api/venues", async (c) => {
-    const venues = await allRows<{
-      address: string;
-      booking_url: string | null;
-      description: string;
-      hero_image_url: string | null;
-      id: string;
-      latitude: number;
-      longitude: number;
-      name: string;
-      opening_hours_text: string | null;
-      pricing: "free" | "paid";
-      source_url: string | null;
-    }>(
+    const venues = await allRows<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
+              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
+              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
        FROM venues
        ORDER BY name ASC`,
     );
     return c.json({
-      venues: venues.map((venue) => ({
-        address: venue.address,
-        description: venue.description,
-        heroImageUrl: venue.hero_image_url,
-        id: venue.id,
-        latitude: Number(venue.latitude),
-        longitude: Number(venue.longitude),
-        name: venue.name,
-        bookingUrl: venue.booking_url,
-        openingHoursText: venue.opening_hours_text,
-        pricing: venue.pricing,
-        sourceUrl: venue.source_url,
-      })),
+      venues: venues.map(mapVenueSummary),
     });
   });
 
@@ -1487,21 +1577,11 @@ export function createApp() {
     await ensureSeriesCoverage(c.env.DB);
     const viewerId = c.get("viewer")?.id ?? null;
 
-    const venue = await firstRow<{
-      address: string;
-      booking_url: string | null;
-      description: string;
-      hero_image_url: string | null;
-      id: string;
-      latitude: number;
-      longitude: number;
-      name: string;
-      opening_hours_text: string | null;
-      pricing: "free" | "paid";
-      source_url: string | null;
-    }>(
+    const venue = await firstRow<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
+              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
+              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
        FROM venues
        WHERE id = ?`,
       c.req.param("id"),
@@ -1514,19 +1594,7 @@ export function createApp() {
 
     return c.json({
       meetings,
-      venue: {
-        address: venue.address,
-        description: venue.description,
-        heroImageUrl: venue.hero_image_url,
-        id: venue.id,
-        latitude: Number(venue.latitude),
-        longitude: Number(venue.longitude),
-        name: venue.name,
-        bookingUrl: venue.booking_url,
-        openingHoursText: venue.opening_hours_text,
-        pricing: venue.pricing,
-        sourceUrl: venue.source_url,
-      },
+      venue: mapVenueSummary(venue),
     });
   });
 
@@ -1535,21 +1603,11 @@ export function createApp() {
     const query = c.req.valid("query");
     const viewerId = c.get("viewer")?.id ?? null;
 
-    const venues = await allRows<{
-      address: string;
-      booking_url: string | null;
-      description: string;
-      hero_image_url: string | null;
-      id: string;
-      latitude: number;
-      longitude: number;
-      name: string;
-      opening_hours_text: string | null;
-      pricing: "free" | "paid";
-      source_url: string | null;
-    }>(
+    const venues = await allRows<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url
+      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
+              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
+              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
        FROM venues
        WHERE longitude BETWEEN ? AND ?
          AND latitude BETWEEN ? AND ?
@@ -1576,19 +1634,7 @@ export function createApp() {
 
     return c.json({
       meetings,
-      venues: venues.map((venue) => ({
-        address: venue.address,
-        description: venue.description,
-        heroImageUrl: venue.hero_image_url,
-        id: venue.id,
-        latitude: Number(venue.latitude),
-        longitude: Number(venue.longitude),
-        name: venue.name,
-        bookingUrl: venue.booking_url,
-        openingHoursText: venue.opening_hours_text,
-        pricing: venue.pricing,
-        sourceUrl: venue.source_url,
-      })),
+      venues: venues.map(mapVenueSummary),
     });
   });
 

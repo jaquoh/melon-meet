@@ -1,0 +1,557 @@
+[
+  {
+    "id": "venue-alexanderplatz",
+    "name": "Alexanderplatz",
+    "description": "Der Alexanderplatz ist das Zentrum von Ost-Berlin. Täglich besuchen ca. 360.000 Menschen Fernsehturm, Bahnhof, Geschäfte und Fußgängerzone. Hinter dem Alex liegt ein Beachvolleyballfeld, um dem sich Obdachlose und Drogensüchtige aufhalten. Öffnungszeiten: 08:00 - 13:00 Uhr / 15:00 - 20:00 Uhr",
+    "summary": "Beachen im Schatten des Fernsehturms...",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Schlechtes Netz Sozialer Brennpunkt",
+      "openingHours": "08:00 - 13:00 Uhr / 15:00 - 20:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Alexanderplatz/443"
+  },
+  {
+    "id": "venue-baseball-rams",
+    "name": "Baseball Rams",
+    "description": "Zehlendorf ist ein gehobenes Wohnviertel am Stadtrand. Die Vereinssportanlage ist das zu Hause der Berlin Rams. Neben dem Baseball-Stadion gibt es einen Fußball-, Basketball- und Beachvolleyballplatz. Nur wenige Volleyballer nutzen das Feld.",
+    "summary": "Liebloses Beachvolleyballfeld am Baseball-Stadion.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "Große Spielfläche",
+      "negativeAspects": "Keine Bänke",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Baseball-Rams/769"
+  },
+  {
+    "id": "venue-benn-wartenberg",
+    "name": "BENN Wartenberg",
+    "description": "Wartenberg liegt am nördlichen Rand von Berlin. Im Stadtteil stehen Plattenbauten neben neuen Familienhäusern. Hinter dem Wohngebiet beginnt ein weitläufiger Landschaftspark. Der umzäunte Beachvolleyballplatz ist Teil der BENN Wartenberg, einer gemeinnützigen Einrichtung für die Nachbarschaft.",
+    "summary": "Kleines Beachvolleyballfeld für die Nachbarschaft.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Keine Sitzoptionen",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638"
+  },
+  {
+    "id": "venue-biesdorfer-baggersee",
+    "name": "Biesdorfer Baggersee",
+    "description": "Biesdorf samt Schloss liegt am grünen Rand von Berlin. Das Beachvolleyballfeld ist an der Badestelle des Sees zusammen mit einem Spiel- und Grillplatz. Ein Weg führt von der U-Bahn Station am Feld vorbei.",
+    "summary": "Ruhiges Beachvolleyballfeld am Baggersee.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "Schmales Netz Nicht Originalhöhe",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514"
+  },
+  {
+    "id": "venue-blucherstrasse-europa-kita",
+    "name": "Blücherstraße (Europa-Kita)",
+    "description": "Die Europa-Kita ist Teil eines bilingualen deutsch-türkischen Campus. Die Umgebung zwischen Landwehrkanal und Hasenheide in Kreuzberg ist multikulturell. Der Eingang vom Schulgelände zum Beachvolleyballplatz und den Basketballkörben ist fast immer offen und führt ebenfalls zu einem Tennisverein.",
+    "summary": "Lieblose, versteckte Beachvolleyballfelder mitten in Kreuzberg.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Netzstangen, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Kein Netz Keine Linien",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599"
+  },
+  {
+    "id": "venue-borussia-friedrichsfelde",
+    "name": "Borussia Friedrichsfelde",
+    "description": "Die Volleyballfelder sind Teil eines Sportparks zusammen mit einem Fitness-Parcours der Borussia Friedrichsfelde. Der Bereich ist öffentlich zugänglich und wird einzelnen Sportler und Gruppen genutzt.",
+    "summary": "Treffpunkt vieler Jugendgruppen zum Volleyball.",
+    "facts": {
+      "surface": "Hartgummi",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Große Spielflächen Gute Netze Viele Spiele",
+      "negativeAspects": "Kein Sand",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448"
+  },
+  {
+    "id": "venue-britzer-damm",
+    "name": "Britzer Damm",
+    "description": "Der Britzer Damm ist eine Verkehrsachse in Neukölln. Auf einem Teilstück ist die Autobahn untertunnelt. Darüber befindet sich ein Park mit Feldern für Fußball, Beachvolleyball und Basketball.",
+    "summary": "",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Wenige Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Steinstufen Gestrüpp",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Britzer-Damm/115"
+  },
+  {
+    "id": "venue-clara-zetkin-park",
+    "name": "Clara-Zetkin-Park",
+    "description": "Der Clara-Zetkin-Park ist seit 1987 eine Wohngebietsanlage in Marzahn. Die teilweise verwahrloste Fläche ist umstritten. Das Beachvolleyballfeld liegt abgesenkt auf einer wilden Wiese.",
+    "summary": "Triste Sandgrube umgeben von Plattenbauten.",
+    "facts": {
+      "surface": "Grober Sand",
+      "equipment": "Kein Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140"
+  },
+  {
+    "id": "venue-dolgenseestrasse",
+    "name": "Dolgenseestraße",
+    "description": "Das Beachvolleyballfeld liegt an einem Radweg durch den Hönower Grünzug. Der Aktivpark entstand 2008 und vereint einen Garten mit Volleyball und einer Boulebahn. Öffnungszeiten: 07:00 - 13:00 Uhr / 15:00 - 20:00 Uhr",
+    "summary": "Grüne Sportoase in Friedrichsfelde.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Wenige Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": "07:00 - 13:00 Uhr / 15:00 - 20:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100"
+  },
+  {
+    "id": "venue-elfiwiese",
+    "name": "Elfiwiese",
+    "description": "Zehlendorf gilt als wohlhabender Ortsteil mit viel Grün. Highlights im Sommer sind der Wannsee und der Nikolassee in der Nähe. Die Elfiwiese ist ein kleiner Park mit Spiel- und Basketballplatz. Das Beachvolleballfeld ist offen auf der Wiese. Ein Netz muss man mitbringen und an schmale Stangen befestigen.",
+    "summary": "Abgelegenes Beachvolleyballfeld in ruhiger Umgebung.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Keine Linien, Netzstangen",
+      "playerLevel": "Kaum Sportler",
+      "positiveAspects": "",
+      "negativeAspects": "Dünne Netzstange Keine Linien",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Elfiwiese/622"
+  },
+  {
+    "id": "venue-emdener-strasse",
+    "name": "Emdener Straße",
+    "description": "Die Emdener Straße wurde 2013 zur „Schönsten Straße Deutschlands“ gekührt. Dafür sammelten Bewohner Müll, bepflanzten Beete und übermalten Stromkästen. Das Volleyballfeld liegt am Durchgang einer Sport- und Spielfläche mit Tischtennisplatten und Bolzplatz. Markant ist ein Graffiti von der 21er Gallery.",
+    "summary": "Volleyballfeld an der einer der schönsten Straße Deutschlands.",
+    "facts": {
+      "surface": "Hartgummi",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Kaum Sportler",
+      "positiveAspects": "Große Spielfläche",
+      "negativeAspects": "Schmales Netz Kein Sand",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712"
+  },
+  {
+    "id": "venue-freizeitpark-marienfelde-amiberg",
+    "name": "Freizeitpark Marienfelde (Amiberg)",
+    "description": "Der Freizeitpark wurde auf einer Mülldeponie am Stadtrand errichtet. Auf dem Gelände befindet sich eine Radaranlage, die den USA als Abhörstation diente - daher \"Amiberg\". Den Laufpfad zum Beachvolleyballfeld auf einem Hügel kennen nur wenige.",
+    "summary": "Verstecktes Beachvolleyballfeld auf dem Hügel.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "Schmales Netz",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106"
+  },
+  {
+    "id": "venue-freizeitpark-tegel-malche",
+    "name": "Freizeitpark Tegel (Malche)",
+    "description": "Der Freizeitpark liegt am Nordufer des Tegeler Sees. Die Sport- und Spielwiesen sind offen zugänglich. Seit der Schließung des Flughafens wird Tegel zum beliebten Erholungsgebiet. Der Beachvolleyballplatz ist Teil eines Spielplatzes. Wenige Schritte entfernt stehen ein Calisthenics Park, Basketballplatz und Tischtennisplatten.",
+    "summary": "Einfaches Beachvolleyballfeld am Seeufer.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774"
+  },
+  {
+    "id": "venue-freizeitsportanlage-sudpark",
+    "name": "Freizeitsportanlage Südpark",
+    "description": "Die betreute Freizeitsportanlage im Südpark ist auf dem Gelände eines ehemaligen Schwimmbads von 1924. Die alten Umkleidekabinen können heute gemietet werden. Auf dem Areal gibt es Basketball-, Badminton- und Beachvolleyballfelder. Öffnungszeiten: 10:00 - 20:00 Uhr",
+    "summary": "Tolle Freizeitsportanlage mit guten Feldern zum Beachen.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Freizeitsportler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": "10:00 - 20:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512"
+  },
+  {
+    "id": "venue-grosser-spektesee",
+    "name": "Großer Spektesee",
+    "description": "Der Kiesteich ist eine Grünfläche, in dem in den 1960er Jahren Kies abgebaut wurde. Der Spektesee ist Teil davon. An der Badestelle befindet sich eine Sportwiese mit Beachvolleyballplätzen. Im Park gibt es zudem einen Basketballplatz, Skatepark und Calisthenics Bereich.",
+    "summary": "Beliebteste Beachvolleyballplätze in Spandau.",
+    "facts": {
+      "surface": "Gepflegter Sand, Wiese",
+      "equipment": "Feste Netze, Keine Linien",
+      "playerLevel": "Gute Spieler",
+      "positiveAspects": "Viele Spieler",
+      "negativeAspects": "Keine Bänke",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780"
+  },
+  {
+    "id": "venue-grunzug-britz",
+    "name": "Grünzug Britz",
+    "description": "Das Beachvolleyballfeld liegt in einem neu gestalteten Grünzug, der von Britz bis in die Gropiusstadt führt. Das Feld ist sehr klein. Ein kleiner Weg führt zum Eingang.",
+    "summary": "Beachvolleyballfeld in Miniaturgröße.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, keine Linien",
+      "playerLevel": "Wenige Sportler",
+      "positiveAspects": "Minifeld Gepflegt",
+      "negativeAspects": "Schmales Netz",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139"
+  },
+  {
+    "id": "venue-hohensaatener-strasse",
+    "name": "Hohensaatener Straße",
+    "description": "Die Hohensaatener Straße in Marzahn war Teil der größten Großsiedlung der DDR. Nach der Wende zogen viele Menschen weg. Das Beachvolleyballfeld liegt zwischen Plattenbauten. Highlight ist ein Wasserspielplatz mit separaten Duschen.",
+    "summary": "",
+    "facts": {
+      "surface": "Grober Sand",
+      "equipment": "Festes Netz, keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Grober Sand Schlechtes Netz Kaum Puffer",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142"
+  },
+  {
+    "id": "venue-insulaner",
+    "name": "Insulaner",
+    "description": "Der Insulaner ist ein 78 Meter hoher Trümmerberg zwischen Schöneberg und Steglitz. In den 1960er Jahren wurde auf dem Plateau eine Sternwarte errichtet. Später kamen ein Freibad, Spielplatz und Beachvolleyballfeld hinzu.",
+    "summary": "Einfache Beachvolleyball-Option für Familien.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "Grobes Netz",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Insulaner/123"
+  },
+  {
+    "id": "venue-krusenick",
+    "name": "Krusenick",
+    "description": "Krusenick heißt die Halbinsel vor der Köpenicker Altstadt. Auf einem Abschnitt stehen exklusive Wohnanlagen mit Spreeblick. Dem gegenüber ist ein stillgelegtes Gelände der alten Filmfabrik.",
+    "summary": "",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Krusenick/124"
+  },
+  {
+    "id": "venue-herrmann-dorner-allee",
+    "name": "Landschaftspark Johannisthal",
+    "description": "Der Landschaftspark grenzt an den Neubauten von Adlershof. Am Stadtrand von Berlin entstand ein moderner Uni-Campus. Seitdem siedeln sich Technologie-Unternehmen und Startups an.",
+    "summary": "Meist freies Beachvolleyballfeld für Anwohner.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Wenige Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71"
+  },
+  {
+    "id": "venue-marchlewskistrasse",
+    "name": "Marchlewskistraße",
+    "description": "Der Kiez zwischen Warschauer Straße und Frankfurter Tor ist trotz der Nähe zur Partymeile ein bürgerliches Wohngebiet. Das Beachvolleyballfeld ist Teil eines kleinen Parks mit Spielplatz. Die Fläche ist eingezäunt und unterliegt Öffnungszeiten. Mo-Fr: 14:30 - 20:00 Uhr Sa-So: 08:00 - 20:00 Uhr",
+    "summary": "Verstecktes, großes Beachvolleyballfeld im Kiez.",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524"
+  },
+  {
+    "id": "venue-mellowpark",
+    "name": "Mellowpark",
+    "description": "Der Mellowpark ist weit entfernt von der City. Niemand erwartet im beschaulichen Köpenick ein Mekka für Skater und BMX-Fahrer. Auf dem riesigen Gelände sind unzählige Rampen und ein Race Track für Olympioniken. Sportler können im Park essen. Hinter den Gebäuden an der Spree liegt der Beachvolleyballplatz. Mo-Fr: 15:00 - 20:00 Uhr Sa-So: 10:00 - 20:00 Uhr",
+    "summary": "Beachvolleyballfeld idyllisch am Ufer.",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Originalmaße Betreuter Sportpark Toiletten Imbiss",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Mellowpark/760"
+  },
+  {
+    "id": "venue-monbijoupark",
+    "name": "Monbijoupark",
+    "description": "Der Monbijoupark liegt zentral zwischen Hackescher Markt und Museumsinsel an der Stelle eines ehemaligen Schlosses. Entlang der Spree reihen sich Calisthenics Park, Basketballcourt, Bolzplatz und Beachvolleyballfeld aneinander.",
+    "summary": "Beachen vor der Museumsinsel.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Hohe Auslastung",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Monbijoupark/33"
+  },
+  {
+    "id": "venue-neues-ufer",
+    "name": "Neues Ufer",
+    "description": "Das Neue Ufer in Moabit ist eine begehrte Fläche. Im Sommer sind Wiesen, Spiel- und Sportflächen entlang des Kanals voller Menschen. Dagegen vegetiert hinter einem Schulgebäude ein Beachvolleyballplatz vor sich hin.",
+    "summary": "Vergessenes Beachvolleyballfeld ohne Netz.",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Kein Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Neues-Ufer/136"
+  },
+  {
+    "id": "venue-esswirtschaft-adlershof",
+    "name": "Newtonstraße",
+    "description": "Der Bereich um die Newtonstraße entwickelt als moderner Uni-Campus mit Startups und Technologie-Firmen rasant. Basketball- und Beachvolleyplatz sind offen auf einer Wiese einsehbar.",
+    "summary": "",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Newtonstrasse/55"
+  },
+  {
+    "id": "venue-park-am-buschkrug",
+    "name": "Park am Buschkrug",
+    "description": "Der Park am Buschkrug wird dominiert von einem riesigen Kinderspielplatz, der bei Familien aus dem arabischen Raum sehr beliebt ist. Das Beachvolleyballfeld wird dagegen kaum genutzt.",
+    "summary": "Toller Kinderspielplatz, aber ungeeignet für Beachvolleyball.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474"
+  },
+  {
+    "id": "venue-park-trilogie",
+    "name": "Park-Trilogie",
+    "description": "Die Park-Trilogie ist eine Grünfläche, so trist wie das Dienstgebäude des Bezirksamt nebenan. Sie verbindet mehrere Parks und soll künftig besser ausgestattet werden. Beachvolleyball- und Basketballplatz werden - wenn überhaupt - nur als Durchgang genutzt.",
+    "summary": "Einsames Beachvolleyballfeld auf einer verwilderten Wiese.",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Keine Bänke",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Parktrilogie/843"
+  },
+  {
+    "id": "venue-poststadion",
+    "name": "Poststadion",
+    "description": "Das Poststadion liegt in Moabit in der Nähe des Hauptbahnhofs. Die Sandfläche liegt zwischen Vereinsheim und Fußballplätze. Seit 2026 gibt es Netzstangen. Ein Netz muss man selber mitbringen. Sand und Wiese werden auch von anderen Sportgruppen genutzt.",
+    "summary": "Universal genutzte Beachvolleyballfläche.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Netzstangen, Keine Linien",
+      "playerLevel": "Wenige Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Poststadion/178"
+  },
+  {
+    "id": "venue-schendelpark",
+    "name": "Schendelpark",
+    "description": "Der Schendelpark ist eine kleine Oase umgeben von Hostels, Boutiquen und Cafés flaniert von Touris und Hippsters. Im vorderen Bereich wird gegessen und getrunken. Das Volleyballfeld wird von Blicken und Lärm durch Bäume geschützt und ist im Sommer meist belegt.",
+    "summary": "Beachen und relaxen im pulsierenden Hippster-Viertel.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Hohe Auslastung",
+      "negativeAspects": "Schmales Netz",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Schendelpark/31"
+  },
+  {
+    "id": "venue-schreinerstrasse",
+    "name": "Schreinerstraße 46",
+    "description": "Die Schreinerstraße liegt in einem beliebtem Kiez in dem es bis heute besetzte Häuser linker Gruppen gibt. Der Beachvolleyballplatz liegt zusammen mit einem Basketballfeld versteckt zwischen Häusern. Niemand vermutet hier einen Sportpark.",
+    "summary": "Liebevoller Sportbereich für Anwohner.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Gute Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Schreinerstrasse-46/77"
+  },
+  {
+    "id": "venue-strandbad-muggelsee",
+    "name": "Strandbad Müggelsee",
+    "description": "Das Strandbad Müggelsee gibt es seit 1910 und ist denkmalgeschützt. Mit einer Uferlänge von 750 Metern bietet es bis zu 25.000 Gästen Platz. Der Eintritt ist frei. Laufende Kosten trägt die Stadt. Öffnungszeiten: Mo-So: 09:00 - 21:00 Uhr",
+    "summary": "Beachvolleyball und Baden in der Hauptstadt.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Keine Netze, Keine Linien",
+      "playerLevel": "Gute Spieler",
+      "positiveAspects": "Viele Spieler Gepflegtes Seebad",
+      "negativeAspects": "",
+      "openingHours": "Mo-So: 09:00 - 21:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185"
+  },
+  {
+    "id": "venue-strandbad-tegeler-see",
+    "name": "Strandbad Tegeler See",
+    "description": "Das Strandbad Tegel gehört zu einem Wald- und Naturschutzgebiet. Im Bad gibt es Rutschen, einen Sprungturm und Beachvolleyballplatz. Während der Saison kostet das Bad Eintritt, außerhalb ist es kostenlos. Öffnungszeiten: 09:00 - 19:00 Uhr",
+    "summary": "Beachvolleyball mit Badespaß.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": "09:00 - 19:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187"
+  },
+  {
+    "id": "venue-vfl-tegel",
+    "name": "Vfl Tegel",
+    "description": "Tegel war für viele Jahre Synonym für den Flughafen. Dieser wurde 2020 geschlossen. Der Beachvolleyballplatz liegt zusammen mit Basketballfelder und einem Calisthenics Park hinter dem Vereinsheim des Vfl Tegel. Obwohl nur über ein Tor zugänglich, ist die Anlage öffentlich, nachts geschützt und sehr gepflegt. Öffnungszeiten: 10:00 - 22:00 Uhr",
+    "summary": "Großes, empor gesetztes Beachvolleyballfeld.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Sehr guter Zustand, Gepolstertes Netz",
+      "negativeAspects": "Öffnungszeiten",
+      "openingHours": "10:00 - 22:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Vfl-Tegel/998"
+  },
+  {
+    "id": "venue-vinetaplatz",
+    "name": "Vinetaplatz",
+    "description": "Der Vinetaplatz ist in der Nähe vom Mauerpark. Das Beachvolleyballfeld liegt in einem umzäunten, herab gesetzten Bereich, der über eine Rampe und Treppe zugänglich ist. \"Wrangler\" sponserte die Renovierung der Sportanlage inklusive Basketballplatz. Öffnungszeiten: 08:00 - 21:00 Uhr",
+    "summary": "Großes umzäuntes Beachvolleyballfeld.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "Viele Spieler Windgeschützt",
+      "negativeAspects": "",
+      "openingHours": "08:00 - 21:00 Uhr"
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Vinetaplatz/101"
+  },
+  {
+    "id": "venue-volkspark-friedrichshain",
+    "name": "Volkspark Friedrichshain",
+    "description": "Der Volkspark ist als grünes Herzstück zwischen den hippen Vierteln Friedrichshain und Prenzlauer Berg bei jungen Leuten extrem beliebt. Zwischen den Besuchern in einer Mulde ist ein großer Bereich zum Beachen. Ein weiteres Feld befindet sich am Skatepark. Ein Highlight für Beachvolleyball in Berlin!",
+    "summary": "Der größte kostenlose Beachvolleyball-Spot Berlins...",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Keine Netze und Linien",
+      "playerLevel": "Gute Spieler",
+      "positiveAspects": "Sehr viele Spieler Partystimmung",
+      "negativeAspects": "Keine Netze Keine Linien",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Friedrichshain/26"
+  },
+  {
+    "id": "venue-volkspark-jungfernheide",
+    "name": "Volkspark Jungfernheide",
+    "description": "Das ehemalige Jagdrevier mit Wasserturm ist heute Park, Wald und Gartendenkmal. Im Sommer tummeln sich Berliner im Freiluftkino und Strandbad mit Beachvolleyplatz. Die freie Strandfläche wird ganzjährig zum Spielen und Picknicken genutzt.",
+    "summary": "Beachvolleyballfeld am Strandbad.",
+    "facts": {
+      "surface": "Gepflegter Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Freizeitspieler",
+      "positiveAspects": "",
+      "negativeAspects": "",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505"
+  },
+  {
+    "id": "venue-wiesenpark-wuhle",
+    "name": "Wiesenpark (Wuhle)",
+    "description": "Der Wiesenpark schließt sich den \"Gärten der Welt\" an, gehört zum Erholungsraum Wuhletal und wird vom Wuhle-Wanderweg durchzogen. Der Sportbereich umfasst zusätzlich ein Fußballfeld, Basketballplatz und Skatepark.",
+    "summary": "",
+    "facts": {
+      "surface": "Ordentlicher Sand",
+      "equipment": "Festes Netz, Keine Linien",
+      "playerLevel": "Kaum Spieler",
+      "positiveAspects": "",
+      "negativeAspects": "Schmales Feld",
+      "openingHours": null
+    },
+    "sourceUrl": "https://parkinspector.de/parks/Beachen/Wiesenpark-Wuhle/887"
+  }
+]

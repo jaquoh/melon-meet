@@ -2282,6 +2282,11 @@ img {
   padding-inline: 0;
 }
 
+.info-panel .timeline-panel--embedded .stack-sm {
+  padding-inline: 1rem;
+  padding-bottom: 0.35rem;
+}
+
 .timeline-panel__header {
   display: flex;
   align-items: flex-start;

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Melon Meet Venue",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "address",
+    "description",
+    "pricing",
+    "accessType",
+    "environment",
+    "latitude",
+    "longitude",
+    "facts",
+    "amenities",
+    "sourceUrls",
+    "imageGallery"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "address": { "type": "string" },
+    "description": {
+      "type": "string",
+      "description": "English display summary written as prose. Do not store source facts such as surface, lines, nets, or player level here."
+    },
+    "pricing": { "enum": ["free", "paid"] },
+    "accessType": { "enum": ["public", "bookable", "membership", "entry_fee", "mixed"] },
+    "environment": { "enum": ["indoor", "outdoor", "indoor_outdoor"] },
+    "latitude": { "type": "number" },
+    "longitude": { "type": "number" },
+    "courtCountTotal": { "type": ["integer", "null"] },
+    "indoorCourtCount": { "type": "integer" },
+    "outdoorCourtCount": { "type": "integer" },
+    "websiteUrl": { "type": ["string", "null"] },
+    "bookingUrl": { "type": ["string", "null"] },
+    "googleMapsUrl": { "type": ["string", "null"] },
+    "openingHoursText": { "type": ["string", "null"] },
+    "seasonalityText": { "type": ["string", "null"] },
+    "facts": {
+      "type": "object",
+      "required": ["surface", "equipment", "playerLevel", "areaNotes", "parkInspectorScore"],
+      "properties": {
+        "surface": { "type": ["string", "null"] },
+        "equipment": { "type": "array", "items": { "type": "string" } },
+        "playerLevel": { "type": ["string", "null"] },
+        "areaNotes": { "type": "array", "items": { "type": "string" } },
+        "parkInspectorScore": { "type": ["number", "null"] }
+      }
+    },
+    "amenities": { "type": "array", "items": { "type": "string" } },
+    "sourceUrls": { "type": "array", "items": { "type": "string" } },
+    "imageGallery": { "type": "array" },
+    "duplicateNotes": { "type": ["string", "null"] }
+  }
+}

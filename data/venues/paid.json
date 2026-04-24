@@ -1,0 +1,862 @@
+[
+  {
+    "id": "venue-beach61",
+    "name": "Beach61",
+    "address": "Park am Gleisdreieck, Luckenwalder Str./Schöneberger Str., 10963 Berlin",
+    "description": "Bookable outdoor beach volleyball park in Gleisdreieck with a large summer court setup, bar, training, tournaments, showers, and changing rooms.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.4988,
+    "longitude": 13.374,
+    "courtCountTotal": 25,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 25,
+    "websiteUrl": "https://www.beach61.de/",
+    "bookingUrl": "https://beach61.de/platz-buchen",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Beach61%20Park%20am%20Gleisdreieck%20Berlin",
+    "openingHoursText": "Seasonal summer operation; Urban Sports lists weekday check-in windows and official booking is online.",
+    "seasonalityText": "Outdoor-only summer venue, usually around April to late September.",
+    "amenities": [
+      "online booking",
+      "bar",
+      "training",
+      "tournaments",
+      "changing rooms",
+      "showers",
+      "balls",
+      "some floodlit courts"
+    ],
+    "sourceUrls": [
+      "https://www.beach61.de/",
+      "https://beach61.de/about-us",
+      "https://urbansportsclub.com/de/venues/beach61",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Beach61_Park_am_Gleisdreieck_(Westpark)_01.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beach61_Park_am_Gleisdreieck_(Westpark)_01.jpg",
+        "credit": "Lienhard Schulz",
+        "license": "CC BY-SA 3.0",
+        "rightsStatus": "usable"
+      },
+      {
+        "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Beach61_Park_am_Gleisdreieck_(Westpark)_02.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beach61_Park_am_Gleisdreieck_(Westpark)_02.jpg",
+        "credit": "Lienhard Schulz",
+        "license": "CC BY-SA 3.0",
+        "rightsStatus": "usable"
+      }
+    ],
+    "duplicateNotes": "Merged Beach61 and Urban Sports Beach61 references. Urban Sports says over 40 courts, but venue-list sources consistently state 25; stored the conservative confirmed 25.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-beachmitte",
+    "name": "BeachMitte",
+    "address": "Caroline-Michaelis-Str. 8, 10115 Berlin",
+    "description": "Large central bookable beach sports venue near Nordbahnhof with more than 35 outdoor courts and winter beach play in air domes.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "indoor_outdoor",
+    "latitude": 52.536,
+    "longitude": 13.3924,
+    "courtCountTotal": 37,
+    "indoorCourtCount": 2,
+    "outdoorCourtCount": 35,
+    "websiteUrl": "https://beachmitte.de/",
+    "bookingUrl": "https://beachmitte.de/beachmitte/courts-buchung-sommer/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachMitte%20Caroline-Michaelis-Str.%208%2010115%20Berlin",
+    "openingHoursText": "Summer court booking page lists current 2026 prices; winter page lists indoor winter beach.",
+    "seasonalityText": "Outdoor summer courts; winter beach play is offered in air domes from roughly October to April.",
+    "amenities": [
+      "online booking",
+      "balls for rent",
+      "changing rooms",
+      "showers",
+      "gastro",
+      "bar",
+      "training",
+      "tournaments",
+      "floodlights"
+    ],
+    "sourceUrls": [
+      "https://beachmitte.de/",
+      "https://beachmitte.de/beachvolleyball/beachvolleyball-berlin/",
+      "https://beachmitte.de/beachmitte/courts-buchung-sommer/",
+      "https://www.visitberlin.de/en/beachmitte",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-indoor/",
+      "https://urbansportsclub.com/en/sports/beach-volleyball/berlin"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/2023_Special_Olympics_World_Summer_Games_-_beach_volleyball_3_Beachmitte.jpg",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:2023_Special_Olympics_World_Summer_Games_-_beach_volleyball_3_Beachmitte.jpg",
+        "credit": "Unmarcheprovencal",
+        "license": "CC BY-SA 4.0",
+        "rightsStatus": "usable"
+      }
+    ],
+    "duplicateNotes": "Merged BeachMitte, BeachMitte Winterstrand, Community Sports @ BeachMitte, and Berlin Beach Vibes @ BeachMitte references.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-beachvbm",
+    "name": "BeachVBM",
+    "address": "Trachenbergring 85, 12249 Berlin",
+    "description": "Member-run successor to South Beach Berlin, offering year-round indoor beach volleyball in Marienfelde.",
+    "pricing": "paid",
+    "accessType": "membership",
+    "environment": "indoor",
+    "latitude": 52.42776,
+    "longitude": 13.37033,
+    "courtCountTotal": 7,
+    "indoorCourtCount": 7,
+    "outdoorCourtCount": 0,
+    "websiteUrl": "https://beachvbm.de/",
+    "bookingUrl": "https://beachvbm.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachVBM%20Trachenbergring%2085%2012249%20Berlin",
+    "openingHoursText": "Membership model with fixed annual slots and gap booking rules.",
+    "seasonalityText": "Indoor year-round; historically listed as South Beach with winter indoor focus.",
+    "amenities": [
+      "heated indoor sand",
+      "high ceilings",
+      "sauna",
+      "club membership"
+    ],
+    "sourceUrls": [
+      "https://beachvbm.de/",
+      "https://beachvbm.de/ueber-uns/",
+      "https://spoto.app/spot/de-beachvbm-ev/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-indoor/"
+    ],
+    "imageGallery": [],
+    "duplicateNotes": "Merged VBM, BeachVBM, and former South Beach Berlin references.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-beachzone-lichtenberg",
+    "name": "BeachZone Lichtenberg",
+    "address": "Weißenseer Weg 100, 10369 Berlin",
+    "description": "Outdoor BeachZone site in Lichtenberg with 14 courts, seven floodlit courts, sauna, bar, grill, and casual flatrate beaching offers.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.5291,
+    "longitude": 13.4834,
+    "courtCountTotal": 14,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 14,
+    "websiteUrl": "https://beach-zone.de/",
+    "bookingUrl": "https://beach-zone.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Lichtenberg%20Wei%C3%9Fenseer%20Weg%20100%2010369%20Berlin",
+    "openingHoursText": "Official BeachZone page lists current hourly prices by time band.",
+    "seasonalityText": "Outdoor summer BeachZone location.",
+    "amenities": [
+      "online booking",
+      "7 floodlit courts",
+      "sauna",
+      "bar",
+      "grill",
+      "sun terrace",
+      "showers",
+      "changing rooms",
+      "playground"
+    ],
+    "sourceUrls": [
+      "https://beach-zone.de/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/"
+    ],
+    "imageGallery": [],
+    "duplicateNotes": "Kept separate from BeachZone Marzahn and Wartenberg because they are distinct indoor/outdoor locations.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-beachzone-marzahn",
+    "name": "BeachZone Marzahn",
+    "address": "Allee der Kosmonauten 190, 12683 Berlin",
+    "description": "Indoor BeachZone hall in Marzahn with four DVV-quality quartz-sand courts, party room, and tournament use.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "indoor",
+    "latitude": 52.5296229,
+    "longitude": 13.5493623,
+    "courtCountTotal": 4,
+    "indoorCourtCount": 4,
+    "outdoorCourtCount": 0,
+    "websiteUrl": "https://beach-zone.de/",
+    "bookingUrl": "https://beach-zone.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Marzahn%20Allee%20der%20Kosmonauten%20190%2012683%20Berlin",
+    "openingHoursText": "Official BeachZone page lists hourly prices; Kauperts lists weekdays from 12:00 and weekends from 09:00.",
+    "seasonalityText": "Indoor hall, also used for winter training.",
+    "amenities": [
+      "online booking",
+      "party room",
+      "events",
+      "tournaments",
+      "DVV-quality sand"
+    ],
+    "sourceUrls": [
+      "https://beach-zone.de/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/",
+      "https://berlin.kauperts.de/eintrag/Beach-Zone-Indoor-Marzahn-Allee-der-Kosmonauten-190-12683-Berlin",
+      "https://www.marzahner-vc.de/beachvolleyball/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-beachzone-wartenberg",
+    "name": "BeachZone Wartenberg",
+    "address": "Am Berl 21, 13051 Berlin",
+    "description": "Indoor BeachZone hall in Wartenberg with four beach volleyball courts and tournament use.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "indoor",
+    "latitude": 52.5732006869254,
+    "longitude": 13.5010707378387,
+    "courtCountTotal": 4,
+    "indoorCourtCount": 4,
+    "outdoorCourtCount": 0,
+    "websiteUrl": "https://beach-zone.de/",
+    "bookingUrl": "https://beach-zone.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Wartenberg%20Am%20Berl%2021%2013051%20Berlin",
+    "openingHoursText": "Third-party directory lists weekdays from 12:00 and weekends from 09:00; verify with BeachZone.",
+    "seasonalityText": "Indoor hall, primarily useful for winter and bad-weather play.",
+    "amenities": [
+      "online booking",
+      "sauna",
+      "events",
+      "tournaments"
+    ],
+    "sourceUrls": [
+      "https://beach-zone.de/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/",
+      "https://berlin.kauperts.de/eintrag/Beach-Zone-Indoor-Wartenberg-Am-Berl-21-13051-Berlin",
+      "https://beach-turniere.de/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-bernsteinsee-ruhlsdorf",
+    "name": "Bernsteinsee Ruhlsdorf",
+    "address": "Biesenthaler Chaussee 16, 16348 Marienwerder OT Ruhlsdorf",
+    "description": "BeachZone lakeside destination outside Berlin with eight outdoor beach volleyball courts included after lido entry.",
+    "pricing": "paid",
+    "accessType": "entry_fee",
+    "environment": "outdoor",
+    "latitude": 52.77,
+    "longitude": 13.59,
+    "courtCountTotal": 8,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 8,
+    "websiteUrl": "https://beach-zone.de/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Bernsteinsee%20Ruhlsdorf%20Biesenthaler%20Chaussee%2016%2016348%20Marienwerder",
+    "openingHoursText": "Official BeachZone page lists daily 09:00-20:00 seasonal lido hours.",
+    "seasonalityText": "Outdoor seasonal bathing lake venue outside Berlin.",
+    "amenities": [
+      "swimming",
+      "free court use after entry",
+      "food",
+      "playground",
+      "sanitary facilities",
+      "parking"
+    ],
+    "sourceUrls": [
+      "https://beach-zone.de/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-east61",
+    "name": "East61",
+    "address": "Naumannstr. 43 / Wilhelm-Kabus-Str. 42, 10829 Berlin",
+    "description": "Year-round Beach61 sister venue in Schöneberg with indoor winter courts and outdoor summer courts.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "indoor_outdoor",
+    "latitude": 52.4818,
+    "longitude": 13.3669,
+    "courtCountTotal": 19,
+    "indoorCourtCount": 10,
+    "outdoorCourtCount": 9,
+    "websiteUrl": "https://www.east61.de/",
+    "bookingUrl": "https://www.east61.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=East61%20Naumannstr.%2043%2010829%20Berlin",
+    "openingHoursText": "Urban Sports and Berlin Beachvolleyball list bookable use; check current Eversports slots.",
+    "seasonalityText": "Indoor in winter and year-round; additional outdoor courts in summer.",
+    "amenities": [
+      "online booking",
+      "bar",
+      "changing rooms",
+      "showers",
+      "lockers",
+      "parking",
+      "training",
+      "fun tournaments"
+    ],
+    "sourceUrls": [
+      "https://urbansportsclub.com/de/venues/east61",
+      "https://www.beach61.de/about-us",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-indoor/"
+    ],
+    "imageGallery": [],
+    "duplicateNotes": "Merged East61 and Community Sports @ East61 references.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-fuechse-sportpark",
+    "name": "Füchse Berlin Sportpark",
+    "address": "Kopenhagener Str. 33 / Freiheitsweg 18, 13407 Berlin",
+    "description": "Club sport park in Reinickendorf with six bookable beach volleyball courts, tennis, padel, gastronomy, and parking.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.579,
+    "longitude": 13.357,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 6,
+    "websiteUrl": "https://www.fuechse-berlin-reinickendorf.de/sportpark/",
+    "bookingUrl": "https://www.fuechse-berlin-reinickendorf.de/sportpark/beachvolleyball-courts-buchen/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=F%C3%BCchse%20Berlin%20Sportpark%20Kopenhagener%20Str.%2033%2013407%20Berlin",
+    "openingHoursText": "Bookable courts; current booking availability on the club booking page.",
+    "seasonalityText": "Outdoor club sport park.",
+    "amenities": [
+      "online booking",
+      "clubhouse",
+      "gastronomy",
+      "parking",
+      "tennis",
+      "padel"
+    ],
+    "sourceUrls": [
+      "https://www.fuechse-berlin-reinickendorf.de/sportpark/",
+      "https://www.fuechse-berlin-reinickendorf.de/sportpark/beachvolleyball-courts-buchen/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/"
+    ],
+    "imageGallery": [],
+    "duplicateNotes": "Merged BeachUp beach court entry with the official Sportpark venue.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-funkhaus-beach",
+    "name": "Funkhaus Beach",
+    "address": "Köpenicker Chaussee 11-14, 10317 Berlin",
+    "description": "Indoor beach volleyball hall at Funkhaus with six courts, high ceilings, bright lighting, and winter-friendly heated floor.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "indoor",
+    "latitude": 52.4805,
+    "longitude": 13.5008,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 6,
+    "outdoorCourtCount": 0,
+    "websiteUrl": "https://www.funkhaus-beach.com/",
+    "bookingUrl": "https://www.funkhaus-beach.com/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Funkhaus%20Beach%20K%C3%B6penicker%20Chaussee%2011-14%20Berlin",
+    "openingHoursText": "Berlin Beachvolleyball lists daily 09:00-23:00; confirm on official booking site.",
+    "seasonalityText": "Indoor beach hall, especially relevant for winter.",
+    "amenities": [
+      "online booking",
+      "parking",
+      "heated floor",
+      "changing rooms",
+      "drinks"
+    ],
+    "sourceUrls": [
+      "https://www.funkhaus-beach.com/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-indoor/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-kickerworld-berlin",
+    "name": "KICKERWorld Berlin",
+    "address": "Kleine Eiswerderstr. 1, 13599 Berlin",
+    "description": "Haselhorst multi-sport venue where the outdoor beach area supports beach volleyball alongside beach soccer and footvolley.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.54909,
+    "longitude": 13.22671,
+    "courtCountTotal": null,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 0,
+    "websiteUrl": "https://kickerworld-berlin.de/",
+    "bookingUrl": "https://kickerworld-berlin.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=KICKERWorld%20Berlin%20Kleine%20Eiswerderstr.%201%2013599%20Berlin",
+    "openingHoursText": "Official location page lists Monday-Friday from 16:00 and weekends from 11:00/10:00 depending on language page.",
+    "seasonalityText": "Outdoor beach area attached to an indoor sports facility.",
+    "amenities": [
+      "online booking",
+      "sports bar",
+      "football",
+      "footvolley",
+      "padel",
+      "parking",
+      "changing rooms"
+    ],
+    "sourceUrls": [
+      "https://kickerworld-berlin.de/en/location.html",
+      "https://kickerworld-berlin.de/anlage/",
+      "https://urbansportsclub.com/de/sports/beach-volleyball/berlin",
+      "https://berlin.kauperts.de/eintrag/KICKERWorld-Berlin-Kleine-Eiswerderstrasse-1-13599-Berlin"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-kiessee-schildow",
+    "name": "Kiessee Schildow",
+    "address": "Lessingstr. 48, 16552 Mühlenbecker Land",
+    "description": "BeachZone-operated lakeside venue north of Berlin with six beach volleyball courts, bathing lake, food, playground, and sanitary facilities.",
+    "pricing": "paid",
+    "accessType": "entry_fee",
+    "environment": "outdoor",
+    "latitude": 52.632,
+    "longitude": 13.382,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 6,
+    "websiteUrl": "https://beach-zone.de/",
+    "bookingUrl": "https://beach-zone.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Kiessee%20Schildow%20Lessingstra%C3%9Fe%2048%2016552%20M%C3%BChlenbecker%20Land",
+    "openingHoursText": "Official BeachZone page lists daily 09:00-20:00 seasonal lido hours.",
+    "seasonalityText": "Outdoor seasonal bathing lake venue.",
+    "amenities": [
+      "swimming",
+      "food",
+      "grill",
+      "playground",
+      "sanitary facilities",
+      "table tennis",
+      "camping"
+    ],
+    "sourceUrls": [
+      "https://beach-zone.de/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-playground-berlin",
+    "name": "Playground Berlin",
+    "address": "Adlergestell 105, 12439 Berlin",
+    "description": "Outdoor multi-sport site in Schöneweide with beach volleyball, football, open plays, bookable fields, and a beach bar.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.4476,
+    "longitude": 13.5246,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 6,
+    "websiteUrl": "https://www.playground.berlin/",
+    "bookingUrl": "https://www.playground.berlin/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Playground%20Berlin%20Adlergestell%20105%2012439%20Berlin",
+    "openingHoursText": "Urban Sports and event listings show bookable/open-play use; verify current hours on the venue site.",
+    "seasonalityText": "Outdoor beach volleyball venue.",
+    "amenities": [
+      "online booking",
+      "open play",
+      "beach bar",
+      "football",
+      "parking"
+    ],
+    "sourceUrls": [
+      "https://urbansportsclub.com/en/sports/beach-volleyball/berlin",
+      "https://blog.urbansportsclub.com/en/workout/outdoor-sports-berlin/",
+      "https://ra.co/events/2424584",
+      "https://mypadelway.com/de/berlin/playground-berlin-berlin"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-spok-pankow",
+    "name": "SPOK Pankow",
+    "address": "Nordendstr. 56, 13156 Berlin",
+    "description": "Bookable Pankow sport and leisure complex with six outdoor beach volleyball courts, professional nets, showers, food, and optional sauna.",
+    "pricing": "paid",
+    "accessType": "bookable",
+    "environment": "outdoor",
+    "latitude": 52.588,
+    "longitude": 13.402,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 6,
+    "websiteUrl": "https://spok.de/sport-freizeit/beachvolleyball/",
+    "bookingUrl": "https://spok.de/sport-freizeit/beachvolleyball/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=SPOK%20Pankow%20Nordendstr.%2056%2013156%20Berlin",
+    "openingHoursText": "Official page lists Monday-Saturday 08:00-21:00 and Sunday 09:00-21:00 during the beach season.",
+    "seasonalityText": "Official season is 01.05 to 30.09, with flexibility earlier/later in good weather.",
+    "amenities": [
+      "online booking",
+      "professional nets",
+      "ball rental",
+      "changing rooms",
+      "showers",
+      "restaurant",
+      "sauna"
+    ],
+    "sourceUrls": [
+      "https://spok.de/sport-freizeit/beachvolleyball/",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/",
+      "https://berlin-beachvolleyball.de/beachvolleyball-berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-strandbad-jungfernheide",
+    "name": "Strandbad Jungfernheide",
+    "address": "Jungfernheideweg 60, 13629 Berlin",
+    "description": "Seasonal lido volleyball courts with online booking; unused courts may be played after paying lido admission.",
+    "pricing": "paid",
+    "accessType": "mixed",
+    "environment": "outdoor",
+    "latitude": 52.538,
+    "longitude": 13.293,
+    "courtCountTotal": 7,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 7,
+    "websiteUrl": "https://www.strandbad-jungfernheide.de/volleyball",
+    "bookingUrl": "https://www.strandbad-jungfernheide.de/volleyball",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Jungfernheide%20Jungfernheideweg%2060%2013629%20Berlin",
+    "openingHoursText": "Court booking is online only; court fee is 5 EUR/hour plus lido day ticket.",
+    "seasonalityText": "Seasonal outdoor lido venue.",
+    "amenities": [
+      "online booking",
+      "swimming",
+      "toilets",
+      "lido entry",
+      "bring own court lines"
+    ],
+    "sourceUrls": [
+      "https://www.strandbad-jungfernheide.de/volleyball"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-strandbad-ploetzensee",
+    "name": "Strandbad Plötzensee",
+    "address": "Nordufer 26, 13351 Berlin",
+    "description": "Central Wedding lido with volleyball fields, sandy beach, large lawn, table tennis, food options, and online/day tickets.",
+    "pricing": "paid",
+    "accessType": "entry_fee",
+    "environment": "outdoor",
+    "latitude": 52.542,
+    "longitude": 13.333,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://strandbad.ploetzensee.de/",
+    "bookingUrl": "https://strandbad.ploetzensee.de/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Pl%C3%B6tzensee%20Nordufer%2026%2013351%20Berlin",
+    "openingHoursText": "Official site lists daily 10:00-22:00, weather dependent.",
+    "seasonalityText": "Outdoor seasonal lido venue.",
+    "amenities": [
+      "swimming",
+      "online tickets",
+      "showers",
+      "changing rooms",
+      "table tennis",
+      "bar",
+      "food",
+      "barrier-free"
+    ],
+    "sourceUrls": [
+      "https://strandbad.ploetzensee.de/",
+      "https://www.berlin.de/en/sports-leisure/swimming-pools/7651980-7642368-strandbad-ploetzensee.en.html",
+      "https://www.berlinerbaeder.de/baeder/detail/strandbad-ploetzensee/",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-strandbad-tegeler-see",
+    "name": "Strandbad Tegeler See",
+    "address": "Schwarzer Weg 95, 13505 Berlin",
+    "description": "A public outdoor beach volleyball spot in Tegel. Parkinspector lists 2 courts here. The playing surface is well-kept sand. It has a fixed net and boundary lines.",
+    "pricing": "paid",
+    "accessType": "mixed",
+    "environment": "outdoor",
+    "latitude": 52.578938688777214,
+    "longitude": 13.245383795224786,
+    "courtCountTotal": 2,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 2,
+    "websiteUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://goo.gl/maps/fdRoztXWizf55E7G6",
+    "openingHoursText": "09:00 - 19:00",
+    "seasonalityText": "Seasonal Strandbad entry applies during the bathing season; Parkinspector notes access can be free outside the season.",
+    "amenities": [
+      "public outdoor court",
+      "bathing lake",
+      "showers",
+      "food nearby",
+      "toilets",
+      "posted opening hours",
+      "water nearby",
+      "seasonal entry fee noted"
+    ],
+    "sourceUrls": [
+      "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187"
+    ],
+    "imageGallery": [
+      {
+        "url": "https://parkinspector.de/api/?files&file=94cba592e246fc14f16a309196f1c200e4345b52--Bild1_cut-min.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      },
+      {
+        "url": "https://parkinspector.de/api/?files&file=8ace68123dbc6c2027eb39f2d9320e1bb6334ad8--a.jpg&width=1600",
+        "sourceUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187",
+        "credit": "Parkinspector",
+        "license": "Permission required; no reusable license found during research",
+        "rightsStatus": "requires_permission"
+      }
+    ],
+    "facts": {
+      "surface": "well-kept sand",
+      "equipment": [
+        "fixed net",
+        "boundary lines"
+      ],
+      "playerLevel": "casual players",
+      "areaNotes": [],
+      "parkInspectorScore": 55
+    }
+  },
+  {
+    "id": "venue-strandbad-wannsee",
+    "name": "Strandbad Wannsee",
+    "address": "Wannseebadweg 25, 14129 Berlin",
+    "description": "Large Berliner Bäder lido with sport and play area including beach volleyball on the famous Wannsee beach.",
+    "pricing": "paid",
+    "accessType": "entry_fee",
+    "environment": "outdoor",
+    "latitude": 52.433,
+    "longitude": 13.177,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://www.berlinerbaeder.de/baeder/detail/strandbad-wannsee/",
+    "bookingUrl": "https://www.berlinerbaeder.de/baeder/detail/strandbad-wannsee/",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Wannsee%20Wannseebadweg%2025%2014129%20Berlin",
+    "openingHoursText": "Berliner Bäder page lists current seasonal status and tickets.",
+    "seasonalityText": "Outdoor seasonal lido venue.",
+    "amenities": [
+      "swimming",
+      "beach chairs",
+      "playground",
+      "football",
+      "FKK area",
+      "tickets"
+    ],
+    "sourceUrls": [
+      "https://www.berlinerbaeder.de/baeder/detail/strandbad-wannsee/",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-strandbad-wendenschloss",
+    "name": "Strandbad Wendenschloss",
+    "address": "Möllhausenufer 30, 12557 Berlin",
+    "description": "Lakeside lido with a beach volleyball court, sandy beach, boat/SUP rental, playground, table tennis, and beer garden.",
+    "pricing": "paid",
+    "accessType": "entry_fee",
+    "environment": "outdoor",
+    "latitude": 52.421,
+    "longitude": 13.584,
+    "courtCountTotal": 1,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 1,
+    "websiteUrl": "https://strandbad-wendenschloss.berlin/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Wendenschloss%20M%C3%B6llhausenufer%2030%2012557%20Berlin",
+    "openingHoursText": "Seasonal lido opening times; current season details are on the operator website.",
+    "seasonalityText": "Outdoor beach court inside a seasonal lido.",
+    "amenities": [
+      "swimming",
+      "boat rental",
+      "SUP rental",
+      "playground",
+      "table tennis",
+      "beer garden",
+      "barrier-free"
+    ],
+    "sourceUrls": [
+      "https://www.berlin.de/en/sports-leisure/swimming-pools/9252033-7642368-strandbad-wendenschloss.en.html",
+      "https://www.berlinerbaeder.de/baeder/detail/strandbad-wendenschloss/",
+      "https://www.tip-berlin.de/lifestyle/sport/beachvolleyball-felder-berlin/"
+    ],
+    "imageGallery": [],
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  },
+  {
+    "id": "venue-tib-1848",
+    "name": "TiB 1848 Beachvolleyball",
+    "address": "Columbiadamm 91, 10965 Berlin",
+    "description": "Club beach volleyball courts on the former Tempelhof airport sports grounds; BeachUp notes member-based booking.",
+    "pricing": "paid",
+    "accessType": "membership",
+    "environment": "outdoor",
+    "latitude": 52.48,
+    "longitude": 13.414,
+    "courtCountTotal": 6,
+    "indoorCourtCount": 0,
+    "outdoorCourtCount": 6,
+    "websiteUrl": "https://tib1848ev.de/sportarten/beachvolleyball/",
+    "bookingUrl": null,
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=TiB%201848%20Beachfeld%20Columbiadamm%2091%2010965%20Berlin",
+    "openingHoursText": "Training/play windows listed Monday-Thursday 10:00-21:00 or until sunset.",
+    "seasonalityText": "Summer-only outdoor club use.",
+    "amenities": [
+      "club training",
+      "youth training",
+      "summer courts"
+    ],
+    "sourceUrls": [
+      "https://tib1848ev.de/sportarten/beachvolleyball/",
+      "https://www.beachup.app/de/beachvolleyballplaetze/deutschland/berlin/"
+    ],
+    "imageGallery": [],
+    "duplicateNotes": "BeachUp uses Columbiadamm 91; TiB imprint/contact lists Columbiadamm 111. Stored the court address from BeachUp.",
+    "facts": {
+      "surface": null,
+      "equipment": [],
+      "playerLevel": null,
+      "areaNotes": [],
+      "parkInspectorScore": null
+    }
+  }
+]

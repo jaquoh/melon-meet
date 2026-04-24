@@ -1519,8 +1519,19 @@ export function DiscoveryPage({
           <Compass size={14} strokeWidth={2} />
           <span>Maps</span>
         </a>
-        {selectedVenueDetail.bookingUrl ? <a className="button-secondary button-inline" href={selectedVenueDetail.bookingUrl} rel="noreferrer" target="_blank">Booking</a> : null}
-        {selectedVenueDetail.sourceUrl ? <a className="button-secondary button-inline" href={selectedVenueDetail.sourceUrl} rel="noreferrer" target="_blank">Website</a> : null}
+        {(() => {
+          const bookingUrl = selectedVenueDetail.bookingUrl?.trim() || null;
+          const websiteUrl = selectedVenueDetail.websiteUrl?.trim() || selectedVenueDetail.sourceUrl?.trim() || null;
+          const primaryUrl = bookingUrl ?? websiteUrl;
+          if (!primaryUrl) {
+            return null;
+          }
+          return (
+            <a className="button-secondary button-inline" href={primaryUrl} rel="noreferrer" target="_blank">
+              {bookingUrl ? "Booking" : "Website"}
+            </a>
+          );
+        })()}
       </div>
       <EventTimeline
         contextLabel="Venue"
