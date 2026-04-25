@@ -1003,7 +1003,10 @@ img {
 .landing-scene {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: -2;
+  pointer-events: none;
 }
 
 .landing-scene::after {
@@ -1025,12 +1028,10 @@ img {
 
 .info-landing-frame .landing-scene__image {
   filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
-  transform: scale(1.03);
 }
 
 .info-landing-frame::after {
   filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
-  transform: scale(1.03);
 }
 
 :root[data-theme="dark"] .landing-workspace-page {
@@ -1741,12 +1742,14 @@ img {
 }
 
 .workspace-page {
+  height: 100svh;
   min-height: 100svh;
   padding: 1rem;
   display: grid;
   align-items: stretch;
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -1833,7 +1836,6 @@ img {
 
 .workspace-page:not(.landing-workspace-page) .workspace-frame--unified::before {
   filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
-  transform: scale(1.03);
 }
 
 :root[data-theme="dark"] .workspace-page:not(.landing-workspace-page) .workspace-frame--unified::before {
@@ -2633,14 +2635,21 @@ img {
 }
 
 .stack-list--compact {
-  gap: 0.45rem;
+  gap: 0.6rem;
 }
 
 .browse-listing {
   width: 100%;
   display: grid;
-  gap: 0.25rem;
-  padding: 0.58rem 0.72rem;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.72rem;
+  padding: 0.62rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--glass-card) 88%, var(--timeline-accent, var(--accent)) 12%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-align: left;
   transition:
     border-color 140ms ease,
@@ -2649,30 +2658,62 @@ img {
 }
 
 .browse-listing.is-selected {
-  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
-  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+  background: color-mix(in srgb, var(--glass-selected) 70%, var(--accent) 30%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 36%, transparent);
 }
 
 .browse-listing--venue {
-  gap: 0.55rem;
-  padding: 0.78rem 0.86rem 0.82rem;
+  gap: 0.72rem;
+}
+
+.browse-listing__thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  align-self: start;
+  border: 1px solid color-mix(in srgb, var(--timeline-accent, var(--accent)) 22%, var(--line));
+  border-radius: 0.72rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--glass-card-strong) 88%, var(--timeline-accent, var(--accent)) 12%);
+  color: var(--muted);
+}
+
+.browse-listing__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.browse-listing__body {
+  display: grid;
+  align-content: start;
+  gap: 0.34rem;
+  min-width: 0;
 }
 
 .browse-listing__row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.72rem;
+  min-width: 0;
 }
 
-.browse-listing--venue .browse-listing__row {
-  gap: 1rem;
+.browse-listing__copy-block {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
 }
 
 .browse-listing__title {
   display: block;
   font-family: "Nunito", "Public Sans", sans-serif;
   font-size: 0.94rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .browse-listing__meta,
@@ -2693,7 +2734,7 @@ img {
   overflow: hidden;
   line-height: 1.5;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
 }
 
 .list-separator {
@@ -2762,9 +2803,9 @@ img {
 }
 
 .info-panel .timeline-panel__header.is-stuck {
-  background: var(--glass-panel-header);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--panel) 82%, var(--glass-panel-header) 18%);
+  backdrop-filter: blur(24px) saturate(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
 }
 
 .timeline-list {
@@ -2888,14 +2929,20 @@ img {
   gap: 0.75rem;
 }
 
-.timeline-card__group,
 .timeline-card__meta {
   margin: 0;
   color: var(--muted);
   font-size: 0.76rem;
 }
 
-.timeline-card__group {
+.timeline-card__copy,
+.timeline-card__meta-stack {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.timeline-card__meta {
   font-family: "IBM Plex Mono", monospace;
 }
 
@@ -2909,7 +2956,7 @@ img {
 .timeline-card__meta-row {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.65rem;
 }
 
@@ -2917,11 +2964,6 @@ img {
   display: flex;
   justify-content: flex-start;
   padding-top: 0.1rem;
-}
-
-.timeline-card__meta-row .timeline-card__meta {
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 .timeline-card__side-stack {
@@ -3636,7 +3678,6 @@ img {
 }
 
 .workspace-frame--unified .info-panel__sticky-title,
-.workspace-frame--unified .info-panel .timeline-panel__header.is-stuck,
 .workspace-frame--unified .detail-card,
 .workspace-frame--unified .detail-fact-card,
 .workspace-frame--unified .detail-hero__media,
@@ -4079,7 +4120,7 @@ img {
 
   .workspace-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: 5rem minmax(0, 1fr) auto auto;
     grid-template-areas:
       "mobiletop"
       "center"
@@ -4090,7 +4131,7 @@ img {
 
   .workspace-frame--unified .workspace-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(0, 1fr) var(--workspace-mobile-legal-height);
+    grid-template-rows: 5rem auto minmax(0, 1fr) var(--workspace-mobile-legal-height);
     grid-template-areas:
       "mobiletop"
       "top"
@@ -4108,7 +4149,7 @@ img {
 
   .workspace-frame--info .workspace-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: 5rem minmax(0, 1fr);
     grid-template-areas:
       "mobiletop"
       "center";
@@ -4136,6 +4177,10 @@ img {
   .workspace-cell--mobile-top {
     display: block;
     grid-area: mobiletop;
+    height: 5rem;
+    min-height: 5rem;
+    max-height: 5rem;
+    overflow: hidden;
     border-bottom: 1px solid var(--line);
     border-right: 0;
   }
@@ -4269,7 +4314,7 @@ img {
     height: auto;
     min-height: 100%;
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: 5rem auto auto;
     grid-template-areas:
       "mobiletop"
       "center"
@@ -4323,10 +4368,13 @@ img {
   }
 
   .workspace-mobile-inline {
+    height: 5rem;
     min-height: 5rem;
+    max-height: 5rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: stretch;
+    overflow: hidden;
   }
 
   .workspace-frame--detail .workspace-mobile-brand {

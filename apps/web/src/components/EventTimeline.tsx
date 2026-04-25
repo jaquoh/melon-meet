@@ -13,7 +13,6 @@ interface EventTimelineProps {
   onSelectMeeting?: (meeting: MeetingSummary) => void;
   secondaryMeta?: "group" | "group-and-location" | "location";
   selectedMeetingId?: string | null;
-  showGroupLabel?: boolean;
 }
 
 function formatTimelineDate(startsAt: string) {
@@ -60,7 +59,6 @@ export function EventTimeline({
   onSelectMeeting,
   secondaryMeta = "group-and-location",
   selectedMeetingId = null,
-  showGroupLabel = true,
 }: EventTimelineProps) {
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -138,30 +136,33 @@ export function EventTimeline({
           const isSelected = selectedMeetingId === meeting.id;
           const accent = pickAccent(meeting.seriesId ?? meeting.venueId ?? meeting.groupId ?? meeting.id);
           const style = { "--timeline-accent": accent } as CSSProperties;
-          const meta =
+          const metaLines =
             secondaryMeta === "location"
-              ? meeting.locationName
+              ? [`@${meeting.locationName}`]
               : secondaryMeta === "group"
-                ? meeting.groupName
-                : showGroupLabel
-                  ? meeting.locationName
-                  : `${meeting.groupName} · ${meeting.locationName}`;
+                ? [`from ${meeting.groupName}`]
+                : [`from ${meeting.groupName}`, `@${meeting.locationName}`];
 
           const card = (
             <>
               <div className="timeline-card__top">
-                {showGroupLabel ? <p className="timeline-card__group">{meeting.groupName}</p> : <span />}
+                <div className="timeline-card__copy">
+                  <h3 className={`timeline-card__title ${meeting.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}>
+                    {meeting.shortName || meeting.title}
+                  </h3>
+                  <div className="timeline-card__meta-stack">
+                    {metaLines.map((line) => (
+                      <p className="timeline-card__meta" key={line}>{line}</p>
+                    ))}
+                  </div>
+                </div>
                 <div className="timeline-card__side-stack">
                   {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
                   <span className="badge">{formatSessionPrice(meeting)}</span>
                   <span className="badge-outline">{`${meeting.claimedSpots}/${meeting.capacity}`}</span>
                 </div>
               </div>
-              <h3 className={`timeline-card__title ${meeting.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}>
-                {meeting.shortName || meeting.title}
-              </h3>
               <div className="timeline-card__meta-row">
-                <p className="timeline-card__meta">{meta}</p>
                 <div className="timeline-card__tags timeline-card__tags--bottom-right">
                   {meeting.seriesId && !meeting.viewerHasClaimed ? <span className="badge-outline">Series</span> : null}
                   {meeting.viewerHasClaimed ? <span className="badge-accent">Claimed</span> : null}

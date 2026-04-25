@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarRange,
@@ -173,6 +173,15 @@ function workspaceRouteKind(pathname: string) {
   return null;
 }
 
+function browseAccent(seed: string) {
+  const palette = ["#8a6d52", "#576f86", "#6f7b5a", "#7c5f66", "#5c7070", "#7b694f"];
+  let value = 0;
+  for (const character of seed) {
+    value = (value * 31 + character.charCodeAt(0)) % palette.length;
+  }
+  return palette[value] ?? palette[0];
+}
+
 export function DiscoveryPage({
   initialDisplayMode,
   initialItemMode,
@@ -227,6 +236,7 @@ export function DiscoveryPage({
   const [fullscreenImage, setFullscreenImage] = useState<FullscreenImageTarget>(null);
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const listScrollRef = useRef<HTMLDivElement | null>(null);
+  const previousDisplayModeRef = useRef(displayMode);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
       ? {
@@ -1089,20 +1099,42 @@ export function DiscoveryPage({
   }, [selectedGroupId, selectedMeetingCluster?.lookupKey, selectedMeetingId, selectedProfileId, selectedVenueId]);
 
   useEffect(() => {
+    window.scrollTo({ left: 0, top: 0 });
+  }, [displayMode, selectedGroupId, selectedMeetingId, selectedVenueId]);
+
+  useEffect(() => {
     setFullscreenImage(null);
   }, [selectedGroupId, selectedMeetingId, selectedVenueId]);
 
   useEffect(() => {
-    if (displayMode !== "list") {
+    const previousDisplayMode = previousDisplayModeRef.current;
+    previousDisplayModeRef.current = displayMode;
+    if (previousDisplayMode !== "map" || displayMode !== "list") {
       return;
     }
     const frame = window.requestAnimationFrame(() => {
-      listScrollRef.current
-        ?.querySelector<HTMLElement>('[data-active-list-item="true"]')
-        ?.scrollIntoView({ block: "center", inline: "nearest" });
+      const listScroll = listScrollRef.current;
+      const activeItem = listScroll?.querySelector<HTMLElement>('[data-active-list-item="true"]');
+      if (!listScroll || !activeItem) {
+        return;
+      }
+      const listRect = listScroll.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+      const scrollPadding = 16;
+      if (itemRect.top >= listRect.top + scrollPadding && itemRect.bottom <= listRect.bottom - scrollPadding) {
+        return;
+      }
+      const nextScrollTop =
+        itemRect.top < listRect.top + scrollPadding
+          ? listScroll.scrollTop + itemRect.top - listRect.top - scrollPadding
+          : listScroll.scrollTop + itemRect.bottom - listRect.bottom + scrollPadding;
+      listScroll.scrollTo({
+        behavior: "smooth",
+        top: nextScrollTop,
+      });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [displayMode, itemMode, selectedGroupId, selectedMeetingId, selectedVenueId]);
+  }, [displayMode]);
 
   const handleMapBackgroundClick = () => {
     setShowMobileFilters(false);
@@ -1396,7 +1428,6 @@ export function DiscoveryPage({
                     meetings={selectedProfileAttending}
                     onSelectMeeting={selectMeeting}
                     secondaryMeta="location"
-                    showGroupLabel
                   />
                 ) : null}
                 {selectedProfileResponsible.length > 0 ? (
@@ -1407,7 +1438,6 @@ export function DiscoveryPage({
                     meetings={selectedProfileResponsible}
                     onSelectMeeting={selectMeeting}
                     secondaryMeta="location"
-                    showGroupLabel
                   />
                 ) : null}
               </>
@@ -1645,7 +1675,6 @@ export function DiscoveryPage({
         meetings={selectedVenueMeetings}
         onSelectMeeting={selectMeeting}
         secondaryMeta="group"
-        showGroupLabel
       />
     </div>
   ) : selectedGroupDetail ? (
@@ -1711,7 +1740,6 @@ export function DiscoveryPage({
         meetings={selectedGroupMeetings}
         onSelectMeeting={selectMeeting}
         secondaryMeta="location"
-        showGroupLabel={false}
       />
     </div>
   ) : (
@@ -1879,16 +1907,25 @@ export function DiscoveryPage({
                 data-active-list-item={selectedVenueId === venue.id ? "true" : undefined}
                 key={venue.id}
                 onClick={() => selectVenue(venue)}
+                style={{ "--timeline-accent": browseAccent(venue.id) } as CSSProperties}
                 type="button"
               >
-                <div className="browse-listing__row">
-                  <div>
+                <span className={`browse-listing__thumb ${venue.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
+                  {venue.heroImageUrl ? <img alt="" src={venue.heroImageUrl} /> : <MapPin size={18} strokeWidth={2} />}
+                </span>
+                <span className="browse-listing__body">
+                  <span className="browse-listing__row">
+                    <span className="browse-listing__copy-block">
                     <strong className="browse-listing__title">{venue.name}</strong>
                     <p className="browse-listing__meta">{venue.address}</p>
-                  </div>
-                  <span className="badge-outline">{venue.pricing}</span>
-                </div>
-                <p className="browse-listing__copy">{venue.description}</p>
+                    </span>
+                    <span className="compact-badges">
+                      <span className="badge-outline">{venue.pricing}</span>
+                      <span className="badge">{venueMeetingsById[venue.id]?.length ?? 0} sessions</span>
+                    </span>
+                  </span>
+                  <span className="browse-listing__copy">{venue.description}</span>
+                </span>
               </button>
             ))
           : <>
@@ -1900,19 +1937,26 @@ export function DiscoveryPage({
                       data-active-list-item={selectedGroupId === group.id ? "true" : undefined}
                       key={group.id}
                       onClick={() => selectGroup(group)}
+                      style={{ "--timeline-accent": browseAccent(group.id) } as CSSProperties}
                       type="button"
                     >
-                      <div className="browse-listing__row">
-                        <div>
+                      <span className={`browse-listing__thumb ${group.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
+                        {group.heroImageUrl ? <img alt="" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
+                      </span>
+                      <span className="browse-listing__body">
+                        <span className="browse-listing__row">
+                          <span className="browse-listing__copy-block">
                           <strong className="browse-listing__title">{group.name}</strong>
-                          <p className="browse-listing__meta">{group.description}</p>
-                        </div>
-              <div className="compact-badges">
-                <span className="badge">{group.viewerRole}</span>
-                <span className="badge-outline">{group.visibility}</span>
-                <span className="badge-outline">{group.publicSessionCount} sessions</span>
-              </div>
-                      </div>
+                            <p className="browse-listing__meta">{group.activityLabel || "Beach volleyball"}</p>
+                          </span>
+                          <span className="compact-badges">
+                            {group.viewerRole ? <span className="badge">{group.viewerRole}</span> : null}
+                            <span className="badge-outline">{group.memberCount} members</span>
+                            <span className="badge-outline">{group.publicSessionCount} sessions</span>
+                          </span>
+                        </span>
+                        <span className="browse-listing__copy">{group.description}</span>
+                      </span>
                     </button>
                   ))
                 : null}
@@ -1924,18 +1968,25 @@ export function DiscoveryPage({
                   data-active-list-item={selectedGroupId === group.id ? "true" : undefined}
                   key={group.id}
                   onClick={() => selectGroup(group)}
+                  style={{ "--timeline-accent": browseAccent(group.id) } as CSSProperties}
                   type="button"
                 >
-                  <div className="browse-listing__row">
-                    <div>
+                  <span className={`browse-listing__thumb ${group.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
+                    {group.heroImageUrl ? <img alt="" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
+                  </span>
+                  <span className="browse-listing__body">
+                    <span className="browse-listing__row">
+                      <span className="browse-listing__copy-block">
                       <strong className="browse-listing__title">{group.name}</strong>
-                      <p className="browse-listing__meta">{group.description}</p>
-                    </div>
-                    <div className="compact-badges">
-                      <span className="badge-outline">{group.visibility}</span>
-                      <span className="badge">{group.publicSessionCount} sessions</span>
-                    </div>
-                  </div>
+                        <p className="browse-listing__meta">{group.activityLabel || "Beach volleyball"}</p>
+                      </span>
+                      <span className="compact-badges">
+                        <span className="badge-outline">{group.memberCount} members</span>
+                        <span className="badge">{group.publicSessionCount} sessions</span>
+                      </span>
+                    </span>
+                    <span className="browse-listing__copy">{group.description}</span>
+                  </span>
                 </button>
               ))}
             </>}
