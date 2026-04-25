@@ -20,6 +20,7 @@ interface WorkspaceShellProps {
   leftHeader: ReactNode;
   layoutVariant?: "default" | "info" | "info-detail" | "info-index";
   mobileCollapsePanels?: boolean;
+  overlay?: ReactNode;
   profileLinkState?: unknown;
   right: ReactNode;
   rightHeader: ReactNode;
@@ -48,6 +49,7 @@ export function WorkspaceShell({
   toggleTheme,
   viewer,
   onLogOut,
+  overlay,
   topCenter,
   utilityNavigation = "info",
 }: WorkspaceShellProps) {
@@ -207,6 +209,7 @@ export function WorkspaceShell({
             </nav>
           ) : null}
         </div>
+        {overlay ? <div className="workspace-frame-overlay">{overlay}</div> : null}
       </div>
     </div>
   );

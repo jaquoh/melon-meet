@@ -6,7 +6,6 @@ import {
   Edit3,
   ExternalLink,
   Filter,
-  Image as ImageIcon,
   List,
   Map as MapIcon,
   MapPin,
@@ -54,6 +53,11 @@ type DisplayMode = "list" | "map";
 type ItemMode = "groups" | "sessions" | "venues";
 type TimePreset = "all-sessions" | "custom" | "next-week" | "this-month" | "this-week" | "today" | "tomorrow";
 type EditingTarget = null | { kind: "group" } | { kind: "meeting"; mode: "series" | "single" };
+type FullscreenImageTarget = null | {
+  imageUrl: string;
+  quote: string;
+  title: string;
+};
 
 interface DiscoveryWorkspaceState {
   bounds: DiscoveryBounds;
@@ -220,6 +224,7 @@ export function DiscoveryPage({
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const [isClearingSelection, setIsClearingSelection] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<FullscreenImageTarget>(null);
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
@@ -709,7 +714,7 @@ export function DiscoveryPage({
     }
     if (routeMeetingId || routeVenueId || routeGroupId) {
       setDisplayMode(workspaceState?.displayMode ?? "map");
-      setItemMode(routeVenueId ? "venues" : routeGroupId ? "groups" : "sessions");
+      setItemMode(workspaceState?.itemMode ?? (routeVenueId ? "venues" : routeGroupId ? "groups" : "sessions"));
     }
     if (routeProfileId) {
       return;
@@ -737,7 +742,18 @@ export function DiscoveryPage({
       setSelectedVenue(null);
       setEditingTarget(null);
     }
-  }, [groups, isClearingSelection, meetings, routeGroupId, routeMeetingId, routeProfileId, routeVenueId, venues]);
+  }, [
+    groups,
+    isClearingSelection,
+    meetings,
+    routeGroupId,
+    routeMeetingId,
+    routeProfileId,
+    routeVenueId,
+    venues,
+    workspaceState?.displayMode,
+    workspaceState?.itemMode,
+  ]);
 
   useEffect(() => {
     if (!routeGroupId && !routeMeetingId && !routeProfileId && !routeVenueId) {
@@ -890,9 +906,12 @@ export function DiscoveryPage({
     }
   }, [groups, meetings, pendingSelectionState, selectedVenueIdFromQuery, venues]);
 
-  const selectedMeetingDetail = selectedMeetingDetailQuery.data?.meeting ?? selectedMeeting;
-  const selectedVenueDetail = selectedVenueDetailQuery.data?.venue ?? selectedVenue;
-  const selectedGroupDetail = selectedGroupDetailQuery.data?.group ?? selectedGroup;
+  const selectedMeetingDetail =
+    selectedMeetingDetailQuery.data?.meeting.id === selectedMeetingId ? selectedMeetingDetailQuery.data.meeting : selectedMeeting;
+  const selectedVenueDetail =
+    selectedVenueDetailQuery.data?.venue.id === selectedVenueId ? selectedVenueDetailQuery.data.venue : selectedVenue;
+  const selectedGroupDetail =
+    selectedGroupDetailQuery.data?.group.id === selectedGroupId ? selectedGroupDetailQuery.data.group : selectedGroup;
   const selectedProfileDetail =
     selectedProfileDetailQuery.data?.profile ?? (selectedProfileId && viewer?.id === selectedProfileId ? viewer : null);
   const selectedProfileMemberships = selectedProfileDetailQuery.data?.memberships ?? [];
@@ -911,8 +930,18 @@ export function DiscoveryPage({
     "";
   const listHeading = itemMode === "groups" ? "Groups" : itemMode === "venues" ? "Venues" : "Sessions";
   const navState = createNavigationState(location, "Workspace");
-  const selectedVenueMeetings = selectedVenueDetailQuery.data?.meetings ?? (selectedVenueId ? venueMeetingsById[selectedVenueId] ?? [] : []);
-  const selectedGroupMeetings = selectedGroupDetailQuery.data?.meetings ?? (selectedGroupId ? groupMeetingsById[selectedGroupId] ?? [] : []);
+  const selectedVenueMeetings =
+    selectedVenueDetailQuery.data?.venue.id === selectedVenueId
+      ? selectedVenueDetailQuery.data.meetings
+      : selectedVenueId
+        ? venueMeetingsById[selectedVenueId] ?? []
+        : [];
+  const selectedGroupMeetings =
+    selectedGroupDetailQuery.data?.group.id === selectedGroupId
+      ? selectedGroupDetailQuery.data.meetings
+      : selectedGroupId
+        ? groupMeetingsById[selectedGroupId] ?? []
+        : [];
   const visibleSessionClusterKey =
     selectedMeetingDetail && itemMode === "sessions"
       ? (() => {
@@ -1057,6 +1086,11 @@ export function DiscoveryPage({
       document.querySelector<HTMLElement>(selector)?.scrollTo({ top: 0 });
     }
   }, [selectedGroupId, selectedMeetingCluster?.lookupKey, selectedMeetingId, selectedProfileId, selectedVenueId]);
+
+  useEffect(() => {
+    setFullscreenImage(null);
+  }, [selectedGroupId, selectedMeetingId, selectedVenueId]);
+
   const handleMapBackgroundClick = () => {
     setShowMobileFilters(false);
     handleSelectionClose();
@@ -1069,6 +1103,40 @@ export function DiscoveryPage({
       </button>
     </div>
   ) : null;
+
+  function renderImagePane({
+    imageUrl,
+    quote,
+    title,
+  }: {
+    imageUrl?: string | null;
+    quote: string;
+    title: string;
+  }) {
+    const normalizedImageUrl = imageUrl?.trim() || null;
+    const className = `detail-hero__media info-panel__hero ${normalizedImageUrl ? "has-image" : ""}`.trim();
+
+    if (!normalizedImageUrl) {
+      return (
+        <div className={className} key={`${title}:empty`}>
+          <div className="detail-hero__fallback" aria-hidden="true" />
+        </div>
+      );
+    }
+
+    return (
+      <button
+        aria-label={`Open image for ${title}`}
+        className={`${className} detail-hero__media--button`}
+        key={`${title}:${normalizedImageUrl}`}
+        onClick={() => setFullscreenImage({ imageUrl: normalizedImageUrl, quote, title })}
+        type="button"
+      >
+        <img alt={title} className="detail-hero__image" src={normalizedImageUrl} />
+        <div className="detail-hero__fallback" aria-hidden="true" />
+      </button>
+    );
+  }
 
   async function handleMeetingSave(payload: Record<string, unknown>) {
     const { seriesDates, ...basePayload } = payload as Record<string, unknown> & {
@@ -1382,12 +1450,11 @@ export function DiscoveryPage({
           {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Claimed</span> : null}
         </div>
       </div>
-      <div className={`detail-hero__media info-panel__hero ${selectedMeetingDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
-        {selectedMeetingDetail.heroImageUrl ? <img alt={selectedMeetingDetail.title} className="detail-hero__image" src={selectedMeetingDetail.heroImageUrl} /> : null}
-        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedMeetingDetail.heroImageUrl)}>
-          <ImageIcon size={24} strokeWidth={1.8} />
-        </div>
-      </div>
+      {renderImagePane({
+        imageUrl: selectedMeetingDetail.heroImageUrl,
+        quote: selectedMeetingDetail.description || "No description yet.",
+        title: selectedMeetingDetail.title,
+      })}
       <p className="detail-quote detail-quote--hero">{selectedMeetingDetail.description || "No description yet."}</p>
       <section className="availability-callout">
         <span className="panel-caption">Availability</span>
@@ -1521,12 +1588,11 @@ export function DiscoveryPage({
           <span className="mini-chip">{selectedVenueMeetings.length} sessions</span>
         </div>
       </div>
-      <div className={`detail-hero__media info-panel__hero ${selectedVenueDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
-        {selectedVenueDetail.heroImageUrl ? <img alt={selectedVenueDetail.name} className="detail-hero__image" src={selectedVenueDetail.heroImageUrl} /> : null}
-        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedVenueDetail.heroImageUrl)}>
-          <ImageIcon size={24} strokeWidth={1.8} />
-        </div>
-      </div>
+      {renderImagePane({
+        imageUrl: selectedVenueDetail.heroImageUrl,
+        quote: selectedVenueDetail.description || "No description yet.",
+        title: selectedVenueDetail.name,
+      })}
       <p className="detail-quote detail-quote--hero">{selectedVenueDetail.description || "No description yet."}</p>
       <section className="info-grid">
         <div>
@@ -1584,12 +1650,11 @@ export function DiscoveryPage({
           {selectedGroupDetail.viewerRole ? <span className="mini-chip mini-chip--accent">{selectedGroupDetail.viewerRole}</span> : null}
         </div>
       </div>
-      <div className={`detail-hero__media info-panel__hero ${selectedGroupDetail.heroImageUrl ? "has-image" : ""}`.trim()}>
-        {selectedGroupDetail.heroImageUrl ? <img alt={selectedGroupDetail.name} className="detail-hero__image" src={selectedGroupDetail.heroImageUrl} /> : null}
-        <div className="detail-hero__fallback" aria-hidden={Boolean(selectedGroupDetail.heroImageUrl)}>
-          <ImageIcon size={24} strokeWidth={1.8} />
-        </div>
-      </div>
+      {renderImagePane({
+        imageUrl: selectedGroupDetail.heroImageUrl,
+        quote: selectedGroupDetail.description || "No description yet.",
+        title: selectedGroupDetail.name,
+      })}
       <p className="detail-quote">{selectedGroupDetail.description || "No description yet."}</p>
       <section className="info-grid">
         <div>
@@ -1790,13 +1855,14 @@ export function DiscoveryPage({
         emptyLabel="No sessions match the current filters."
         meetings={meetings}
         onSelectMeeting={selectMeeting}
+        selectedMeetingId={selectedMeetingId}
       />
     ) : (
       <div className="stack-list stack-list--compact">
         {itemMode === "venues"
           ? venues.map((venue) => (
               <button
-                className={`browse-listing browse-listing--venue ${selectedVenue?.id === venue.id ? "is-selected" : ""}`}
+                className={`browse-listing browse-listing--venue ${selectedVenueId === venue.id ? "is-selected" : ""}`}
                 key={venue.id}
                 onClick={() => selectVenue(venue)}
                 type="button"
@@ -1816,7 +1882,7 @@ export function DiscoveryPage({
               {viewer
                 ? memberGroups.map((group) => (
                     <button
-                      className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
+                      className={`browse-listing ${selectedGroupId === group.id ? "is-selected" : ""}`}
                       key={group.id}
                       onClick={() => selectGroup(group)}
                       type="button"
@@ -1839,7 +1905,7 @@ export function DiscoveryPage({
               <p className="list-separator list-separator--plain">Public groups</p>
               {publicGroups.map((group) => (
                 <button
-                  className={`browse-listing ${selectedGroup?.id === group.id ? "is-selected" : ""}`}
+                  className={`browse-listing ${selectedGroupId === group.id ? "is-selected" : ""}`}
                   key={group.id}
                   onClick={() => selectGroup(group)}
                   type="button"
@@ -1870,8 +1936,12 @@ export function DiscoveryPage({
       center={
         editPanel ? (
           editPanel
-        ) : displayMode === "map" ? (
-          <div className={`workspace-map-center ${hasSelection ? "workspace-main-center--covered" : ""}`.trim()}>
+        ) : (
+          <div
+            className={`workspace-discovery-center ${displayMode === "map" ? "is-map" : "is-list"} ${
+              hasSelection ? "workspace-main-center--covered" : ""
+            }`.trim()}
+          >
             <div className="map-overlay-controls">
               {renderWorkspaceControls()}
             </div>
@@ -1892,20 +1962,9 @@ export function DiscoveryPage({
               theme={theme}
               venueMeetingsById={venueMeetingsById}
               venues={venues}
+              visible={displayMode === "map"}
             />
-            {hasSelection ? (
-              <aside className="mobile-details-drawer is-open">
-                <div className="mobile-details-drawer__body">{selectionPanel}</div>
-              </aside>
-            ) : null}
-          </div>
-        ) : (
-          <div className={`workspace-list-center ${hasSelection ? "workspace-main-center--covered" : ""}`.trim()}>
-            <div className="map-overlay-controls">
-              {renderWorkspaceControls()}
-            </div>
-            <div className="mode-overlay-controls">{renderModeSwitch()}</div>
-            <div className="workspace-list-scroll">
+            <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll">
               <div className="workspace-list-heading">
                 <p className="eyebrow">Browse</p>
                 <h2 className="section-title typewriter-title">{listHeading}</h2>
@@ -2065,6 +2124,25 @@ export function DiscoveryPage({
       leftHeader={undefined}
       mobileCollapsePanels
       onLogOut={onLogOut}
+      overlay={
+        fullscreenImage ? (
+          <div className="fullscreen-image-view">
+            <div className="fullscreen-image-view__scroller">
+              <img alt={fullscreenImage.title} className="fullscreen-image-view__image" src={fullscreenImage.imageUrl} />
+            </div>
+            <h2 className="fullscreen-image-view__title">{fullscreenImage.title}</h2>
+            <p className="fullscreen-image-view__quote">{fullscreenImage.quote}</p>
+            <button
+              aria-label="Close image"
+              className="button-secondary workspace-panel-close-square fullscreen-image-view__close"
+              onClick={() => setFullscreenImage(null)}
+              type="button"
+            >
+              <X size={16} strokeWidth={2} />
+            </button>
+          </div>
+        ) : null
+      }
       profileLinkState={headerProfileLinkState()}
       right={selectionPanel}
       rightHeader={undefined}

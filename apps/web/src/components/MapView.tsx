@@ -33,6 +33,7 @@ interface MapViewProps {
   theme: "dark" | "light";
   venueMeetingsById?: Record<string, MeetingSummary[]>;
   venues: VenueSummary[];
+  visible?: boolean;
 }
 
 type SelectedMarkerKey = null | string;
@@ -1138,6 +1139,7 @@ export function MapView({
   theme,
   venueMeetingsById = {},
   venues,
+  visible = true,
 }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -1401,10 +1403,13 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (visible) {
+      map?.resize();
+    }
     if (!selectedLocation) {
       centeredSelectionRef.current = null;
     }
-    if (!map || !mapReady || !selectedLocation) {
+    if (!map || !mapReady || !selectedLocation || !visible) {
       return;
     }
     if (centeredSelectionRef.current === selectedLocation.id) {
@@ -1428,7 +1433,7 @@ export function MapView({
     return () => {
       map.off("moveend", refreshSelection);
     };
-  }, [mapReady, selectedKey, selectedLocation]);
+  }, [mapReady, selectedKey, selectedLocation, visible]);
 
   useLayoutEffect(() => {
     const map = mapRef.current;

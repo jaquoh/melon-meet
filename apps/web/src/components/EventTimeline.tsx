@@ -12,6 +12,7 @@ interface EventTimelineProps {
   meetings: MeetingSummary[];
   onSelectMeeting?: (meeting: MeetingSummary) => void;
   secondaryMeta?: "group" | "group-and-location" | "location";
+  selectedMeetingId?: string | null;
   showGroupLabel?: boolean;
 }
 
@@ -58,6 +59,7 @@ export function EventTimeline({
   meetings,
   onSelectMeeting,
   secondaryMeta = "group-and-location",
+  selectedMeetingId = null,
   showGroupLabel = true,
 }: EventTimelineProps) {
   const location = useLocation();
@@ -133,6 +135,7 @@ export function EventTimeline({
       <div className="timeline-list timeline-list--rail">
         {meetings.map((meeting) => {
           const date = formatTimelineDate(meeting.startsAt);
+          const isSelected = selectedMeetingId === meeting.id;
           const accent = pickAccent(meeting.seriesId ?? meeting.venueId ?? meeting.groupId ?? meeting.id);
           const style = { "--timeline-accent": accent } as CSSProperties;
           const meta =
@@ -185,7 +188,9 @@ export function EventTimeline({
               </div>
               {onSelectMeeting ? (
                 <button
-                  className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""}`}
+                  className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""} ${
+                    isSelected ? "is-selected" : ""
+                  }`.trim()}
                   onClick={() => onSelectMeeting(meeting)}
                   type="button"
                 >
@@ -193,7 +198,9 @@ export function EventTimeline({
                 </button>
               ) : (
                 <Link
-                  className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""}`}
+                  className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""} ${
+                    isSelected ? "is-selected" : ""
+                  }`.trim()}
                   state={createNavigationState(location, contextLabel)}
                   to={`/sessions/${meeting.id}`}
                 >
