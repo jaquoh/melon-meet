@@ -432,7 +432,6 @@ export function DiscoveryPage({
   function selectMeeting(meeting: MeetingSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/sessions/${meeting.id}`, {
-      displayMode: "map",
       itemMode: "sessions",
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -441,7 +440,6 @@ export function DiscoveryPage({
       selectedVenueId: null,
       showMobileFilters: false,
     });
-    setDisplayMode("map");
     setItemMode("sessions");
     setSelectedMeeting(meeting);
     setSelectedMeetingCluster(null);
@@ -474,7 +472,6 @@ export function DiscoveryPage({
   function selectVenue(venue: VenueSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/venues/${venue.id}`, {
-      displayMode: "map",
       itemMode: "venues",
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -483,7 +480,6 @@ export function DiscoveryPage({
       selectedVenueId: venue.id,
       showMobileFilters: false,
     });
-    setDisplayMode("map");
     setItemMode("venues");
     setSelectedVenue(venue);
     setSelectedMeeting(null);
@@ -517,7 +513,6 @@ export function DiscoveryPage({
   function selectGroup(group: GroupSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/groups/${group.id}`, {
-      displayMode: "map",
       itemMode: "groups",
       selectedGroupId: group.id,
       selectedMeetingClusterMeetingIds: [],
@@ -526,7 +521,6 @@ export function DiscoveryPage({
       selectedVenueId: null,
       showMobileFilters: false,
     });
-    setDisplayMode("map");
     setItemMode("groups");
     setSelectedGroup(group);
     setSelectedMeeting(null);
@@ -714,7 +708,7 @@ export function DiscoveryPage({
       return;
     }
     if (routeMeetingId || routeVenueId || routeGroupId) {
-      setDisplayMode("map");
+      setDisplayMode(workspaceState?.displayMode ?? "map");
       setItemMode(routeVenueId ? "venues" : routeGroupId ? "groups" : "sessions");
     }
     if (routeProfileId) {
