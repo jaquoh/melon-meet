@@ -88,6 +88,13 @@ const INITIAL_BOUNDS: DiscoveryBounds = {
   west: 13.0884,
 };
 
+const MAP_DATA_BOUNDS = {
+  east: 180,
+  north: 90,
+  south: -90,
+  west: -180,
+};
+
 function formatDateInput(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -196,7 +203,6 @@ export function DiscoveryPage({
   const [displayMode, setDisplayMode] = useState<DisplayMode>(workspaceState?.displayMode ?? initialDisplayMode);
   const [itemMode, setItemMode] = useState<ItemMode>(workspaceState?.itemMode ?? initialItemMode);
   const [bounds, setBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
-  const [queryBounds, setQueryBounds] = useState<DiscoveryBounds>(workspaceState?.bounds ?? INITIAL_BOUNDS);
   const [timePreset, setTimePreset] = useState<TimePreset>(workspaceState?.timePreset ?? "all-sessions");
   const [customStartAt, setCustomStartAt] = useState(workspaceState?.customStartAt ?? defaultCustomStartAt);
   const [customEndAt, setCustomEndAt] = useState(workspaceState?.customEndAt ?? defaultCustomEndAt);
@@ -231,38 +237,27 @@ export function DiscoveryPage({
     [customEndAt, customStartAt, timePreset],
   );
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setQueryBounds((current) => {
-        const next = bounds;
-        const changed =
-          Math.abs(current.east - next.east) > 0.0008 ||
-          Math.abs(current.west - next.west) > 0.0008 ||
-          Math.abs(current.north - next.north) > 0.0008 ||
-          Math.abs(current.south - next.south) > 0.0008 ||
-          current.openOnly !== next.openOnly ||
-          current.pricing !== next.pricing;
-        return changed ? next : current;
-      });
-    }, 220);
-
-    return () => window.clearTimeout(timeout);
-  }, [bounds]);
-
   const mapQuery = useQuery({
     queryFn: () =>
       getMap({
-        east: queryBounds.east,
+        east: MAP_DATA_BOUNDS.east,
         endAt: itemMode !== "venues" ? timeWindow.endAt : undefined,
-        north: queryBounds.north,
-        openOnly: queryBounds.openOnly,
-        pricing: queryBounds.pricing,
-        south: queryBounds.south,
+        north: MAP_DATA_BOUNDS.north,
+        openOnly: bounds.openOnly,
+        pricing: bounds.pricing,
+        south: MAP_DATA_BOUNDS.south,
         startAt: itemMode !== "venues" ? timeWindow.startAt : undefined,
-        west: queryBounds.west,
+        west: MAP_DATA_BOUNDS.west,
       }),
     placeholderData: (previousData) => previousData,
-    queryKey: ["map", queryBounds, itemMode, timeWindow.endAt, timeWindow.startAt],
+    queryKey: [
+      "map",
+      itemMode,
+      bounds.openOnly,
+      bounds.pricing,
+      itemMode !== "venues" ? timeWindow.endAt : null,
+      itemMode !== "venues" ? timeWindow.startAt : null,
+    ],
     staleTime: 15000,
   });
 
@@ -1878,16 +1873,7 @@ export function DiscoveryPage({
               meetings={meetings}
               mode={itemMode}
               onBackgroundClick={handleMapBackgroundClick}
-              onBoundsChange={(mapBounds) =>
-                setBounds((current) => {
-                  const next = {
-                    ...current,
-                    ...mapBounds,
-                  };
-                  normalizeWorkspacePath({ bounds: next });
-                  return next;
-                })
-              }
+              onBoundsChange={() => undefined}
               onGroupSelect={selectGroupFromMap}
               onMeetingClusterSelect={selectMeetingClusterFromMap}
               onMeetingSelect={selectMeetingFromMap}
