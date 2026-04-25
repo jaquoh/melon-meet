@@ -191,6 +191,7 @@ export function EventTimeline({
                   className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""} ${
                     isSelected ? "is-selected" : ""
                   }`.trim()}
+                  data-active-list-item={isSelected ? "true" : undefined}
                   onClick={() => onSelectMeeting(meeting)}
                   type="button"
                 >
@@ -201,6 +202,7 @@ export function EventTimeline({
                   className={`timeline-card timeline-card--toned ${meeting.viewerHasClaimed ? "timeline-card--claimed" : ""} ${
                     isSelected ? "is-selected" : ""
                   }`.trim()}
+                  data-active-list-item={isSelected ? "true" : undefined}
                   state={createNavigationState(location, contextLabel)}
                   to={`/sessions/${meeting.id}`}
                 >

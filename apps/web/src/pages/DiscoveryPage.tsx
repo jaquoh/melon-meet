@@ -226,6 +226,7 @@ export function DiscoveryPage({
   const [isClearingSelection, setIsClearingSelection] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState<FullscreenImageTarget>(null);
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
+  const listScrollRef = useRef<HTMLDivElement | null>(null);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
       ? {
@@ -1091,6 +1092,18 @@ export function DiscoveryPage({
     setFullscreenImage(null);
   }, [selectedGroupId, selectedMeetingId, selectedVenueId]);
 
+  useEffect(() => {
+    if (displayMode !== "list") {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      listScrollRef.current
+        ?.querySelector<HTMLElement>('[data-active-list-item="true"]')
+        ?.scrollIntoView({ block: "center", inline: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [displayMode, itemMode, selectedGroupId, selectedMeetingId, selectedVenueId]);
+
   const handleMapBackgroundClick = () => {
     setShowMobileFilters(false);
     handleSelectionClose();
@@ -1863,6 +1876,7 @@ export function DiscoveryPage({
           ? venues.map((venue) => (
               <button
                 className={`browse-listing browse-listing--venue ${selectedVenueId === venue.id ? "is-selected" : ""}`}
+                data-active-list-item={selectedVenueId === venue.id ? "true" : undefined}
                 key={venue.id}
                 onClick={() => selectVenue(venue)}
                 type="button"
@@ -1883,6 +1897,7 @@ export function DiscoveryPage({
                 ? memberGroups.map((group) => (
                     <button
                       className={`browse-listing ${selectedGroupId === group.id ? "is-selected" : ""}`}
+                      data-active-list-item={selectedGroupId === group.id ? "true" : undefined}
                       key={group.id}
                       onClick={() => selectGroup(group)}
                       type="button"
@@ -1906,6 +1921,7 @@ export function DiscoveryPage({
               {publicGroups.map((group) => (
                 <button
                   className={`browse-listing ${selectedGroupId === group.id ? "is-selected" : ""}`}
+                  data-active-list-item={selectedGroupId === group.id ? "true" : undefined}
                   key={group.id}
                   onClick={() => selectGroup(group)}
                   type="button"
@@ -1964,7 +1980,7 @@ export function DiscoveryPage({
               venues={venues}
               visible={displayMode === "map"}
             />
-            <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll">
+            <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll" ref={listScrollRef}>
               <div className="workspace-list-heading">
                 <p className="eyebrow">Browse</p>
                 <h2 className="section-title typewriter-title">{listHeading}</h2>
