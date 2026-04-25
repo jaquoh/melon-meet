@@ -1002,6 +1002,12 @@ export function DiscoveryPage({
           : null;
   const hasSelection = Boolean(selectedMeetingId || selectedMeetingCluster || selectedVenueId || selectedGroupId || selectedProfileId);
   const showUpcomingSessions = displayMode === "map" || itemMode !== "sessions";
+  const activeFilterTags = [
+    timePreset !== "all-sessions" ? timePresetLabel(timePreset) : null,
+    bounds.pricing !== "all" ? (bounds.pricing === "free" ? "Free" : "Paid") : null,
+    bounds.openOnly ? "Free spots" : null,
+  ].filter((tag): tag is string => Boolean(tag));
+  const hasActiveFilters = activeFilterTags.length > 0;
   const returnPath = workspaceReturnStack[workspaceReturnStack.length - 1];
   const returnRouteKind = returnPath ? workspaceRouteKind(returnPath) : null;
   const emptySelectionState = {
@@ -1756,10 +1762,29 @@ export function DiscoveryPage({
 
   const renderFilterPanel = () => (
     <div className="filter-dropdown" ref={filterDropdownRef}>
-      <button className="workspace-ghost-button workspace-ghost-button--filter" onClick={() => setShowMobileFilters((current) => !current)} type="button">
-        <Filter size={14} strokeWidth={2} />
-        <span>Filter</span>
-      </button>
+      <div className="filter-trigger-stack">
+        <button
+          className={`workspace-ghost-button workspace-ghost-button--filter ${hasActiveFilters ? "is-active" : ""}`.trim()}
+          onClick={() => setShowMobileFilters((current) => !current)}
+          type="button"
+        >
+          <Filter size={14} strokeWidth={2} />
+          <span>Filter</span>
+        </button>
+        <div className={`active-filter-tags ${hasActiveFilters ? "" : "is-empty"}`.trim()} aria-label="Active filters">
+          {hasActiveFilters ? (
+            activeFilterTags.map((tag) => (
+              <span className="active-filter-tag" key={tag}>
+                {tag}
+              </span>
+            ))
+          ) : (
+            <span className="active-filter-tag" aria-hidden="true">
+              All
+            </span>
+          )}
+        </div>
+      </div>
       {showMobileFilters ? (
         <div className="filter-dropdown__panel">
           <p className="panel-caption">Price</p>
