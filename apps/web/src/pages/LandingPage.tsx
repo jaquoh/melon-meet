@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { CalendarDays, Info, Map, Moon, Sun, User, Users, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { CalendarDays, LogIn, Map, Moon, Sun, User, Users, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
@@ -9,6 +9,7 @@ import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
+import { INFO_LINKS } from "./InfoPage";
 
 export function LandingPage({
   theme,
@@ -19,12 +20,41 @@ export function LandingPage({
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
+  const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [showAuthPanel, setShowAuthPanel] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const landingBackgroundImage = theme === "dark" ? landingHeroMelonDark : landingHeroMelon;
+  const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
+  const renderHeaderControls = () => (
+    <div className="landing-shell__right-header">
+      <button
+        aria-label="Toggle theme"
+        className="landing-theme-toggle"
+        onClick={toggleTheme}
+        type="button"
+      >
+        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+      </button>
+      {viewer ? (
+        <Link className="landing-header-button landing-header-button--label" to={`/profile/${viewer.id}`}>
+          <User size={16} strokeWidth={2} />
+          <span>Profile</span>
+        </Link>
+      ) : (
+        <button
+          className="landing-header-button landing-header-button--label landing-header-button--auth"
+          onClick={() => setShowAuthPanel((current) => !current)}
+          type="button"
+        >
+          {showAuthPanel ? <X size={16} strokeWidth={2} /> : <LogIn size={16} strokeWidth={2} />}
+          <span>{showAuthPanel ? "Close" : "Sign in"}</span>
+        </button>
+      )}
+    </div>
+  );
 
   const authMutation = useMutation({
     mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
@@ -40,14 +70,17 @@ export function LandingPage({
         <div className="landing-scene" aria-hidden="true">
           <img alt="" className="landing-scene__image" src={landingBackgroundImage} />
         </div>
-        <div className="landing-shell landing-shell--auth">
+        <div className={`landing-shell landing-shell--auth ${showAuthPanel ? "landing-shell--auth-open" : ""}`.trim()}>
           <section className="landing-shell__center landing-shell__center--welcome">
-            <div className="landing-brand-lockup landing-brand-lockup--stacked">
-              <img alt="Melon Meet" className="landing-shell__logo" src={watermelonMark} />
-              <div className="landing-brand-lockup__copy">
-                <h1 className="landing-brand-lockup__title">Melon Meet</h1>
-                <p className="landing-brand-lockup__meta">Berlin Beachvolleyball</p>
+            <div className="landing-mobile-header">
+              <div className="landing-brand-lockup landing-brand-lockup--stacked">
+                <img alt="Melon Meet" className="landing-shell__logo" src={watermelonMark} />
+                <div className="landing-brand-lockup__copy">
+                  <h1 className="landing-brand-lockup__title">Melon Meet</h1>
+                  <p className="landing-brand-lockup__meta">Berlin Beachvolleyball</p>
+                </div>
               </div>
+              <div className="landing-mobile-actions">{renderHeaderControls()}</div>
             </div>
 
             <div className="landing-hero-grid">
@@ -72,41 +105,14 @@ export function LandingPage({
               </Link>
               <Link className="landing-entry-button" to="/sessions">
                 <CalendarDays size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Catch a rally</span>
+                <span className="landing-entry-button__title">Catch a session</span>
                 <span className="landing-entry-button__copy">See upcoming sessions by time and claim a sandy spot when you are ready.</span>
               </Link>
             </div>
           </section>
 
           <section className="landing-shell__right">
-            <div className="landing-shell__right-header">
-              <button
-                aria-label="Toggle theme"
-                className="landing-theme-toggle"
-                onClick={toggleTheme}
-                type="button"
-              >
-                {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-              </button>
-              <Link aria-label="About Melon Meet" className="landing-header-button" to="/about">
-                <Info size={16} strokeWidth={2} />
-              </Link>
-              {viewer ? (
-                <Link className="landing-header-button landing-header-button--label" to={`/profile/${viewer.id}`}>
-                  <User size={16} strokeWidth={2} />
-                  <span>Profile</span>
-                </Link>
-              ) : (
-                <button
-                  className="landing-header-button landing-header-button--label"
-                  onClick={() => setShowAuthPanel((current) => !current)}
-                  type="button"
-                >
-                  {showAuthPanel ? <X size={16} strokeWidth={2} /> : null}
-                  <span>{showAuthPanel ? "Close" : "Sign in"}</span>
-                </button>
-              )}
-            </div>
+            {renderHeaderControls()}
 
             {viewer ? null : showAuthPanel ? (
               <div className="landing-shell__right-body">
@@ -176,6 +182,17 @@ export function LandingPage({
               </div>
             ) : null}
           </section>
+        </div>
+        <div className="landing-legal-links landing-legal-links--landing" aria-label="Legal pages">
+          {INFO_LINKS.map((link) => (
+            <Link
+              key={link.key}
+              state={infoLinkState}
+              to={link.to}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

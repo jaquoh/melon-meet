@@ -15,7 +15,7 @@
     "websiteUrl": "https://www.beach61.de/",
     "bookingUrl": "https://beach61.de/platz-buchen",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Beach61%20Park%20am%20Gleisdreieck%20Berlin",
-    "openingHoursText": "Seasonal summer operation; Urban Sports lists weekday check-in windows and official booking is online.",
+    "openingHoursText": "Mo-Fri 10:00-23:30; Sat, Sun and holidays 10:00-20:00",
     "seasonalityText": "Outdoor-only summer venue, usually around April to late September.",
     "amenities": [
       "online booking",
@@ -75,7 +75,7 @@
     "websiteUrl": "https://beachmitte.de/",
     "bookingUrl": "https://beachmitte.de/beachmitte/courts-buchung-sommer/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachMitte%20Caroline-Michaelis-Str.%208%2010115%20Berlin",
-    "openingHoursText": "Summer court booking page lists current 2026 prices; winter page lists indoor winter beach.",
+    "openingHoursText": "Daily 09:00-22:00",
     "seasonalityText": "Outdoor summer courts; winter beach play is offered in air domes from roughly October to April.",
     "amenities": [
       "online booking",
@@ -131,7 +131,7 @@
     "websiteUrl": "https://beachvbm.de/",
     "bookingUrl": "https://beachvbm.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachVBM%20Trachenbergring%2085%2012249%20Berlin",
-    "openingHoursText": "Membership model with fixed annual slots and gap booking rules.",
+    "openingHoursText": "Bookable member slots",
     "seasonalityText": "Indoor year-round; historically listed as South Beach with winter indoor focus.",
     "amenities": [
       "heated indoor sand",
@@ -171,7 +171,7 @@
     "websiteUrl": "https://beach-zone.de/",
     "bookingUrl": "https://beach-zone.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Lichtenberg%20Wei%C3%9Fenseer%20Weg%20100%2010369%20Berlin",
-    "openingHoursText": "Official BeachZone page lists current hourly prices by time band.",
+    "openingHoursText": "Mo-Fri from 14:00; Sat, Sun and holidays bookable",
     "seasonalityText": "Outdoor summer BeachZone location.",
     "amenities": [
       "online booking",
@@ -216,7 +216,7 @@
     "websiteUrl": "https://beach-zone.de/",
     "bookingUrl": "https://beach-zone.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Marzahn%20Allee%20der%20Kosmonauten%20190%2012683%20Berlin",
-    "openingHoursText": "Official BeachZone page lists hourly prices; Kauperts lists weekdays from 12:00 and weekends from 09:00.",
+    "openingHoursText": "Mo-Fri 11:00-24:00; Sat, Sun and holidays bookable",
     "seasonalityText": "Indoor hall, also used for winter training.",
     "amenities": [
       "online booking",
@@ -256,7 +256,7 @@
     "websiteUrl": "https://beach-zone.de/",
     "bookingUrl": "https://beach-zone.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=BeachZone%20Wartenberg%20Am%20Berl%2021%2013051%20Berlin",
-    "openingHoursText": "Third-party directory lists weekdays from 12:00 and weekends from 09:00; verify with BeachZone.",
+    "openingHoursText": "Bookable indoor slots",
     "seasonalityText": "Indoor hall, primarily useful for winter and bad-weather play.",
     "amenities": [
       "online booking",
@@ -295,7 +295,7 @@
     "websiteUrl": "https://beach-zone.de/",
     "bookingUrl": null,
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Bernsteinsee%20Ruhlsdorf%20Biesenthaler%20Chaussee%2016%2016348%20Marienwerder",
-    "openingHoursText": "Official BeachZone page lists daily 09:00-20:00 seasonal lido hours.",
+    "openingHoursText": "Daily 09:00-20:00",
     "seasonalityText": "Outdoor seasonal bathing lake venue outside Berlin.",
     "amenities": [
       "swimming",
@@ -334,7 +334,7 @@
     "websiteUrl": "https://www.east61.de/",
     "bookingUrl": "https://www.east61.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=East61%20Naumannstr.%2043%2010829%20Berlin",
-    "openingHoursText": "Urban Sports and Berlin Beachvolleyball list bookable use; check current Eversports slots.",
+    "openingHoursText": "Summer: Mo-Fri 17:00-21:30; winter: Mo-Fri 10:30-23:30, Sat-Sun 09:00-22:00",
     "seasonalityText": "Indoor in winter and year-round; additional outdoor courts in summer.",
     "amenities": [
       "online booking",
@@ -378,7 +378,7 @@
     "websiteUrl": "https://www.fuechse-berlin-reinickendorf.de/sportpark/",
     "bookingUrl": "https://www.fuechse-berlin-reinickendorf.de/sportpark/beachvolleyball-courts-buchen/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=F%C3%BCchse%20Berlin%20Sportpark%20Kopenhagener%20Str.%2033%2013407%20Berlin",
-    "openingHoursText": "Bookable courts; current booking availability on the club booking page.",
+    "openingHoursText": "Bookable slots",
     "seasonalityText": "Outdoor club sport park.",
     "amenities": [
       "online booking",
@@ -419,7 +419,7 @@
     "websiteUrl": "https://www.funkhaus-beach.com/",
     "bookingUrl": "https://www.funkhaus-beach.com/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Funkhaus%20Beach%20K%C3%B6penicker%20Chaussee%2011-14%20Berlin",
-    "openingHoursText": "Berlin Beachvolleyball lists daily 09:00-23:00; confirm on official booking site.",
+    "openingHoursText": "Daily 09:00-23:00",
     "seasonalityText": "Indoor beach hall, especially relevant for winter.",
     "amenities": [
       "online booking",
@@ -457,7 +457,7 @@
     "websiteUrl": "https://kickerworld-berlin.de/",
     "bookingUrl": "https://kickerworld-berlin.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=KICKERWorld%20Berlin%20Kleine%20Eiswerderstr.%201%2013599%20Berlin",
-    "openingHoursText": "Official location page lists Monday-Friday from 16:00 and weekends from 11:00/10:00 depending on language page.",
+    "openingHoursText": "Mo-Fri from 16:00; Sat-Sun from 10:00",
     "seasonalityText": "Outdoor beach area attached to an indoor sports facility.",
     "amenities": [
       "online booking",
@@ -499,7 +499,7 @@
     "websiteUrl": "https://beach-zone.de/",
     "bookingUrl": "https://beach-zone.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Kiessee%20Schildow%20Lessingstra%C3%9Fe%2048%2016552%20M%C3%BChlenbecker%20Land",
-    "openingHoursText": "Official BeachZone page lists daily 09:00-20:00 seasonal lido hours.",
+    "openingHoursText": "Daily 09:00-20:00",
     "seasonalityText": "Outdoor seasonal bathing lake venue.",
     "amenities": [
       "swimming",
@@ -539,7 +539,7 @@
     "websiteUrl": "https://www.playground.berlin/",
     "bookingUrl": "https://www.playground.berlin/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Playground%20Berlin%20Adlergestell%20105%2012439%20Berlin",
-    "openingHoursText": "Urban Sports and event listings show bookable/open-play use; verify current hours on the venue site.",
+    "openingHoursText": "Mon-Fri 10:00-22:00; Sat-Sun 14:00-22:00",
     "seasonalityText": "Outdoor beach volleyball venue.",
     "amenities": [
       "online booking",
@@ -579,7 +579,7 @@
     "websiteUrl": "https://spok.de/sport-freizeit/beachvolleyball/",
     "bookingUrl": "https://spok.de/sport-freizeit/beachvolleyball/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=SPOK%20Pankow%20Nordendstr.%2056%2013156%20Berlin",
-    "openingHoursText": "Official page lists Monday-Saturday 08:00-21:00 and Sunday 09:00-21:00 during the beach season.",
+    "openingHoursText": "Mon-Sat 08:00-21:00; Sun 09:00-21:00",
     "seasonalityText": "Official season is 01.05 to 30.09, with flexibility earlier/later in good weather.",
     "amenities": [
       "online booking",
@@ -620,7 +620,7 @@
     "websiteUrl": "https://www.strandbad-jungfernheide.de/volleyball",
     "bookingUrl": "https://www.strandbad-jungfernheide.de/volleyball",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Jungfernheide%20Jungfernheideweg%2060%2013629%20Berlin",
-    "openingHoursText": "Court booking is online only; court fee is 5 EUR/hour plus lido day ticket.",
+    "openingHoursText": "Mo, Wed, Thu, Sat, Sun 10:00-19:00; Tue and Fri closed; weather dependent",
     "seasonalityText": "Seasonal outdoor lido venue.",
     "amenities": [
       "online booking",
@@ -657,7 +657,7 @@
     "websiteUrl": "https://strandbad.ploetzensee.de/",
     "bookingUrl": "https://strandbad.ploetzensee.de/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Pl%C3%B6tzensee%20Nordufer%2026%2013351%20Berlin",
-    "openingHoursText": "Official site lists daily 10:00-22:00, weather dependent.",
+    "openingHoursText": "Daily 10:00-22:00; weather dependent",
     "seasonalityText": "Outdoor seasonal lido venue.",
     "amenities": [
       "swimming",
@@ -700,7 +700,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Tegeler-See/187",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/fdRoztXWizf55E7G6",
-    "openingHoursText": "09:00 - 19:00",
+    "openingHoursText": "Seasonal: Mo-Thu 10:00-19:00; Fri-Sun 10:00-20:00",
     "seasonalityText": "Seasonal Strandbad entry applies during the bathing season; Parkinspector notes access can be free outside the season.",
     "amenities": [
       "public outdoor court",
@@ -758,7 +758,7 @@
     "websiteUrl": "https://www.berlinerbaeder.de/baeder/detail/strandbad-wannsee/",
     "bookingUrl": "https://www.berlinerbaeder.de/baeder/detail/strandbad-wannsee/",
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Wannsee%20Wannseebadweg%2025%2014129%20Berlin",
-    "openingHoursText": "Berliner Bäder page lists current seasonal status and tickets.",
+    "openingHoursText": "Seasonal: weekdays 09:00-20:00, weekends 08:00-21:00 in high season",
     "seasonalityText": "Outdoor seasonal lido venue.",
     "amenities": [
       "swimming",
@@ -797,7 +797,7 @@
     "websiteUrl": "https://strandbad-wendenschloss.berlin/",
     "bookingUrl": null,
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Strandbad%20Wendenschloss%20M%C3%B6llhausenufer%2030%2012557%20Berlin",
-    "openingHoursText": "Seasonal lido opening times; current season details are on the operator website.",
+    "openingHoursText": "Seasonal: May weekdays 12:00-19:00, weekends 10:00-19:00; Jun-Aug daily 10:00-20:00",
     "seasonalityText": "Outdoor beach court inside a seasonal lido.",
     "amenities": [
       "swimming",
@@ -838,7 +838,7 @@
     "websiteUrl": "https://tib1848ev.de/sportarten/beachvolleyball/",
     "bookingUrl": null,
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=TiB%201848%20Beachfeld%20Columbiadamm%2091%2010965%20Berlin",
-    "openingHoursText": "Training/play windows listed Monday-Thursday 10:00-21:00 or until sunset.",
+    "openingHoursText": "Mon-Thu 10:00-21:00 or until sunset",
     "seasonalityText": "Summer-only outdoor club use.",
     "amenities": [
       "club training",

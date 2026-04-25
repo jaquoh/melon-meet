@@ -72,8 +72,8 @@ function AppShell() {
       <Route path="/" element={<LandingPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
       <Route path="/auth" element={<Navigate replace to="/" />} />
       <Route path="/info" element={<Navigate replace to="/about" />} />
-      <Route path="/about" element={<InfoPage activePage={null} page="info" {...infoPageProps} />} />
-      <Route path="/about/details" element={<InfoPage page="info" {...infoPageProps} />} />
+      <Route path="/about" element={<InfoPage page="info" {...infoPageProps} />} />
+      <Route path="/about/details" element={<Navigate replace to="/about" />} />
       <Route path="/privacy" element={<InfoPage page="privacy" {...infoPageProps} />} />
       <Route path="/terms" element={<InfoPage page="terms" {...infoPageProps} />} />
       <Route path="/impressum" element={<InfoPage page="impressum" {...infoPageProps} />} />

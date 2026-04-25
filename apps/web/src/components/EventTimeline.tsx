@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { MeetingSummary } from "../../../../packages/shared/src";
 import { createNavigationState } from "../lib/navigation";
@@ -61,12 +61,48 @@ export function EventTimeline({
   showGroupLabel = true,
 }: EventTimelineProps) {
   const location = useLocation();
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [isHeaderStuck, setIsHeaderStuck] = useState(false);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) {
+      setIsHeaderStuck(false);
+      return;
+    }
+
+    const scrollContainer =
+      header.closest<HTMLElement>(".workspace-panel__body") ??
+      header.closest<HTMLElement>(".mobile-details-drawer__body") ??
+      header.closest<HTMLElement>(".workspace-detail-scroll");
+
+    if (!scrollContainer) {
+      setIsHeaderStuck(false);
+      return;
+    }
+
+    const updateStickyState = () => {
+      const headerTop = header.getBoundingClientRect().top;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      setIsHeaderStuck(headerTop <= containerTop + 1);
+    };
+
+    updateStickyState();
+    scrollContainer.addEventListener("scroll", updateStickyState, { passive: true });
+    window.addEventListener("resize", updateStickyState);
+    return () => {
+      scrollContainer.removeEventListener("scroll", updateStickyState);
+      window.removeEventListener("resize", updateStickyState);
+    };
+  }, [heading, meetings.length]);
+
+  const headerClassName = `timeline-panel__header ${isHeaderStuck ? "is-stuck" : ""}`.trim();
 
   if (meetings.length === 0) {
     return (
       <div className="timeline-panel timeline-panel--embedded">
         {heading ? (
-          <div className="timeline-panel__header">
+          <div className={headerClassName} ref={headerRef}>
             <div>
               <p className="eyebrow">Timeline</p>
               <h2 className="section-title typewriter-title">{heading}</h2>
@@ -85,7 +121,7 @@ export function EventTimeline({
   return (
     <div className="timeline-panel timeline-panel--embedded">
       {heading || actions ? (
-        <div className="timeline-panel__header">
+        <div className={headerClassName} ref={headerRef}>
           <div>
             {heading ? <p className="eyebrow">Timeline</p> : null}
             {heading ? <h2 className="section-title typewriter-title">{heading}</h2> : null}

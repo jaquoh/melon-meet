@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUp, Moon, Sun, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
+import landingHeroMelon from "../assets/landing-hero-melon.png";
+import watermelonMark from "../assets/watermelon-mark.svg";
 
-const APP_DESCRIPTION = {
+export const APP_DESCRIPTION = {
   body: [
     "Melon Meet is a Berlin-first community tool for discovering beach volleyball venues, public sessions, and small playing groups.",
     "The product keeps public discovery open while giving signed-in users tools to claim spots, manage groups, and organise sessions.",
@@ -13,7 +16,7 @@ const APP_DESCRIPTION = {
   title: "About Melon Meet",
 };
 
-const PAGE_CONTENT = {
+export const PAGE_CONTENT = {
   impressum: {
     description: "Public company/contact disclosure for Melon Meet.",
     eyebrow: "Company",
@@ -45,6 +48,7 @@ const PAGE_CONTENT = {
     sections: [
       {
         body: [
+          ...APP_DESCRIPTION.body,
           "Melon Meet started as a way to make Berlin beach volleyball easier to navigate without forcing every useful place into the same giant chat thread.",
           "The app brings venues, groups, and sessions into one map-first board so people can move from discovering a court to understanding who plays there and when.",
           "Public browsing stays lightweight on purpose. You should be able to open the app, scan the city, and get oriented before deciding whether you want an account.",
@@ -135,10 +139,10 @@ const PAGE_CONTENT = {
   },
 } as const;
 
-type InfoPageKey = keyof typeof PAGE_CONTENT;
+export type InfoPageKey = keyof typeof PAGE_CONTENT;
 
-const INFO_LINKS: Array<{ key: InfoPageKey; label: string; to: string }> = [
-  { key: "info", label: "About", to: "/about/details" },
+export const INFO_LINKS: Array<{ key: InfoPageKey; label: string; to: string }> = [
+  { key: "info", label: "About", to: "/about" },
   { key: "privacy", label: "Privacy", to: "/privacy" },
   { key: "terms", label: "Terms", to: "/terms" },
   { key: "impressum", label: "Impressum", to: "/impressum" },
@@ -157,9 +161,36 @@ export function InfoPage({
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
+  const location = useLocation();
   const content = PAGE_CONTENT[page];
+  const locationState =
+    location.state && typeof location.state === "object"
+      ? (location.state as { infoReturnTo?: string })
+      : {};
+  const closeTo = locationState.infoReturnTo ?? "/map";
+  const landingBackgroundImage = theme === "dark" ? landingHeroMelonDark : landingHeroMelon;
   const [isDesktopInfoLayout, setIsDesktopInfoLayout] = useState(() =>
     typeof window === "undefined" ? true : window.matchMedia("(min-width: 901px)").matches,
+  );
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const infoShellRef = useRef<HTMLDivElement | null>(null);
+  const infoContentRef = useRef<HTMLElement | null>(null);
+  const infoLinkState = { infoReturnTo: closeTo };
+  const renderHeaderControls = () => (
+    <div className="landing-shell__right-header">
+      <button
+        aria-label="Toggle theme"
+        className="landing-theme-toggle"
+        onClick={toggleTheme}
+        type="button"
+      >
+        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+      </button>
+      <Link className="landing-header-button landing-header-button--label" to={closeTo}>
+        <X size={16} strokeWidth={2} />
+        <span>Close</span>
+      </Link>
+    </div>
   );
 
   useEffect(() => {
@@ -170,6 +201,106 @@ export function InfoPage({
     mediaQuery.addEventListener("change", updateLayout);
     return () => mediaQuery.removeEventListener("change", updateLayout);
   }, []);
+
+  useEffect(() => {
+    if (activePage !== undefined) {
+      return;
+    }
+
+    const mobileQuery = window.matchMedia("(max-width: 1120px)");
+    let scrollElement: HTMLElement | null = null;
+
+    const updateScrollElement = () => {
+      scrollElement?.removeEventListener("scroll", updateScrollState);
+      scrollElement = mobileQuery.matches ? infoShellRef.current : infoContentRef.current;
+      scrollElement?.addEventListener("scroll", updateScrollState, { passive: true });
+      updateScrollState();
+    };
+
+    const updateScrollState = () => {
+      setShowScrollTop((scrollElement?.scrollTop ?? 0) > 12);
+    };
+
+    updateScrollElement();
+    mobileQuery.addEventListener("change", updateScrollElement);
+
+    return () => {
+      scrollElement?.removeEventListener("scroll", updateScrollState);
+      mobileQuery.removeEventListener("change", updateScrollElement);
+    };
+  }, [activePage]);
+
+  function scrollInfoPageToTop() {
+    const scrollElement = window.matchMedia("(max-width: 1120px)").matches ? infoShellRef.current : infoContentRef.current;
+    scrollElement?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  if (activePage === undefined) {
+    return (
+      <div className="workspace-page landing-workspace-page info-landing-page">
+        <div className="workspace-frame landing-shell-frame info-landing-frame">
+          <div className="landing-scene" aria-hidden="true">
+            <img alt="" className="landing-scene__image" src={landingBackgroundImage} />
+          </div>
+          <div className="landing-shell landing-shell--info-page" ref={infoShellRef}>
+            <section className="landing-shell__center landing-shell__center--welcome" ref={infoContentRef}>
+              <div className="landing-mobile-header">
+                <div className="landing-brand-lockup landing-brand-lockup--stacked">
+                  <img alt="Melon Meet" className="landing-shell__logo" src={watermelonMark} />
+                  <div className="landing-brand-lockup__copy">
+                    <h1 className="landing-brand-lockup__title">Melon Meet</h1>
+                    <p className="landing-brand-lockup__meta">Berlin Beachvolleyball</p>
+                  </div>
+                </div>
+                <div className="landing-mobile-actions">{renderHeaderControls()}</div>
+              </div>
+
+              <div className="landing-info-content landing-info-content--page">
+                <div className="stack-sm">
+                  <h2 className="landing-info-content__title">{content.title}</h2>
+                  <p className="landing-hero__text">{content.description}</p>
+                </div>
+                {content.sections.map((section) => (
+                  <section className="stack-sm" key={section.title}>
+                    <h3 className="column-title">{section.title}</h3>
+                    {section.body.map((paragraph) => (
+                      <p className="muted-copy" key={paragraph}>
+                        {paragraph}
+                      </p>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            </section>
+
+            <section className="landing-shell__right">
+              {renderHeaderControls()}
+            </section>
+          </div>
+          <div className="landing-legal-links landing-legal-links--floating" aria-label="Legal pages">
+            {INFO_LINKS.map((link) => (
+              <Link
+                className={page === link.key ? "is-active" : undefined}
+                key={link.key}
+                state={infoLinkState}
+                to={link.to}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <button
+            aria-label="Scroll to top"
+            className={`info-scroll-top ${showScrollTop ? "is-visible" : ""}`}
+            onClick={scrollInfoPageToTop}
+            type="button"
+          >
+            <ArrowUp size={16} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const selectedPage = activePage === undefined ? page : activePage === null && isDesktopInfoLayout ? page : activePage;
   const isDetailPage = selectedPage !== null;
@@ -215,7 +346,6 @@ export function InfoPage({
         ) : null}
         {page !== "info" ? (
           <div className="stack-sm">
-            <p className="eyebrow">{content.eyebrow}</p>
             <h1 className="section-title">{content.title}</h1>
             <p className="muted-copy">{content.description}</p>
           </div>

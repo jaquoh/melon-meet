@@ -729,6 +729,18 @@ function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light")
   }
 }
 
+function collapseMapAttribution(map: maplibregl.Map) {
+  const container = map.getContainer();
+  container.querySelectorAll<HTMLElement>(".maplibregl-ctrl-attrib.maplibregl-compact-show").forEach((control) => {
+    control.classList.remove("maplibregl-compact-show");
+  });
+  container
+    .querySelectorAll<HTMLButtonElement>(".maplibregl-ctrl-attrib-button[aria-expanded='true']")
+    .forEach((button) => {
+      button.setAttribute("aria-expanded", "false");
+    });
+}
+
 function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: TransitFeatureCollection | null) {
   const palette = currentThemePalette(theme);
   applyTransitBoost(map, theme);
@@ -1074,6 +1086,9 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!selectedLocation) {
+      centeredSelectionRef.current = null;
+    }
     if (!map || !mapReady || !selectedLocation) {
       return;
     }
@@ -1089,6 +1104,14 @@ export function MapView({
       zoom: Math.max(map.getZoom(), 12.2),
     });
   }, [mapReady, selectedLocation]);
+
+  useLayoutEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedKey) {
+      return;
+    }
+    collapseMapAttribution(map);
+  }, [selectedKey]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1114,6 +1137,10 @@ export function MapView({
     lookupRef.current = sourceData.lookup;
     const selectedMarkerKey = selectedKey ?? null;
     optimisticSelectedKeyRef.current = selectedMarkerKey;
+    if (!selectedMarkerKey) {
+      popupRef.current?.remove();
+      map.getCanvas().style.cursor = "";
+    }
     const currentSource = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
     currentSource?.setData(
       featureCollectionWithSelectedKey(sourceData.featureCollection, selectedMarkerKey) as never,

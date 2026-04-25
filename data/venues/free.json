@@ -15,7 +15,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Alexanderplatz/443",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/DNwggsJ6Q1CZdfx4A",
-    "openingHoursText": "08:00 - 13:00  / 15:00 - 20:00",
+    "openingHoursText": "Daily 08:00-13:00 / 15:00-20:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -70,7 +70,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Baseball-Rams/769",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/JVwQQUnA7hMbLcN69",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -126,7 +126,7 @@
     "websiteUrl": null,
     "bookingUrl": null,
     "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Kaiserin-Augusta-Allee%20100%2010553%20Berlin%20Beachvolleyball",
-    "openingHoursText": "BeachUp notes nearby youth club open roughly 13:00-20:00; public court access not formally scheduled.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor community court, weather/daylight dependent.",
     "amenities": [
       "bring own net",
@@ -161,7 +161,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Benn-Wartenberg/638",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/q8ZaTVzBNcSRkFC5A",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court"
@@ -214,7 +214,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Biesdorfer-Baggersee/514",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/J5whsd455iu8tVEj7",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -269,7 +269,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Bluecherstrasse-Europakita/599",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/eqiDHnoPUwEaRbyC8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -324,7 +324,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Borussia-Friedrichsfelde/448",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/Sdpx8cvJEy9PU3me6",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -380,7 +380,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Britzer-Damm/115",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/DsUw4yA1sXTm9H7LA",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -434,7 +434,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Clarazetkinpark/140",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/n3NeJS8MEGvBQfgQ6",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -486,7 +486,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Dolgenseestrasse/100",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/i5vL8ZzTqffXR1rg6",
-    "openingHoursText": "07:00 - 13:00  / 15:00 - 20:00",
+    "openingHoursText": "Daily 07:00-13:00 / 15:00-20:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -538,7 +538,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Elfiwiese/622",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/sGrvavXwphSKwdrQA",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -593,7 +593,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Emdener-Strasse/712",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/T1SYPRsqPx2c2H4u6",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -649,7 +649,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Marienfelde-Amiberg/106",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/3B9DkqLCjcRZM9i4A",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court"
@@ -702,7 +702,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitpark-Tegel-Malche/774",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/d335YkVSgQ4fat6J8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -757,7 +757,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Freizeitsportanlage-Suedpark/512",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/3aogKD57QmGMrLZm9",
-    "openingHoursText": "10:00 - 20:00",
+    "openingHoursText": "Daily 10:00-20:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -813,7 +813,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Grosser-Spektesee/780",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/F4jbLq4YS3m7HLhb7",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -872,7 +872,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Gruenzug-Britz/139",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/gzEnYwusZTft8nNT8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -927,7 +927,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Hohensaatener-Strasse/142",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/tEUJTKxyfvQCQzVY8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -982,7 +982,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Insulaner/123",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/oNwvT2D2rAhs3Pmx8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court"
@@ -1035,7 +1035,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Krusenick/124",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/DyfYNx7CJTixDNzJ9",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court"
@@ -1086,7 +1086,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Landschaftspark-Johannisthal/71",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/5PxK5rntWZNTgitk9",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community court, weather/daylight dependent.",
     "amenities": [
       "near calisthenics park",
@@ -1142,7 +1142,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Marchlewskistrasse/524",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/MMxa4BGu5CRUgfXe7",
-    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1194,7 +1194,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Mellowpark/760",
     "bookingUrl": null,
     "googleMapsUrl": "https://g.page/MellowparkBerlin?share",
-    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "openingHoursText": "Mon-Fri 15:00-20:00; Sat-Sun 10:00-20:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1252,7 +1252,7 @@
     "websiteUrl": "https://www.berlin.de/",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/4Vdcso1Rw1tDP5MaA",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public courts, weather/daylight dependent.",
     "amenities": [
       "public park",
@@ -1313,7 +1313,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Neues-Ufer/136",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/sPTvCDGsik2hkZwy5",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1364,7 +1364,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Newtonstrasse/55",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/yS6TRi9ajMo2GPnc7",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community court, weather/daylight dependent.",
     "amenities": [
       "basketball nearby",
@@ -1420,7 +1420,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Park-am-Buschkrug/474",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/B3Jso8XLGpJt6Ev99",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court"
@@ -1471,7 +1471,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Parktrilogie/843",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/uUgQTyHCywPxFnWN7",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1525,7 +1525,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Poststadion/178",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/cGUUvAbLuCXWJkSYA",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1576,7 +1576,7 @@
     "websiteUrl": "https://www.berlin.de/",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/Zr9egNBwQrePr5yk7",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public court, weather/daylight dependent.",
     "amenities": [
       "public park",
@@ -1636,7 +1636,7 @@
     "websiteUrl": "https://www.berlin.de/",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/hSqBjFLGz73qbBUv8",
-    "openingHoursText": "Opening hours listed on Parkinspector.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public court, weather/daylight dependent.",
     "amenities": [
       "public playground",
@@ -1695,7 +1695,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Strandbad-Mueggelsee/185",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/Ep5NYFxy8HKhBGve9",
-    "openingHoursText": "Mon-Sun: 09:00 - 21:00",
+    "openingHoursText": "Daily 09:00-21:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1753,7 +1753,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Vfl-Tegel/998",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/JE2fVwH95zqsEk516",
-    "openingHoursText": "10:00 - 22:00",
+    "openingHoursText": "Daily 10:00-22:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1804,7 +1804,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Vinetaplatz/101",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/6SndbMtTcTa56eSz8",
-    "openingHoursText": "08:00 - 21:00",
+    "openingHoursText": "Daily 08:00-21:00",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",
@@ -1859,7 +1859,7 @@
     "websiteUrl": "https://www.berlin.de/",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/4McoRng6xm9C4tTo8",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public play; usable in good weather and daylight. Bring all equipment.",
     "amenities": [
       "public park",
@@ -1938,7 +1938,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Volkspark-Jungfernheide/505",
     "bookingUrl": null,
     "googleMapsUrl": "https://goo.gl/maps/irU7gzpf5S3v3ont5",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public courts, weather/daylight dependent; Parkinspector notes the free beach area is used year-round.",
     "amenities": [
       "public park",
@@ -1998,7 +1998,7 @@
     "websiteUrl": "https://parkinspector.de/parks/Beachen/Wiesenpark-Wuhle/887",
     "bookingUrl": null,
     "googleMapsUrl": "https://maps.app.goo.gl/MBFgw6cH5a9uHC4s9",
-    "openingHoursText": "Public/open access per Parkinspector; no formal booking found.",
+    "openingHoursText": "Public access",
     "seasonalityText": "Outdoor public/community spot, weather/daylight dependent.",
     "amenities": [
       "public outdoor court",

@@ -1,10 +1,17 @@
-import type { ReactNode } from "react";
-import { Info, Map, Moon, Sun, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import type { MouseEvent, ReactNode } from "react";
+import { Map, Moon, Sun, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
 
 type ThemeMode = "light" | "dark";
+
+const INFO_FOOTER_LINKS = [
+  { label: "About", to: "/about" },
+  { label: "Privacy", to: "/privacy" },
+  { label: "Terms", to: "/terms" },
+  { label: "Impressum", to: "/impressum" },
+] as const;
 
 interface WorkspaceShellProps {
   center: ReactNode;
@@ -44,7 +51,10 @@ export function WorkspaceShell({
   topCenter,
   utilityNavigation = "info",
 }: WorkspaceShellProps) {
+  const location = useLocation();
   const navigate = useNavigate();
+  const infoReturnTo = `${location.pathname}${location.search}`;
+  const showInfoFooter = layoutVariant !== "info" && layoutVariant !== "info-index" && layoutVariant !== "info-detail" && !detailCloseTo;
 
   function handleDetailClose() {
     if (typeof window !== "undefined" && window.history.state && typeof window.history.state.idx === "number" && window.history.state.idx > 0) {
@@ -54,6 +64,12 @@ export function WorkspaceShell({
     if (detailCloseTo) {
       navigate(detailCloseTo);
     }
+  }
+
+  function handleHomeNavigation(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigate("/", { state: null });
   }
 
   const utilityActions = (
@@ -66,13 +82,15 @@ export function WorkspaceShell({
       >
         {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
       </button>
-      <Link
-        aria-label={utilityNavigation === "map" ? "Back to map" : "Info and legal pages"}
-        className="workspace-action workspace-action--icon"
-        to={utilityNavigation === "map" ? "/map" : "/about"}
-      >
-        {utilityNavigation === "map" ? <Map size={16} strokeWidth={2} /> : <Info size={16} strokeWidth={2} />}
-      </Link>
+      {utilityNavigation === "map" ? (
+        <Link
+          aria-label="Back to map"
+          className="workspace-action workspace-action--icon"
+          to="/map"
+        >
+          <Map size={16} strokeWidth={2} />
+        </Link>
+      ) : null}
     </div>
   );
 
@@ -97,7 +115,7 @@ export function WorkspaceShell({
   );
 
   const actions = (
-    <div className="workspace-auth">
+    <div className={`workspace-auth ${utilityNavigation === "map" ? "workspace-auth--with-secondary" : ""}`.trim()}>
       {utilityActions}
       {primaryAction}
     </div>
@@ -111,7 +129,7 @@ export function WorkspaceShell({
         <div className="workspace-shell">
           <div className="workspace-cell workspace-cell--mobile-top">
             <div className="workspace-mobile-inline">
-              <Link className="workspace-mobile-brand" to="/">
+              <Link className="workspace-mobile-brand" onClick={handleHomeNavigation} to="/">
                 <img alt="Melon Meet" className="workspace-brand__mark" src={watermelonMark} />
                 <div className="workspace-brand__copy">
                   <span className="workspace-brand__name">Melon Meet</span>
@@ -122,7 +140,7 @@ export function WorkspaceShell({
             </div>
           </div>
 
-          <Link className="workspace-cell workspace-cell--brand" to="/">
+          <Link className="workspace-cell workspace-cell--brand" onClick={handleHomeNavigation} to="/">
             <img alt="Melon Meet" className="workspace-brand__mark" src={watermelonMark} />
             <div className="workspace-brand__copy">
               <span className="workspace-brand__name">Melon Meet</span>
@@ -178,6 +196,16 @@ export function WorkspaceShell({
               )}
             </div>
           </section>
+
+          {showInfoFooter ? (
+            <nav className="workspace-cell workspace-legal-cell" aria-label="Info and legal pages">
+              {INFO_FOOTER_LINKS.map((link) => (
+                <Link key={link.to} state={{ infoReturnTo }} to={link.to}>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
         </div>
       </div>
     </div>

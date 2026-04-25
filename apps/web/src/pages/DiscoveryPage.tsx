@@ -213,6 +213,7 @@ export function DiscoveryPage({
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
+  const [isClearingSelection, setIsClearingSelection] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const [pendingSelectionState, setPendingSelectionState] = useState(() =>
     workspaceState
@@ -434,6 +435,7 @@ export function DiscoveryPage({
   }
 
   function selectMeeting(meeting: MeetingSummary) {
+    setIsClearingSelection(false);
     navigateToWorkspacePath(`/sessions/${meeting.id}`, {
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -452,6 +454,7 @@ export function DiscoveryPage({
   }
 
   function selectMeetingFromMap(meeting: MeetingSummary) {
+    setIsClearingSelection(false);
     navigateToMapSelectionPath(`/sessions/${meeting.id}`, {
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -470,6 +473,7 @@ export function DiscoveryPage({
   }
 
   function selectVenue(venue: VenueSummary) {
+    setIsClearingSelection(false);
     navigateToWorkspacePath(`/venues/${venue.id}`, {
       itemMode: "venues",
       selectedGroupId: null,
@@ -489,6 +493,7 @@ export function DiscoveryPage({
   }
 
   function selectVenueFromMap(venue: VenueSummary) {
+    setIsClearingSelection(false);
     navigateToMapSelectionPath(`/venues/${venue.id}`, {
       itemMode: "venues",
       selectedGroupId: null,
@@ -508,6 +513,7 @@ export function DiscoveryPage({
   }
 
   function selectGroup(group: GroupSummary) {
+    setIsClearingSelection(false);
     navigateToWorkspacePath(`/groups/${group.id}`, {
       itemMode: "groups",
       selectedGroupId: group.id,
@@ -527,6 +533,7 @@ export function DiscoveryPage({
   }
 
   function selectGroupFromMap(group: GroupSummary) {
+    setIsClearingSelection(false);
     navigateToMapSelectionPath(`/groups/${group.id}`, {
       itemMode: "groups",
       selectedGroupId: group.id,
@@ -546,6 +553,7 @@ export function DiscoveryPage({
   }
 
   function selectMeetingCluster(cluster: { lookupKey: string; meetings: MeetingSummary[]; title: string }) {
+    setIsClearingSelection(false);
     navigateToWorkspacePath("/discover", {
       selectedGroupId: null,
       selectedMeetingCluster: cluster,
@@ -565,6 +573,7 @@ export function DiscoveryPage({
   }
 
   function selectMeetingClusterFromMap(cluster: { lookupKey: string; meetings: MeetingSummary[]; title: string }) {
+    setIsClearingSelection(false);
     navigateToMapSelectionPath("/discover", {
       selectedGroupId: null,
       selectedMeetingCluster: cluster,
@@ -696,6 +705,9 @@ export function DiscoveryPage({
   }, [routeProfileId]);
 
   useEffect(() => {
+    if (isClearingSelection) {
+      return;
+    }
     if (routeProfileId) {
       return;
     }
@@ -722,12 +734,18 @@ export function DiscoveryPage({
       setSelectedVenue(null);
       setEditingTarget(null);
     }
-  }, [groups, meetings, routeGroupId, routeMeetingId, routeVenueId, venues]);
+  }, [groups, isClearingSelection, meetings, routeGroupId, routeMeetingId, routeProfileId, routeVenueId, venues]);
 
-  const selectedMeetingId = routeMeetingId ?? selectedMeeting?.id ?? null;
-  const selectedVenueId = routeVenueId ?? selectedVenue?.id ?? null;
-  const selectedGroupId = routeGroupId ?? selectedGroup?.id ?? null;
-  const selectedProfileId = routeProfileId ?? null;
+  useEffect(() => {
+    if (!routeGroupId && !routeMeetingId && !routeProfileId && !routeVenueId) {
+      setIsClearingSelection(false);
+    }
+  }, [routeGroupId, routeMeetingId, routeProfileId, routeVenueId]);
+
+  const selectedMeetingId = isClearingSelection ? selectedMeeting?.id ?? null : routeMeetingId ?? selectedMeeting?.id ?? null;
+  const selectedVenueId = isClearingSelection ? selectedVenue?.id ?? null : routeVenueId ?? selectedVenue?.id ?? null;
+  const selectedGroupId = isClearingSelection ? selectedGroup?.id ?? null : routeGroupId ?? selectedGroup?.id ?? null;
+  const selectedProfileId = isClearingSelection ? null : routeProfileId ?? null;
 
   const selectedMeetingDetailQuery = useQuery({
     enabled: Boolean(selectedMeetingId),
@@ -949,6 +967,7 @@ export function DiscoveryPage({
     selectedVenueId: null,
   } satisfies Partial<DiscoveryWorkspaceState>;
   const clearSelection = () => {
+    setIsClearingSelection(true);
     setMapSelectionRevision((current) => current + 1);
     if (!routeGroupId && !routeMeetingId && !routeVenueId && !routeProfileId) {
       normalizeWorkspacePath(emptySelectionState);
@@ -961,9 +980,13 @@ export function DiscoveryPage({
     setEditingProfile(false);
     setProfileDraft(null);
     clearVenueQueryParam();
+    if (!routeGroupId && !routeMeetingId && !routeVenueId && !routeProfileId) {
+      setIsClearingSelection(false);
+    }
   };
 
   const handleSelectionClose = () => {
+    setIsClearingSelection(true);
     setMapSelectionRevision((current) => current + 1);
     if (routeGroupId || routeMeetingId || routeVenueId || routeProfileId) {
       setSelectedMeeting(null);
@@ -1450,9 +1473,9 @@ export function DiscoveryPage({
       <div className="subtle-action-row">
         <CopyTextButton label="Copy address" value={selectedMeetingDetail.locationAddress} />
         <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMeetingDetail.locationAddress)}`} rel="noreferrer" target="_blank">
-          <ExternalLink size={14} strokeWidth={2} />
           <Compass size={14} strokeWidth={2} />
           <span>Maps</span>
+          <ExternalLink size={14} strokeWidth={2} />
         </a>
         {selectedMeetingDetail.viewerCanEdit ? (
           <>
@@ -1515,9 +1538,9 @@ export function DiscoveryPage({
       <div className="subtle-action-row">
         <CopyTextButton label="Copy address" value={selectedVenueDetail.address} />
         <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedVenueDetail.address)}`} rel="noreferrer" target="_blank">
-          <ExternalLink size={14} strokeWidth={2} />
           <Compass size={14} strokeWidth={2} />
           <span>Maps</span>
+          <ExternalLink size={14} strokeWidth={2} />
         </a>
         {(() => {
           const bookingUrl = selectedVenueDetail.bookingUrl?.trim() || null;
@@ -1845,7 +1868,7 @@ export function DiscoveryPage({
         editPanel ? (
           editPanel
         ) : displayMode === "map" ? (
-          <div className="workspace-map-center">
+          <div className={`workspace-map-center ${hasSelection ? "workspace-main-center--covered" : ""}`.trim()}>
             <div className="map-overlay-controls">
               {renderWorkspaceControls()}
             </div>
@@ -1883,7 +1906,7 @@ export function DiscoveryPage({
             ) : null}
           </div>
         ) : (
-          <div className="workspace-list-center">
+          <div className={`workspace-list-center ${hasSelection ? "workspace-main-center--covered" : ""}`.trim()}>
             <div className="map-overlay-controls">
               {renderWorkspaceControls()}
             </div>
