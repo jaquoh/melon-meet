@@ -732,6 +732,7 @@ function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light")
 function collapseMapAttribution(map: maplibregl.Map) {
   const container = map.getContainer();
   container.querySelectorAll<HTMLElement>(".maplibregl-ctrl-attrib.maplibregl-compact-show").forEach((control) => {
+    control.querySelector<HTMLButtonElement>(".maplibregl-ctrl-attrib-button")?.click();
     control.classList.remove("maplibregl-compact-show");
   });
   container

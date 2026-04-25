@@ -22,6 +22,7 @@
   --glass-card: rgba(255, 253, 250, 0.16);
   --glass-card-strong: rgba(255, 242, 235, 0.18);
   --glass-selected: rgba(240, 95, 120, 0.2);
+  --workspace-legal-height: 3.35rem;
   --workspace-bottom-glass: color-mix(in srgb, var(--glass-panel-header) 58%, transparent);
   --app-frame-overlay: linear-gradient(180deg, rgba(255, 248, 241, 0.34), rgba(244, 241, 225, 0.3));
   --text: #231d1c;
@@ -975,9 +976,6 @@ img {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(180deg, rgba(255, 250, 246, 0.22), rgba(255, 247, 238, 0.08)),
-    radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.24), transparent 26rem);
 }
 
 .landing-shell-frame::after {
@@ -990,7 +988,7 @@ img {
     linear-gradient(90deg, rgba(255, 244, 239, 0.16), rgba(255, 250, 246, 0.02) 40%, rgba(246, 236, 221, 0.18) 100%),
     var(--melon-app-bg-image) center 46% / cover no-repeat,
     linear-gradient(180deg, #fff7f2, #eef0dd);
-  clip-path: inset(calc(100% - 2.9rem) 0 0 0);
+  clip-path: inset(calc(100% - var(--workspace-legal-height)) 0 0 0);
   filter: saturate(1.08) contrast(1) brightness(1.04);
   pointer-events: none;
 }
@@ -1018,6 +1016,16 @@ img {
   filter: saturate(1.08) contrast(1) brightness(1.04);
 }
 
+.info-landing-frame .landing-scene__image {
+  filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
+  transform: scale(1.03);
+}
+
+.info-landing-frame::after {
+  filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
+  transform: scale(1.03);
+}
+
 :root[data-theme="dark"] .landing-workspace-page {
   background: linear-gradient(180deg, #181b2e, #111822);
 }
@@ -1039,6 +1047,11 @@ img {
 
 :root[data-theme="dark"] .landing-scene__image {
   filter: saturate(1.02) contrast(1.04) brightness(0.88);
+}
+
+:root[data-theme="dark"] .info-landing-frame .landing-scene__image,
+:root[data-theme="dark"] .info-landing-frame::after {
+  filter: blur(12px) saturate(1.02) contrast(1.04) brightness(0.88);
 }
 
 :root[data-theme="dark"] .landing-theme-toggle {
@@ -1141,16 +1154,6 @@ img {
 
 :root[data-theme="dark"] .workspace-legal-cell a {
   color: rgba(234, 238, 255, 0.58);
-}
-
-:root[data-theme="dark"] .workspace-legal-cell::before {
-  background:
-    linear-gradient(var(--workspace-bottom-glass), var(--workspace-bottom-glass)),
-    var(--app-frame-overlay),
-    radial-gradient(circle at 50% 22%, rgba(9, 14, 24, 0.14), transparent 28rem),
-    var(--melon-app-bg-image) center 46% / cover no-repeat,
-    var(--bg);
-  filter: saturate(1.02) contrast(1.04) brightness(0.88);
 }
 
 :root[data-theme="dark"] .landing-legal-links a:hover,
@@ -1554,31 +1557,33 @@ img {
 .landing-legal-links--landing {
   position: absolute;
   left: 0;
-  right: 1.15rem;
-  bottom: 0.72rem;
+  right: 0;
+  bottom: 0;
   z-index: 4;
+  height: var(--workspace-legal-height);
   justify-content: flex-end;
-  padding-left: 1.15rem;
+  padding: 0 1.15rem;
 }
 
 .landing-legal-links--floating {
   position: absolute;
   left: 0;
-  right: 1.15rem;
-  bottom: 0.72rem;
+  right: 0;
+  bottom: 0;
   z-index: 4;
+  height: var(--workspace-legal-height);
   justify-content: flex-end;
-  padding-left: 1.15rem;
+  padding: 0 1.15rem;
 }
 
 .landing-shell--info-page .landing-shell__center {
   overflow: auto;
-  padding-bottom: 3.35rem;
+  padding-bottom: var(--workspace-legal-height);
 }
 
 .landing-shell--auth .landing-shell__center,
 .landing-shell--auth .landing-shell__right {
-  padding-bottom: 3.35rem;
+  padding-bottom: var(--workspace-legal-height);
 }
 
 .landing-legal-links a {
@@ -1828,6 +1833,15 @@ img {
     linear-gradient(180deg, rgba(5, 9, 16, 0.04), rgba(4, 8, 14, 0.2));
 }
 
+.workspace-page:not(.landing-workspace-page) .workspace-frame--unified::before {
+  filter: blur(12px) saturate(1.08) contrast(1) brightness(1.04);
+  transform: scale(1.03);
+}
+
+:root[data-theme="dark"] .workspace-page:not(.landing-workspace-page) .workspace-frame--unified::before {
+  filter: blur(12px) saturate(1.02) contrast(1.04) brightness(0.88);
+}
+
 .workspace-shell {
   width: 100%;
   height: 100%;
@@ -1944,11 +1958,29 @@ img {
 
 .workspace-frame--unified .workspace-shell {
   grid-template-columns: 15rem minmax(0, 1fr) minmax(26.5rem, 32%);
-  grid-template-rows: 4.8rem minmax(0, 1fr) 3.35rem;
+  grid-template-rows: 4.8rem minmax(0, 1fr) var(--workspace-legal-height);
   grid-template-areas:
     "brand top actions"
     "center center right"
     "center center legal";
+}
+
+.workspace-frame--unified {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.workspace-frame--unified .workspace-cell--brand,
+.workspace-frame--unified .workspace-cell--top-right,
+.workspace-frame--unified .workspace-cell--top-center,
+.workspace-frame--unified .workspace-cell--center,
+.workspace-frame--unified .workspace-cell--right,
+.workspace-frame--unified .workspace-panel__header,
+.workspace-frame--unified .workspace-panel__body,
+.workspace-frame--unified .workspace-legal-cell,
+.workspace-frame--unified .mode-overlay-controls .workspace-segmented {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .workspace-frame--unified .workspace-cell--center {
@@ -1967,46 +1999,33 @@ img {
   position: relative;
   z-index: 4;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
   min-width: 0;
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 0 1.15rem 0.72rem;
+  padding: 0 1.15rem;
   border-top: 0;
   border-bottom-right-radius: 0;
-  background: var(--workspace-bottom-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  isolation: isolate;
+  background: var(--glass-side);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
 }
 
 .workspace-legal-cell::before {
-  content: "";
   display: none;
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  width: min(98rem, 100vw - 2rem);
-  height: calc(100svh - 2rem);
-  background:
-    linear-gradient(var(--workspace-bottom-glass), var(--workspace-bottom-glass)),
-    var(--app-frame-overlay),
-    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.12), transparent 28rem),
-    var(--melon-app-bg-image) center 46% / cover no-repeat,
-    var(--bg);
-  filter: saturate(1.08) contrast(1) brightness(1.04);
-  transform: scale(1.001);
-  transform-origin: bottom right;
+}
+
+.workspace-legal-cell::after {
+  display: none;
 }
 
 .workspace-legal-cell a {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   color: color-mix(in srgb, var(--text) 52%, #8a6d66);
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.68rem;
@@ -3598,8 +3617,6 @@ img {
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   background: var(--glass-panel-header);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .workspace-frame--unified .maplibregl-ctrl-top-right {
@@ -3632,18 +3649,16 @@ img {
   border-top: 0;
 }
 
-  .workspace-frame--unified .mode-overlay-controls .workspace-segmented {
+.workspace-frame--unified .mode-overlay-controls .workspace-segmented {
   width: 100%;
   border-right: 0;
   border-bottom: 0;
   border-left: 0;
   border-radius: 0;
-  background: var(--workspace-bottom-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--glass-side);
 }
 
-  .workspace-frame--unified .mode-overlay-controls .workspace-segmented button {
+.workspace-frame--unified .mode-overlay-controls .workspace-segmented button {
   flex: 1 1 0;
   min-height: 3.35rem;
   display: inline-flex;
@@ -3653,12 +3668,12 @@ img {
   padding: 0.5rem 0.75rem;
   background: transparent;
   font-size: 1rem;
-  }
+}
 
-  .workspace-frame--unified .mode-overlay-controls .workspace-segmented button:first-child,
-  .workspace-frame--unified .mode-overlay-controls .workspace-segmented button:last-child {
-    border-radius: 0;
-  }
+.workspace-frame--unified .mode-overlay-controls .workspace-segmented button:first-child,
+.workspace-frame--unified .mode-overlay-controls .workspace-segmented button:last-child {
+  border-radius: 0;
+}
 
 .workspace-frame--unified .mode-overlay-controls .workspace-segmented button:hover {
   background: var(--accent-soft);
@@ -3727,8 +3742,6 @@ img {
     border: 1px solid var(--line);
     border-radius: 0.5rem;
     background: var(--glass-panel-header);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 
   .workspace-frame--unified .map-overlay-controls .workspace-segmented button,
@@ -3994,16 +4007,14 @@ img {
     height: auto;
     max-width: none;
     justify-content: center;
-    align-items: flex-end;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.75rem;
-    min-height: 2.9rem;
-    padding: 0 1.15rem 0.72rem;
+    min-height: var(--workspace-legal-height);
+    padding: 0 1.15rem;
     border-top: 0;
     border-bottom-right-radius: 0;
-    background: var(--workspace-bottom-glass);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: var(--glass-side);
     overflow: hidden;
   }
 
@@ -4022,25 +4033,25 @@ img {
   }
 
   .workspace-frame--unified:has(.mobile-details-drawer.is-open) .workspace-legal-cell {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 8;
+    position: static;
+    transform: none;
     width: 100%;
     height: auto;
-    min-height: 2.9rem;
-    padding: 0 1.15rem 0.72rem;
-    background: var(--workspace-bottom-glass);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    max-width: none;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    min-height: var(--workspace-legal-height);
+    padding: 0 1.15rem;
+    border-top: 0;
+    border-bottom-right-radius: 0;
+    background: var(--glass-side);
     overflow: hidden;
   }
 
   .workspace-frame--unified:has(.mobile-details-drawer.is-open) .workspace-legal-cell::before {
-    display: block;
-    width: calc(100vw - 1rem);
-    height: calc(100svh - 1rem);
+    display: none;
   }
 
   .workspace-frame--info .workspace-cell--center,
@@ -4274,15 +4285,19 @@ img {
     position: absolute;
     inset: 0;
     width: 100%;
+    max-width: 100%;
+    max-height: 100%;
     display: grid;
     grid-template-rows: minmax(0, 1fr);
     border: 0;
+    border-radius: 0;
     outline: 0;
     background: var(--glass-frame);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     box-shadow: none;
     overflow: hidden;
+    contain: paint;
     transform: translateX(102%);
     transition: transform 180ms ease;
     visibility: hidden;
@@ -4301,6 +4316,16 @@ img {
   .workspace-main-center--covered > .mode-overlay-controls,
   .workspace-main-center--covered > .workspace-list-scroll {
     visibility: hidden;
+  }
+
+  .workspace-main-center--covered .maplibregl-control-container,
+  .workspace-main-center--covered .maplibregl-ctrl-bottom-left,
+  .workspace-main-center--covered .maplibregl-ctrl-bottom-right,
+  .workspace-main-center--covered .maplibregl-ctrl-attrib {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .mobile-details-drawer__header {
@@ -4419,9 +4444,10 @@ img {
     position: absolute;
     right: 0;
     left: 0;
-    bottom: 0.72rem;
+    bottom: 0;
     transform: none;
     z-index: 4;
+    height: var(--workspace-legal-height);
     justify-content: center;
     flex-wrap: wrap;
     max-width: none;
@@ -4432,10 +4458,11 @@ img {
     position: absolute;
     right: 0;
     left: 0;
-    bottom: 0.72rem;
+    bottom: 0;
     transform: none;
     z-index: 4;
     width: auto;
+    height: var(--workspace-legal-height);
     max-width: none;
     justify-content: center;
     flex-wrap: wrap;
