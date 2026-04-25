@@ -406,6 +406,31 @@ img {
   accent-color: var(--accent);
 }
 
+.auth-consent-row {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  color: color-mix(in srgb, var(--text) 64%, #87645b);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.auth-consent-row input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent);
+}
+
+.auth-consent-row a {
+  color: var(--accent-strong);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 .form-grid {
   display: grid;
   gap: 0.9rem;
@@ -1191,7 +1216,7 @@ img {
 .landing-shell--info-page {
   grid-template-columns: 1fr;
   overflow: hidden;
-  padding-bottom: 3.55rem;
+  padding-bottom: 0;
 }
 
 .landing-shell__left,
@@ -1577,7 +1602,7 @@ img {
 
 .landing-shell--info-page .landing-shell__center {
   overflow: auto;
-  padding-bottom: var(--workspace-legal-height);
+  padding-bottom: clamp(1.25rem, 2.5vw, 2.2rem);
 }
 
 .landing-shell--auth .landing-shell__center,

@@ -1048,6 +1048,7 @@ export function DiscoveryPage({
           (routeMeetingId && (returnRouteKind === "group" || returnRouteKind === "venue")));
 
       if (goToPrevious) {
+        setIsClearingSelection(false);
         if (
           typeof window !== "undefined" &&
           window.history.state &&

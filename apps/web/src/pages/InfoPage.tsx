@@ -23,21 +23,34 @@ export const PAGE_CONTENT = {
     sections: [
       {
         body: [
-          "Operator: Melon Meet",
-          "Responsible for content according to Section 5 TMG and Section 18 MStV:",
+          "Angaben gemaess Section 5 DDG / formerly Section 5 TMG.",
+          "Melon Meet",
           "Jacob Otto",
           "Halskestr. 6",
           "12167 Berlin",
           "Germany",
-          "Email: hello@melonmeet.example",
         ],
         title: "Provider Identification",
       },
       {
         body: [
-          "This product is intended to help people discover public venues, groups, and sessions around beach volleyball and related outdoor games.",
+          "Email: hello@melonmeet.example",
+          "Telephone: Not provided.",
         ],
-        title: "Notes",
+        title: "Contact",
+      },
+      {
+        body: [
+          "Represented by: Jacob Otto",
+          "VAT ID: Not provided.",
+        ],
+        title: "Represented By and VAT",
+      },
+      {
+        body: [
+          "Responsible for content according to Section 18 Abs. 2 MStV: Jacob Otto, Halskestr. 6, 12167 Berlin, Germany.",
+        ],
+        title: "Responsible for Content",
       },
     ],
     title: "Impressum",
@@ -69,73 +82,111 @@ export const PAGE_CONTENT = {
   },
   privacy: {
     description:
-      "How Melon Meet collects and uses account, group, and session data. This is a practical starter policy and should be reviewed before public launch.",
+      "How Melon Meet collects and uses account, profile, group, and session data.",
     eyebrow: "Privacy",
     sections: [
       {
         body: [
-          "Melon Meet stores the information needed to provide the service, including account details, profile fields, group membership, meetings, posts, and session claims.",
-          "Authentication sessions are stored so users can stay signed in across visits.",
+          "Last updated: April 25, 2026.",
+          "This Privacy Policy describes how Melon Meet collects, uses, and discloses your personal information when you visit the Melon Meet website and create a user account.",
         ],
-        title: "Data We Store",
+        title: "Overview",
       },
       {
         body: [
-          "We use this data to operate the product, show public and private community content, let organisers manage groups and sessions, and secure accounts against abuse.",
-          "Authentication attempts may be rate limited and logged in aggregate to protect the service.",
+          "Controller: Melon Meet, Jacob Otto, Halskestr. 6, 12167 Berlin, Germany.",
+          "Contact: hello@melonmeet.example.",
         ],
-        title: "Why We Use It",
+        title: "Data Controller",
       },
       {
         body: [
-          "Private groups and member-only content are only shown to authorised members.",
-          "Users can update their profile visibility settings inside the app and can delete their profile/account from the service.",
+          "Account information: When you register, we collect your email address and password. Passwords are hashed and are not stored in plain text.",
+          "Profile data: Information you voluntarily add to your profile, such as display name, profile picture, bio, home area, playing level, and profile visibility settings.",
+          "Community data: Group memberships, membership requests, sessions, session claims, posts, and organiser responsibilities needed to operate the service.",
+          "Usage and security data: Authentication sessions, login-related timestamps, IP address, browser type, and rate-limit information may be processed for security purposes.",
         ],
-        title: "Visibility and Control",
+        title: "Data We Collect",
       },
       {
         body: [
-          "Before public launch, add your real retention periods, support contact, and lawful-basis language if you operate in the EU.",
+          "We process this data to provide and manage your user account, allow you to interact with the website, show public and private community content, let organisers manage groups and sessions, and secure the site against unauthorised access.",
         ],
-        title: "Before Launch",
+        title: "Purpose of Processing",
+      },
+      {
+        body: [
+          "Processing is based on your consent under Art. 6(1)(a) GDPR when you create an account and on the performance of a contract under Art. 6(1)(b) GDPR to provide the service.",
+          "Security-related processing may also be based on our legitimate interest under Art. 6(1)(f) GDPR in protecting the service and its users.",
+        ],
+        title: "Legal Basis",
+      },
+      {
+        body: [
+          "We retain your personal data only as long as necessary to provide the service and meet legal obligations.",
+          "If you delete your account, your data will be deleted or anonymised within 30 days unless longer retention is legally required.",
+        ],
+        title: "Data Retention",
+      },
+      {
+        body: [
+          "You have the right to access, rectify, erase, or restrict processing of your data, and to object to processing where applicable.",
+          "Contact hello@melonmeet.example to exercise these rights.",
+        ],
+        title: "User Rights",
       },
     ],
     title: "Privacy Policy",
   },
   terms: {
     description:
-      "Rules for using Melon Meet. This is a launch-ready starter draft, but it should be reviewed and tailored before opening the product broadly.",
+      "Rules for using Melon Meet accounts, profiles, groups, sessions, and user-generated content.",
     eyebrow: "Terms",
     sections: [
       {
         body: [
-          "Melon Meet helps users discover venues, create groups, publish sessions, and coordinate outdoor games.",
-          "You must provide accurate account information and keep your login credentials secure.",
+          "Last updated: April 25, 2026.",
+          "By creating an account on Melon Meet, you agree to these Terms of Service.",
         ],
-        title: "Using the Service",
+        title: "Acceptance of Terms",
       },
       {
         body: [
-          "Do not use the service for harassment, spam, fraud, illegal activity, or content that invades another person's privacy.",
-          "Do not upload or share content unless you have the right to do so.",
+          "You must provide accurate information.",
+          "You are responsible for keeping your password confidential.",
+          "You must be at least 16 years old to create an account.",
+        ],
+        title: "User Accounts",
+      },
+      {
+        body: [
+          "You agree not to post illegal, defamatory, harmful, harassing, spam, fraudulent, or privacy-invasive content.",
+          "You agree not to attempt to bypass security measures or access data you are not authorised to access.",
         ],
         title: "Acceptable Use",
       },
       {
         body: [
-          "You remain responsible for the content you post and for the sessions or groups you organise.",
-          "Melon Meet may remove content or suspend access to protect the community and the service.",
+          "You retain ownership of content you post, including profile pictures, profile text, group posts, and session details.",
+          "You grant Melon Meet a non-exclusive licence to display this content on the website as needed to operate the service.",
         ],
-        title: "Content and Moderation",
+        title: "User Content",
       },
       {
         body: [
+          "We reserve the right to suspend or terminate accounts that violate these terms or create risk for the community or service.",
+        ],
+        title: "Termination",
+      },
+      {
+        body: [
+          "Melon Meet is provided \"as is\". We are not liable for damages arising from your use of the site to the extent permitted by law.",
           "Outdoor sports carry inherent risk. Participants are responsible for their own safety, insurance, travel, and participation decisions.",
         ],
-        title: "Events and Liability",
+        title: "Limitation of Liability",
       },
     ],
-    title: "Terms of Use",
+    title: "Terms of Service",
   },
 } as const;
 

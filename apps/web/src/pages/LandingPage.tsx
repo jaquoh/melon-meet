@@ -26,6 +26,7 @@ export function LandingPage({
   const [showAuthPanel, setShowAuthPanel] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedSignupTerms, setAcceptedSignupTerms] = useState(false);
   const landingBackgroundImage = theme === "dark" ? landingHeroMelonDark : landingHeroMelon;
   const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
   const renderHeaderControls = () => (
@@ -147,6 +148,9 @@ export function LandingPage({
                   className="form-grid"
                   onSubmit={(event) => {
                     event.preventDefault();
+                    if (mode === "signup" && !acceptedSignupTerms) {
+                      return;
+                    }
                     authMutation.mutate();
                   }}
                 >
@@ -167,6 +171,28 @@ export function LandingPage({
                     />
                   </label>
 
+                  {mode === "signup" ? (
+                    <div className="auth-consent-row">
+                      <input
+                        checked={acceptedSignupTerms}
+                        id="signup-legal-consent"
+                        onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
+                        type="checkbox"
+                      />
+                      <label htmlFor="signup-legal-consent">
+                        I have read the{" "}
+                        <Link state={infoLinkState} to="/privacy">
+                          Privacy Policy
+                        </Link>{" "}
+                        and agree to the{" "}
+                        <Link state={infoLinkState} to="/terms">
+                          Terms
+                        </Link>
+                        .
+                      </label>
+                    </div>
+                  ) : null}
+
                   {authMutation.error ? (
                     <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
                       {authMutation.error.message}
@@ -174,7 +200,7 @@ export function LandingPage({
                   ) : null}
 
                   <div className="form-actions form-actions--start">
-                    <button className="button-primary" disabled={authMutation.isPending}>
+                    <button className="button-primary" disabled={authMutation.isPending || (mode === "signup" && !acceptedSignupTerms)}>
                       {authMutation.isPending ? "Working" : mode === "login" ? "Log in" : "Create account"}
                     </button>
                   </div>
