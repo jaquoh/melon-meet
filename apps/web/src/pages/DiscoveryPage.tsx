@@ -432,6 +432,8 @@ export function DiscoveryPage({
   function selectMeeting(meeting: MeetingSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/sessions/${meeting.id}`, {
+      displayMode: "map",
+      itemMode: "sessions",
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
       selectedMeetingClusterTitle: null,
@@ -439,6 +441,8 @@ export function DiscoveryPage({
       selectedVenueId: null,
       showMobileFilters: false,
     });
+    setDisplayMode("map");
+    setItemMode("sessions");
     setSelectedMeeting(meeting);
     setSelectedMeetingCluster(null);
     setSelectedVenue(null);
@@ -470,6 +474,7 @@ export function DiscoveryPage({
   function selectVenue(venue: VenueSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/venues/${venue.id}`, {
+      displayMode: "map",
       itemMode: "venues",
       selectedGroupId: null,
       selectedMeetingClusterMeetingIds: [],
@@ -478,6 +483,8 @@ export function DiscoveryPage({
       selectedVenueId: venue.id,
       showMobileFilters: false,
     });
+    setDisplayMode("map");
+    setItemMode("venues");
     setSelectedVenue(venue);
     setSelectedMeeting(null);
     setSelectedMeetingCluster(null);
@@ -510,6 +517,7 @@ export function DiscoveryPage({
   function selectGroup(group: GroupSummary) {
     setIsClearingSelection(false);
     navigateToWorkspacePath(`/groups/${group.id}`, {
+      displayMode: "map",
       itemMode: "groups",
       selectedGroupId: group.id,
       selectedMeetingClusterMeetingIds: [],
@@ -518,6 +526,8 @@ export function DiscoveryPage({
       selectedVenueId: null,
       showMobileFilters: false,
     });
+    setDisplayMode("map");
+    setItemMode("groups");
     setSelectedGroup(group);
     setSelectedMeeting(null);
     setSelectedMeetingCluster(null);
@@ -702,6 +712,10 @@ export function DiscoveryPage({
   useEffect(() => {
     if (isClearingSelection) {
       return;
+    }
+    if (routeMeetingId || routeVenueId || routeGroupId) {
+      setDisplayMode("map");
+      setItemMode(routeVenueId ? "venues" : routeGroupId ? "groups" : "sessions");
     }
     if (routeProfileId) {
       return;
@@ -920,11 +934,13 @@ export function DiscoveryPage({
         })()
       : null;
   const selectedMapKey =
-    selectedMeetingCluster?.lookupKey ??
-    visibleSessionClusterKey ??
-    selectedMeetingId ??
-    selectedVenueId ??
-    selectedGroupId;
+    isClearingSelection
+      ? null
+      : selectedMeetingCluster?.lookupKey ??
+        visibleSessionClusterKey ??
+        selectedMeetingId ??
+        selectedVenueId ??
+        selectedGroupId;
   const selectedMapLocation = selectedMeetingDetail
     ? {
         id: visibleSessionClusterKey ?? `meeting:${selectedMeetingDetail.id}`,
@@ -1048,10 +1064,8 @@ export function DiscoveryPage({
     }
   }, [selectedGroupId, selectedMeetingCluster?.lookupKey, selectedMeetingId, selectedProfileId, selectedVenueId]);
   const handleMapBackgroundClick = () => {
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches) {
-      clearSelection();
-      setShowMobileFilters(false);
-    }
+    setShowMobileFilters(false);
+    handleSelectionClose();
   };
 
   const selectionHeaderActions = hasSelection ? (

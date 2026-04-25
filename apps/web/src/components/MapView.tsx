@@ -86,6 +86,16 @@ type TransitFeatureCollection = {
 
 const BERLIN_CENTER: [number, number] = [13.405, 52.52];
 const SOURCE_ID = "melon-map-items";
+const CLUSTER_LAYER_ID = "melon-map-clusters";
+const CLUSTER_COUNT_LAYER_ID = "melon-map-cluster-count";
+const VENUE_SOURCE_ID = "melon-map-venues";
+const VENUE_CLUSTER_LAYER_ID = "melon-map-venue-clusters";
+const VENUE_CLUSTER_COUNT_LAYER_ID = "melon-map-venue-cluster-count";
+const VENUE_BASE_LAYER_ID = "melon-map-venue-base";
+const VENUE_ICON_LAYER_ID = "melon-map-venue-icon";
+const VENUE_BADGE_LAYER_ID = "melon-map-venue-badge";
+const VENUE_LABEL_LAYER_ID = "melon-map-venue-label";
+const VENUE_HIT_LAYER_ID = "melon-map-venue-hit";
 const LAYER_BASE_ID = "melon-map-base";
 const LAYER_ICON_ID = "melon-map-icon";
 const LAYER_BADGE_ID = "melon-map-badge";
@@ -100,6 +110,7 @@ const TRANSIT_STATION_LABEL_LAYER_ID = "berlin-transit-station-label";
 const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const DEFAULT_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const TRANSIT_OVERLAY_URL = "/transit/berlin-transit.geojson";
+const SELECTED_MARKER_ZOOM = 13.4;
 
 function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
   return `<div class="map-popup">${
@@ -210,6 +221,13 @@ async function ensureBaseAssets(map: maplibregl.Map) {
 function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
   if (!map.getSource(SOURCE_ID)) {
     map.addSource(SOURCE_ID, {
+      cluster: true,
+      clusterMaxZoom: 12,
+      clusterProperties: {
+        groupCount: ["+", ["case", ["==", ["get", "kind"], "group"], 1, 0]],
+        sessionCount: ["+", ["case", ["==", ["get", "kind"], "session"], 1, 0]],
+      },
+      clusterRadius: 58,
       data: { features: [], type: "FeatureCollection" },
       type: "geojson",
     });
@@ -217,6 +235,7 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
 
   if (!map.getLayer(LAYER_HIT_ID)) {
     map.addLayer({
+      filter: ["!", ["has", "point_count"]],
       id: LAYER_HIT_ID,
       paint: {
         "circle-opacity": 0.01,
@@ -226,10 +245,49 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
       type: "circle",
     });
   }
+
+  if (!map.getSource(VENUE_SOURCE_ID)) {
+    map.addSource(VENUE_SOURCE_ID, {
+      cluster: true,
+      clusterMaxZoom: 12,
+      clusterRadius: 58,
+      data: { features: [], type: "FeatureCollection" },
+      type: "geojson",
+    });
+  }
+
+  if (!map.getLayer(VENUE_HIT_LAYER_ID)) {
+    map.addLayer({
+      filter: ["!", ["has", "point_count"]],
+      id: VENUE_HIT_LAYER_ID,
+      paint: {
+        "circle-opacity": 0.01,
+        "circle-radius": 44,
+      },
+      source: VENUE_SOURCE_ID,
+      type: "circle",
+    });
+  }
 }
 
 function moveAppMarkerLayersToTop(map: maplibregl.Map) {
-  [LAYER_BASE_ID, LAYER_ICON_ID, LAYER_BADGE_ID, LAYER_CORNER_ID, LAYER_LABEL_ID, LAYER_HIT_ID].forEach((layerId) => {
+  [
+    CLUSTER_LAYER_ID,
+    CLUSTER_COUNT_LAYER_ID,
+    VENUE_CLUSTER_LAYER_ID,
+    VENUE_CLUSTER_COUNT_LAYER_ID,
+    VENUE_BASE_LAYER_ID,
+    VENUE_ICON_LAYER_ID,
+    VENUE_BADGE_LAYER_ID,
+    VENUE_LABEL_LAYER_ID,
+    VENUE_HIT_LAYER_ID,
+    LAYER_BASE_ID,
+    LAYER_ICON_ID,
+    LAYER_BADGE_ID,
+    LAYER_CORNER_ID,
+    LAYER_LABEL_ID,
+    LAYER_HIT_ID,
+  ].forEach((layerId) => {
     if (map.getLayer(layerId)) {
       map.moveLayer(layerId);
     }
@@ -274,35 +332,39 @@ function currentThemePalette(theme: "dark" | "light") {
   return theme === "dark"
     ? {
         badgeCountText: "#fff7f2",
-        badgeFill: "#223033",
-        badgeFreeText: "#87d7a1",
-        badgePaidText: "#ffb2c1",
-        badgeStroke: "#456066",
+        badgeFill: "#213430",
+        badgeFreeText: "#7FCBC0",
+        badgePaidText: "#F2A595",
+        badgeStroke: "#5BB0A1",
         circleStroke: "#fff4df",
-        group: "#62a58e",
-        groupOwner: "#ffd166",
+        clusterText: "#fffaf4",
+        group: "#5BB0A1",
+        groupOwner: "#7FCBC0",
         halo: "#0f1517",
         labelColor: "#fff7f2",
-        selected: "#ffd166",
-        session: "#ff6b7f",
-        venue: "#35b97f",
-        viewerAttending: "#ffd166",
+        selected: "#B22222",
+        session: "#E58C80",
+        venue: "#3F7A45",
+        venuePaid: "#264B29",
+        viewerAttending: "#D2B48C",
       }
     : {
         badgeCountText: "#231d1c",
         badgeFill: "#fffdfa",
-        badgeFreeText: "#2c8b61",
-        badgePaidText: "#d54762",
+        badgeFreeText: "#336137",
+        badgePaidText: "#B22222",
         badgeStroke: "#e5d6d0",
         circleStroke: "#fff4df",
-        group: "#4d9a76",
-        groupOwner: "#d49e2f",
+        clusterText: "#fffaf4",
+        group: "#5BB0A1",
+        groupOwner: "#7FCBC0",
         halo: "#fffdfa",
         labelColor: "#231d1c",
-        selected: "#f6b73c",
-        session: "#f05f78",
-        venue: "#20a669",
-        viewerAttending: "#f6b73c",
+        selected: "#B22222",
+        session: "#E58C80",
+        venue: "#3F7A45",
+        venuePaid: "#264B29",
+        viewerAttending: "#D2B48C",
       };
 }
 
@@ -315,6 +377,8 @@ function markerColorExpression(palette: ReturnType<typeof currentThemePalette>):
     palette.viewerAttending,
     ["all", ["==", ["get", "kind"], "group"], ["==", ["get", "owner"], 1]],
     palette.groupOwner,
+    ["all", ["==", ["get", "kind"], "venue"], ["==", ["get", "badge"], "Paid"]],
+    palette.venuePaid,
     [
       "match",
       ["get", "kind"],
@@ -324,6 +388,17 @@ function markerColorExpression(palette: ReturnType<typeof currentThemePalette>):
       palette.session,
       palette.group,
     ],
+  ];
+}
+
+function clusterColorExpression(palette: ReturnType<typeof currentThemePalette>): maplibregl.ExpressionSpecification {
+  return [
+    "case",
+    [">", ["coalesce", ["get", "sessionCount"], 0], 0],
+    palette.session,
+    [">", ["coalesce", ["get", "groupCount"], 0], 0],
+    palette.group,
+    palette.venuePaid,
   ];
 }
 
@@ -392,7 +467,11 @@ function buildFeatureCollection({
         type: "Feature",
       });
     }
-    return { featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection, lookup };
+    return {
+      featureCollection: { features: [], type: "FeatureCollection" } as SimpleFeatureCollection,
+      lookup,
+      venueFeatureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection,
+    };
   }
 
   if (mode === "groups") {
@@ -428,7 +507,11 @@ function buildFeatureCollection({
         type: "Feature",
       });
     }
-    return { featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection, lookup };
+    return {
+      featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection,
+      lookup,
+      venueFeatureCollection: { features: [], type: "FeatureCollection" } as SimpleFeatureCollection,
+    };
   }
 
   const groupedSessions = new Map<string, MeetingSummary[]>();
@@ -501,7 +584,11 @@ function buildFeatureCollection({
     });
   }
 
-  return { featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection, lookup };
+  return {
+    featureCollection: { features, type: "FeatureCollection" } as SimpleFeatureCollection,
+    lookup,
+    venueFeatureCollection: { features: [], type: "FeatureCollection" } as SimpleFeatureCollection,
+  };
 }
 
 function selectedMarkerKeyForLookup(lookup: MarkerLookupEntry) {
@@ -541,15 +628,47 @@ function featureCollectionWithSelectedKey(
   };
 }
 
+function applySelectedKeyToMapSources(map: maplibregl.Map, sourceData: ReturnType<typeof buildFeatureCollection>, selectedKey: SelectedMarkerKey) {
+  const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  source?.setData(featureCollectionWithSelectedKey(sourceData.featureCollection, selectedKey) as never);
+  const venueSource = map.getSource(VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  venueSource?.setData(featureCollectionWithSelectedKey(sourceData.venueFeatureCollection, selectedKey) as never);
+  map.triggerRepaint();
+}
+
 function updateLayerTheme(map: maplibregl.Map, theme: "dark" | "light") {
   const palette = currentThemePalette(theme);
   if (map.getLayer(LAYER_BASE_ID)) {
     map.setPaintProperty(LAYER_BASE_ID, "circle-color", markerColorExpression(palette));
     map.setPaintProperty(LAYER_BASE_ID, "circle-stroke-color", palette.circleStroke);
   }
+  if (map.getLayer(CLUSTER_LAYER_ID)) {
+    map.setPaintProperty(CLUSTER_LAYER_ID, "circle-color", clusterColorExpression(palette));
+    map.setPaintProperty(CLUSTER_LAYER_ID, "circle-stroke-color", palette.circleStroke);
+  }
+  if (map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+    map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, "text-color", palette.clusterText);
+    map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, "text-halo-width", 0);
+  }
+  if (map.getLayer(VENUE_BASE_LAYER_ID)) {
+    map.setPaintProperty(VENUE_BASE_LAYER_ID, "circle-color", markerColorExpression(palette));
+    map.setPaintProperty(VENUE_BASE_LAYER_ID, "circle-stroke-color", palette.circleStroke);
+  }
   if (map.getLayer(LAYER_LABEL_ID)) {
     map.setPaintProperty(LAYER_LABEL_ID, "text-color", palette.labelColor);
     map.setPaintProperty(LAYER_LABEL_ID, "text-halo-color", palette.halo);
+  }
+  if (map.getLayer(VENUE_LABEL_LAYER_ID)) {
+    map.setPaintProperty(VENUE_LABEL_LAYER_ID, "text-color", palette.labelColor);
+    map.setPaintProperty(VENUE_LABEL_LAYER_ID, "text-halo-color", palette.halo);
+  }
+  if (map.getLayer(VENUE_CLUSTER_LAYER_ID)) {
+    map.setPaintProperty(VENUE_CLUSTER_LAYER_ID, "circle-color", palette.venuePaid);
+    map.setPaintProperty(VENUE_CLUSTER_LAYER_ID, "circle-stroke-color", palette.circleStroke);
+  }
+  if (map.getLayer(VENUE_CLUSTER_COUNT_LAYER_ID)) {
+    map.setPaintProperty(VENUE_CLUSTER_COUNT_LAYER_ID, "text-color", palette.clusterText);
+    map.setPaintProperty(VENUE_CLUSTER_COUNT_LAYER_ID, "text-halo-width", 0);
   }
 }
 
@@ -749,8 +868,93 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
   updateTransitOverlayTheme(map, theme);
   ensureMarkerSourceAndHitLayer(map);
 
+  if (!map.getLayer(CLUSTER_LAYER_ID)) {
+    map.addLayer({
+      filter: ["has", "point_count"],
+      id: CLUSTER_LAYER_ID,
+      paint: {
+        "circle-color": clusterColorExpression(palette),
+        "circle-radius": [
+          "step",
+          ["get", "point_count"],
+          20,
+          8,
+          25,
+          18,
+          31,
+        ],
+        "circle-stroke-color": palette.circleStroke,
+        "circle-stroke-opacity": 0.92,
+        "circle-stroke-width": 3,
+      },
+      source: SOURCE_ID,
+      type: "circle",
+    });
+  }
+
+  if (!map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+    map.addLayer({
+      filter: ["has", "point_count"],
+      id: CLUSTER_COUNT_LAYER_ID,
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": ["Noto Sans Bold", "Open Sans Bold", "Noto Sans Regular"],
+        "text-size": 14,
+      },
+      paint: {
+        "text-color": palette.clusterText,
+        "text-halo-width": 0,
+      },
+      source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
+  if (!map.getLayer(VENUE_CLUSTER_LAYER_ID)) {
+    map.addLayer({
+      filter: ["has", "point_count"],
+      id: VENUE_CLUSTER_LAYER_ID,
+      paint: {
+        "circle-color": palette.venuePaid,
+        "circle-radius": [
+          "step",
+          ["get", "point_count"],
+          20,
+          8,
+          25,
+          18,
+          31,
+        ],
+        "circle-stroke-color": palette.circleStroke,
+        "circle-stroke-opacity": 0.92,
+        "circle-stroke-width": 3,
+      },
+      source: VENUE_SOURCE_ID,
+      type: "circle",
+    });
+  }
+
+  if (!map.getLayer(VENUE_CLUSTER_COUNT_LAYER_ID)) {
+    map.addLayer({
+      filter: ["has", "point_count"],
+      id: VENUE_CLUSTER_COUNT_LAYER_ID,
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": ["Noto Sans Bold", "Open Sans Bold", "Noto Sans Regular"],
+        "text-size": 14,
+      },
+      paint: {
+        "text-color": palette.clusterText,
+        "text-halo-width": 0,
+      },
+      source: VENUE_SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
   if (!map.getLayer(LAYER_BASE_ID)) {
     map.addLayer({
+      filter: ["!", ["has", "point_count"]],
       id: LAYER_BASE_ID,
       paint: {
         "circle-color": markerColorExpression(palette),
@@ -773,8 +977,25 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
     });
   }
 
+  if (!map.getLayer(VENUE_BASE_LAYER_ID)) {
+    map.addLayer({
+      filter: ["!", ["has", "point_count"]],
+      id: VENUE_BASE_LAYER_ID,
+      paint: {
+        "circle-color": markerColorExpression(palette),
+        "circle-radius": ["case", ["==", ["get", "selected"], 1], 22, 18.5],
+        "circle-stroke-color": palette.circleStroke,
+        "circle-stroke-opacity": 0.92,
+        "circle-stroke-width": ["case", ["==", ["get", "selected"], 1], 4.5, 3],
+      },
+      source: VENUE_SOURCE_ID,
+      type: "circle",
+    });
+  }
+
   if (!map.getLayer(LAYER_ICON_ID)) {
     map.addLayer({
+      filter: ["!", ["has", "point_count"]],
       id: LAYER_ICON_ID,
       layout: {
         "icon-allow-overlap": true,
@@ -787,9 +1008,24 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
     });
   }
 
+  if (!map.getLayer(VENUE_ICON_LAYER_ID)) {
+    map.addLayer({
+      filter: ["!", ["has", "point_count"]],
+      id: VENUE_ICON_LAYER_ID,
+      layout: {
+        "icon-allow-overlap": true,
+        "icon-anchor": "center",
+        "icon-image": ["get", "icon"],
+        "icon-size": 0.82,
+      },
+      source: VENUE_SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
   if (!map.getLayer(LAYER_BADGE_ID)) {
     map.addLayer({
-      filter: ["!=", ["get", "badge"], ""],
+      filter: ["all", ["!", ["has", "point_count"]], ["!=", ["get", "badge"], ""]],
       id: LAYER_BADGE_ID,
       layout: {
         "icon-allow-overlap": true,
@@ -803,9 +1039,25 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
     });
   }
 
+  if (!map.getLayer(VENUE_BADGE_LAYER_ID)) {
+    map.addLayer({
+      filter: ["all", ["!", ["has", "point_count"]], ["!=", ["get", "badge"], ""]],
+      id: VENUE_BADGE_LAYER_ID,
+      layout: {
+        "icon-allow-overlap": true,
+        "icon-anchor": "bottom-left",
+        "icon-image": ["get", "badgeIcon"],
+        "icon-offset": [7.2, -7.1],
+        "icon-size": 0.92,
+      },
+      source: VENUE_SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
   if (!map.getLayer(LAYER_CORNER_ID)) {
     map.addLayer({
-      filter: ["!=", ["get", "cornerIcon"], ""],
+      filter: ["all", ["!", ["has", "point_count"]], ["!=", ["get", "cornerIcon"], ""]],
       id: LAYER_CORNER_ID,
       layout: {
         "icon-allow-overlap": true,
@@ -821,6 +1073,7 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
 
   if (!map.getLayer(LAYER_LABEL_ID)) {
     map.addLayer({
+      filter: ["!", ["has", "point_count"]],
       id: LAYER_LABEL_ID,
       layout: {
         "text-allow-overlap": true,
@@ -837,6 +1090,30 @@ function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: Tr
         "text-halo-width": 2.5,
       },
       source: SOURCE_ID,
+      type: "symbol",
+    });
+  }
+
+  if (!map.getLayer(VENUE_LABEL_LAYER_ID)) {
+    map.addLayer({
+      filter: ["!", ["has", "point_count"]],
+      id: VENUE_LABEL_LAYER_ID,
+      layout: {
+        "text-allow-overlap": true,
+        "text-anchor": "top",
+        "text-field": ["get", "label"],
+        "text-font": ["Noto Sans Regular", "Open Sans Regular"],
+        "text-max-width": 10,
+        "text-offset": [0, 2.45],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 12, 0, 12.5, 12, 14, 13],
+      },
+      paint: {
+        "text-color": palette.labelColor,
+        "text-halo-color": palette.halo,
+        "text-halo-width": 2.5,
+        "text-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0, 12.5, 1],
+      },
+      source: VENUE_SOURCE_ID,
       type: "symbol",
     });
   }
@@ -957,17 +1234,56 @@ export function MapView({
 
     const applyOptimisticSelection = (nextSelectedKey: SelectedMarkerKey) => {
       optimisticSelectedKeyRef.current = nextSelectedKey;
-      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(
-        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, nextSelectedKey) as never,
-      );
-      map.triggerRepaint();
+      applySelectedKeyToMapSources(map, sourceDataRef.current, nextSelectedKey);
     };
 
-    const markerLayerIds = [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID, LAYER_CORNER_ID];
+    const markerLayerIds = [
+      VENUE_HIT_LAYER_ID,
+      VENUE_BASE_LAYER_ID,
+      VENUE_ICON_LAYER_ID,
+      VENUE_LABEL_LAYER_ID,
+      VENUE_BADGE_LAYER_ID,
+      LAYER_HIT_ID,
+      LAYER_BASE_ID,
+      LAYER_ICON_ID,
+      LAYER_LABEL_ID,
+      LAYER_BADGE_ID,
+      LAYER_CORNER_ID,
+    ];
 
-    const handleMapClick = (event: maplibregl.MapMouseEvent) => {
+    const expandClusterAtPoint = async (event: maplibregl.MapMouseEvent, layerId: string, sourceId: string) => {
+      if (!map.getLayer(layerId)) {
+        return false;
+      }
+      const clusterFeature = map.queryRenderedFeatures(event.point, { layers: [layerId] })[0];
+      const clusterId = Number(clusterFeature?.properties?.cluster_id);
+      if (!Number.isFinite(clusterId)) {
+        return false;
+      }
+      const source = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+      const coordinates = (clusterFeature.geometry as unknown as { coordinates?: [number, number] }).coordinates;
+      if (!source || !coordinates) {
+        return false;
+      }
+      const zoom = await source.getClusterExpansionZoom(clusterId);
+      map.easeTo({
+        center: coordinates,
+        duration: 450,
+        essential: true,
+        zoom,
+      });
+      return true;
+    };
+
+    const handleMapClick = async (event: maplibregl.MapMouseEvent) => {
       const hitBox = 32;
+      if (
+        (await expandClusterAtPoint(event, CLUSTER_LAYER_ID, SOURCE_ID)) ||
+        (await expandClusterAtPoint(event, VENUE_CLUSTER_LAYER_ID, VENUE_SOURCE_ID))
+      ) {
+        return;
+      }
+
       const features = map.queryRenderedFeatures(
         [
           [event.point.x - hitBox, event.point.y - hitBox],
@@ -1042,23 +1358,21 @@ export function MapView({
     const handleLoad = async () => {
       ensureMarkerSourceAndHitLayer(map);
       lookupRef.current = sourceDataRef.current.lookup;
-      const initialSource = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      initialSource?.setData(
-        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, optimisticSelectedKeyRef.current) as never,
-      );
+      applySelectedKeyToMapSources(map, sourceDataRef.current, optimisticSelectedKeyRef.current);
       await ensureBaseAssets(map);
-      await ensureBadgeAssets(map, sourceDataRef.current.featureCollection.features, themeRef.current);
-      addLayers(map, themeRef.current, transitDataRef.current);
-      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(
-        featureCollectionWithSelectedKey(sourceDataRef.current.featureCollection, optimisticSelectedKeyRef.current) as never,
+      await ensureBadgeAssets(
+        map,
+        [...sourceDataRef.current.featureCollection.features, ...sourceDataRef.current.venueFeatureCollection.features],
+        themeRef.current,
       );
+      addLayers(map, themeRef.current, transitDataRef.current);
+      applySelectedKeyToMapSources(map, sourceDataRef.current, optimisticSelectedKeyRef.current);
       moveAppMarkerLayersToTop(map);
       map.triggerRepaint();
       popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
       if (!interactionsBoundRef.current) {
         map.on("click", handleMapClick);
-        [LAYER_HIT_ID, LAYER_BASE_ID, LAYER_ICON_ID, LAYER_LABEL_ID, LAYER_BADGE_ID, LAYER_CORNER_ID].forEach((layerId) => {
+        [CLUSTER_LAYER_ID, VENUE_CLUSTER_LAYER_ID, ...markerLayerIds].forEach((layerId) => {
           map.on("mousemove", layerId, handleHover);
           map.on("mouseleave", layerId, clearHover);
         });
@@ -1098,13 +1412,23 @@ export function MapView({
     }
 
     centeredSelectionRef.current = selectedLocation.id;
+    const refreshSelection = () => {
+      if (selectedKey) {
+        optimisticSelectedKeyRef.current = selectedKey;
+        applySelectedKeyToMapSources(map, sourceDataRef.current, selectedKey);
+      }
+    };
+    map.once("moveend", refreshSelection);
     map.easeTo({
       center: [selectedLocation.longitude, selectedLocation.latitude],
       duration: 650,
       essential: true,
-      zoom: Math.max(map.getZoom(), 12.2),
+      zoom: Math.max(map.getZoom(), SELECTED_MARKER_ZOOM),
     });
-  }, [mapReady, selectedLocation]);
+    return () => {
+      map.off("moveend", refreshSelection);
+    };
+  }, [mapReady, selectedKey, selectedLocation]);
 
   useLayoutEffect(() => {
     const map = mapRef.current;
@@ -1142,25 +1466,22 @@ export function MapView({
       popupRef.current?.remove();
       map.getCanvas().style.cursor = "";
     }
-    const currentSource = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-    currentSource?.setData(
-      featureCollectionWithSelectedKey(sourceData.featureCollection, selectedMarkerKey) as never,
-    );
-    map.triggerRepaint();
+    applySelectedKeyToMapSources(map, sourceData, selectedMarkerKey);
 
     void (async () => {
       await ensureBaseAssets(map);
-      await ensureBadgeAssets(map, sourceData.featureCollection.features, theme);
+      await ensureBadgeAssets(
+        map,
+        [...sourceData.featureCollection.features, ...sourceData.venueFeatureCollection.features],
+        theme,
+      );
       if (!active) {
         return;
       }
       ensureMarkerSourceAndHitLayer(map);
       addLayers(map, theme, transitData);
       updateLayerTheme(map, theme);
-      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(
-        featureCollectionWithSelectedKey(sourceData.featureCollection, optimisticSelectedKeyRef.current) as never,
-      );
+      applySelectedKeyToMapSources(map, sourceData, optimisticSelectedKeyRef.current);
       moveAppMarkerLayersToTop(map);
       map.triggerRepaint();
     })();
