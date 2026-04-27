@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 
 export const SUPPORTED_LOCALES = [
   { code: "de-DE", flag: "🇩🇪", label: "German" },
-  { code: "en-US", flag: "🇺🇸", label: "English" },
+  { code: "en-EN", flag: "🇬🇧", label: "English" },
   { code: "es-ES", flag: "🇪🇸", label: "Spanish" },
   { code: "fr-FR", flag: "🇫🇷", label: "French" },
   { code: "ru-RU", flag: "🇷🇺", label: "Russian" },
@@ -19,8 +19,28 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number]["code"];
 type TranslationValue = string | TranslationDictionary | TranslationValue[];
 type TranslationDictionary = { [key: string]: TranslationValue };
 
-const DEFAULT_LOCALE: AppLocale = "en-US";
+const DEFAULT_LOCALE: AppLocale = "en-EN";
 const LOCALE_STORAGE_KEY = "melon-locale";
+
+function normalizeAppLocale(locale: string | null | undefined): AppLocale | null {
+  if (!locale) {
+    return null;
+  }
+  if (locale === "en-US" || locale === "en-GB") {
+    return "en-EN";
+  }
+  if (SUPPORTED_LOCALES.some((entry) => entry.code === locale)) {
+    return locale as AppLocale;
+  }
+  return null;
+}
+
+function intlLocale(locale: AppLocale): string {
+  if (locale === "en-EN") {
+    return "en";
+  }
+  return locale;
+}
 
 function buildInfoContent(localeLabel: string): TranslationDictionary {
   if (localeLabel === "DE") {
@@ -799,7 +819,7 @@ function translationsFallback(localeLabel: string): TranslationDictionary {
 }
 
 const translations: Record<AppLocale, TranslationDictionary> = {
-  "en-US": englishTranslations,
+  "en-EN": englishTranslations,
   "de-DE": {
     common: {
       all: "Alle",
@@ -1284,8 +1304,9 @@ function getInitialLocale(): AppLocale {
   }
 
   const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (SUPPORTED_LOCALES.some((entry) => entry.code === stored)) {
-    return stored as AppLocale;
+  const normalizedStored = normalizeAppLocale(stored);
+  if (normalizedStored) {
+    return normalizedStored;
   }
 
   const browserLanguages = [...window.navigator.languages, window.navigator.language];
@@ -1321,6 +1342,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<I18nContextValue>(() => {
     const dictionary = translations[locale] ?? translations[DEFAULT_LOCALE];
+    const resolvedIntlLocale = intlLocale(locale);
 
     const t = (key: string, values?: Record<string, string | number | null | undefined>) => {
       const resolved = getNestedValue(dictionary, key) ?? getNestedValue(translations[DEFAULT_LOCALE], key);
@@ -1341,15 +1363,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       },
       t,
       formatCurrency: (amount: number) =>
-        new Intl.NumberFormat(locale, { currency: "EUR", maximumFractionDigits: 1, style: "currency" }).format(amount),
+        new Intl.NumberFormat(resolvedIntlLocale, { currency: "EUR", maximumFractionDigits: 1, style: "currency" }).format(amount),
       formatDateTime: (value: string, options?: Intl.DateTimeFormatOptions) =>
-        new Intl.DateTimeFormat(locale, options ?? { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)),
+        new Intl.DateTimeFormat(resolvedIntlLocale, options ?? { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)),
       formatPrice: (pricing, costPerPerson, withPerson = false) => {
         if (pricing === "free") {
           return t("common.free");
         }
         if (typeof costPerPerson === "number" && Number.isFinite(costPerPerson)) {
-          const amount = new Intl.NumberFormat(locale, { currency: "EUR", maximumFractionDigits: 1, style: "currency" }).format(
+          const amount = new Intl.NumberFormat(resolvedIntlLocale, { currency: "EUR", maximumFractionDigits: 1, style: "currency" }).format(
             costPerPerson,
           );
           return withPerson ? `${amount} / ${t("forms.amountPerPerson").split(" / ")[1] ?? "person"}` : amount;
