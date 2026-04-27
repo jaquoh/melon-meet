@@ -72,7 +72,6 @@ export function WorkspaceShell({
 
   const utilityActions = (
     <div className="workspace-action-icons">
-      <LanguageSwitcher compact />
       <button
         aria-label={t("workspace.toggleTheme")}
         className="workspace-action workspace-action--icon"
@@ -81,6 +80,7 @@ export function WorkspaceShell({
       >
         {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
       </button>
+      <LanguageSwitcher compact />
       {utilityNavigation === "map" ? (
         <Link
           aria-label={t("workspace.backToMap")}

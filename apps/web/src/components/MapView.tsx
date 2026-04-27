@@ -1214,7 +1214,7 @@ export function MapView({
     }
 
     const map = new maplibregl.Map({
-      attributionControl: { compact: true },
+      attributionControl: false,
       center: BERLIN_CENTER,
       container: mapContainerRef.current,
       style: currentStyle,
@@ -1223,6 +1223,7 @@ export function MapView({
     appliedStyleRef.current = currentStyleKey;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 
     const syncBounds = () => {
       const bounds = map.getBounds();
