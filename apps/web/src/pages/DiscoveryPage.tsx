@@ -1571,7 +1571,7 @@ export function DiscoveryPage({
             {selectedMeetingClaims.map((claim) => (
               <Link className="attending-player-card" key={claim.id} state={detailNavigationState()} to={`/profile/${claim.id}`}>
                 {claim.avatarUrl ? (
-                  <img alt={claim.displayName} className="attending-player-card__avatar" src={claim.avatarUrl} />
+                  <img alt={claim.displayName} className="attending-player-card__avatar" decoding="async" loading="lazy" src={claim.avatarUrl} />
                 ) : (
                   <span className="attending-player-card__avatar attending-player-card__avatar--fallback" aria-hidden="true">
                     <User size={16} strokeWidth={2} />
@@ -1935,7 +1935,7 @@ export function DiscoveryPage({
                 type="button"
               >
                 <span className={`browse-listing__thumb ${venue.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
-                  {venue.heroImageUrl ? <img alt="" src={venue.heroImageUrl} /> : <MapPin size={18} strokeWidth={2} />}
+                  {venue.heroImageUrl ? <img alt="" decoding="async" loading="lazy" src={venue.heroImageUrl} /> : <MapPin size={18} strokeWidth={2} />}
                 </span>
                 <span className="browse-listing__body">
                   <span className="browse-listing__row">
@@ -1965,7 +1965,7 @@ export function DiscoveryPage({
                       type="button"
                     >
                       <span className={`browse-listing__thumb ${group.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
-                        {group.heroImageUrl ? <img alt="" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
+                        {group.heroImageUrl ? <img alt="" decoding="async" loading="lazy" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
                       </span>
                       <span className="browse-listing__body">
                         <span className="browse-listing__row">
@@ -1996,7 +1996,7 @@ export function DiscoveryPage({
                   type="button"
                 >
                   <span className={`browse-listing__thumb ${group.heroImageUrl ? "has-image" : ""}`.trim()} aria-hidden="true">
-                    {group.heroImageUrl ? <img alt="" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
+                    {group.heroImageUrl ? <img alt="" decoding="async" loading="lazy" src={group.heroImageUrl} /> : <Users size={18} strokeWidth={2} />}
                   </span>
                   <span className="browse-listing__body">
                     <span className="browse-listing__row">
@@ -2037,24 +2037,26 @@ export function DiscoveryPage({
               {renderWorkspaceControls()}
             </div>
             <div className="mode-overlay-controls">{renderModeSwitch()}</div>
-            <MapView
-              groupPins={groupPins}
-              meetings={meetings}
-              mode={itemMode}
-              onBackgroundClick={handleMapBackgroundClick}
-              onBoundsChange={() => undefined}
-              onGroupSelect={selectGroupFromMap}
-              onMeetingClusterSelect={selectMeetingClusterFromMap}
-              onMeetingSelect={selectMeetingFromMap}
-              onVenueSelect={selectVenueFromMap}
-              selectionRevision={mapSelectionRevision}
-              selectedKey={selectedMapKey}
-              selectedLocation={selectedMapLocation}
-              theme={theme}
-              venueMeetingsById={venueMeetingsById}
-              venues={venues}
-              visible={displayMode === "map"}
-            />
+            {displayMode === "map" ? (
+              <MapView
+                groupPins={groupPins}
+                meetings={meetings}
+                mode={itemMode}
+                onBackgroundClick={handleMapBackgroundClick}
+                onBoundsChange={() => undefined}
+                onGroupSelect={selectGroupFromMap}
+                onMeetingClusterSelect={selectMeetingClusterFromMap}
+                onMeetingSelect={selectMeetingFromMap}
+                onVenueSelect={selectVenueFromMap}
+                selectionRevision={mapSelectionRevision}
+                selectedKey={selectedMapKey}
+                selectedLocation={selectedMapLocation}
+                theme={theme}
+                venueMeetingsById={venueMeetingsById}
+                venues={venues}
+                visible
+              />
+            ) : null}
             <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll" ref={listScrollRef}>
               <div className="workspace-list-heading">
                 <p className="eyebrow">{t("common.browse")}</p>
