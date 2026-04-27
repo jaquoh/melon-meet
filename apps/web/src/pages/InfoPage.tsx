@@ -240,15 +240,17 @@ export function InfoPage({
   const infoLinkState = { infoReturnTo: closeTo };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
-      <LanguageSwitcher compact />
-      <button
-        aria-label={t("workspace.toggleTheme")}
-        className="landing-theme-toggle"
-        onClick={toggleTheme}
-        type="button"
-      >
-        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-      </button>
+      <div className="landing-shell__right-header-left">
+        <LanguageSwitcher compact />
+        <button
+          aria-label={t("workspace.toggleTheme")}
+          className="landing-theme-toggle"
+          onClick={toggleTheme}
+          type="button"
+        >
+          {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+        </button>
+      </div>
       <Link className="landing-header-button landing-header-button--label" to={closeTo}>
         <X size={16} strokeWidth={2} />
         <span>{t("common.close")}</span>

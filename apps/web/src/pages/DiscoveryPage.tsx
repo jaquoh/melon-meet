@@ -1001,11 +1001,28 @@ export function DiscoveryPage({
   const hasSelection = Boolean(selectedMeetingId || selectedMeetingCluster || selectedVenueId || selectedGroupId || selectedProfileId);
   const showUpcomingSessions = displayMode === "map" || itemMode !== "sessions";
   const activeFilterTags = [
-    timePreset !== "all-sessions" ? timePresetLabel(timePreset, t) : null,
     bounds.pricing !== "all" ? (bounds.pricing === "free" ? t("common.free") : t("common.paid")) : null,
+    timePreset !== "all-sessions" ? timePresetLabel(timePreset, t) : null,
     bounds.openOnly ? t("discovery.freeSpots") : null,
   ].filter((tag): tag is string => Boolean(tag));
   const hasActiveFilters = activeFilterTags.length > 0;
+  const resetFilters = () => {
+    const nextBounds: DiscoveryBounds = {
+      ...bounds,
+      openOnly: false,
+      pricing: "all",
+    };
+    normalizeWorkspacePath({
+      bounds: nextBounds,
+      customEndAt: defaultCustomEndAt,
+      customStartAt: defaultCustomStartAt,
+      timePreset: "all-sessions",
+    });
+    setBounds(nextBounds);
+    setCustomEndAt(defaultCustomEndAt);
+    setCustomStartAt(defaultCustomStartAt);
+    setTimePreset("all-sessions");
+  };
   const returnPath = workspaceReturnStack[workspaceReturnStack.length - 1];
   const returnRouteKind = returnPath ? workspaceRouteKind(returnPath) : null;
   const emptySelectionState = {
@@ -1760,27 +1777,39 @@ export function DiscoveryPage({
 
   const renderFilterPanel = () => (
     <div className="filter-dropdown" ref={filterDropdownRef}>
-      <div className="filter-trigger-stack">
-        <button
-          className={`workspace-ghost-button workspace-ghost-button--filter ${hasActiveFilters ? "is-active" : ""}`.trim()}
-          onClick={() => setShowMobileFilters((current) => !current)}
-          type="button"
-        >
-          <Filter size={14} strokeWidth={2} />
-          <span>{t("common.filter")}</span>
-        </button>
-        <div className={`active-filter-tags ${hasActiveFilters ? "" : "is-empty"}`.trim()} aria-label={t("common.filters")}>
-          {hasActiveFilters ? (
-            activeFilterTags.map((tag) => (
-              <span className="active-filter-tag" key={tag}>
-                {tag}
+      <div className="filter-trigger-row">
+        {hasActiveFilters ? (
+          <button
+            aria-label={t("common.reset")}
+            className="workspace-ghost-button workspace-ghost-button--filter-reset"
+            onClick={resetFilters}
+            type="button"
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
+        ) : null}
+        <div className="filter-trigger-stack">
+          <button
+            className={`workspace-ghost-button workspace-ghost-button--filter ${hasActiveFilters ? "is-active" : ""}`.trim()}
+            onClick={() => setShowMobileFilters((current) => !current)}
+            type="button"
+          >
+            <Filter size={14} strokeWidth={2} />
+            <span>{t("common.filter")}</span>
+          </button>
+          <div className={`active-filter-tags ${hasActiveFilters ? "" : "is-empty"}`.trim()} aria-label={t("common.filters")}>
+            {hasActiveFilters ? (
+              activeFilterTags.map((tag) => (
+                <span className="active-filter-tag" key={tag}>
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <span className="active-filter-tag" aria-hidden="true">
+                {t("common.all")}
               </span>
-            ))
-          ) : (
-            <span className="active-filter-tag" aria-hidden="true">
-              {t("common.all")}
-            </span>
-          )}
+            )}
+          </div>
         </div>
       </div>
       {showMobileFilters ? (
