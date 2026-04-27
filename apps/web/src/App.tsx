@@ -6,6 +6,7 @@ import landingHeroMelonLight from "./assets/landing-hero-melon.png";
 import { getMe, logOut } from "./lib/api";
 import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
+import { I18nProvider } from "./lib/i18n";
 import { DiscoveryPage } from "./pages/DiscoveryPage";
 import { InfoPage } from "./pages/InfoPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -206,5 +207,9 @@ function MeetingRedirect() {
 
 export default function App() {
   usePrelineAutoInit();
-  return <AppShell />;
+  return (
+    <I18nProvider>
+      <AppShell />
+    </I18nProvider>
+  );
 }

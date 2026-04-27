@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { MeetingSummary } from "../../../../packages/shared/src";
+import { useI18n } from "../lib/i18n";
 import { createNavigationState } from "../lib/navigation";
 
 interface EventTimelineProps {
@@ -15,18 +16,18 @@ interface EventTimelineProps {
   selectedMeetingId?: string | null;
 }
 
-function formatTimelineDate(startsAt: string) {
+function formatTimelineDate(startsAt: string, locale: string) {
   const date = new Date(startsAt);
   const now = new Date();
   return {
-    day: date.toLocaleDateString("en-GB", { day: "2-digit" }),
+    day: date.toLocaleDateString(locale, { day: "2-digit" }),
     isToday:
       date.getFullYear() === now.getFullYear() &&
       date.getMonth() === now.getMonth() &&
       date.getDate() === now.getDate(),
-    month: date.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
-    weekday: date.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase(),
-    time: date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+    month: date.toLocaleDateString(locale, { month: "short" }).toUpperCase(),
+    weekday: date.toLocaleDateString(locale, { weekday: "short" }).toUpperCase(),
+    time: date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }),
   };
 }
 
@@ -37,16 +38,6 @@ function pickAccent(seed: string) {
     value = (value * 31 + character.charCodeAt(0)) % palette.length;
   }
   return palette[value] ?? palette[0];
-}
-
-function formatSessionPrice(meeting: MeetingSummary) {
-  if (meeting.pricing === "free") {
-    return "Free";
-  }
-  if (typeof meeting.costPerPerson === "number") {
-    return `${meeting.costPerPerson}€`;
-  }
-  return "Paid";
 }
 
 export function EventTimeline({
@@ -60,6 +51,7 @@ export function EventTimeline({
   secondaryMeta = "group-and-location",
   selectedMeetingId = null,
 }: EventTimelineProps) {
+  const { formatPrice, locale, t } = useI18n();
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [isHeaderStuck, setIsHeaderStuck] = useState(false);
@@ -104,7 +96,7 @@ export function EventTimeline({
         {heading ? (
           <div className={headerClassName} ref={headerRef}>
             <div>
-              <p className="eyebrow">Timeline</p>
+              <p className="eyebrow">{t("common.timeline")}</p>
               <h2 className="section-title typewriter-title">{heading}</h2>
             </div>
             {actions}
@@ -123,7 +115,7 @@ export function EventTimeline({
       {heading || actions ? (
         <div className={headerClassName} ref={headerRef}>
           <div>
-            {heading ? <p className="eyebrow">Timeline</p> : null}
+            {heading ? <p className="eyebrow">{t("common.timeline")}</p> : null}
             {heading ? <h2 className="section-title typewriter-title">{heading}</h2> : null}
           </div>
           {actions}
@@ -132,7 +124,7 @@ export function EventTimeline({
 
       <div className="timeline-list timeline-list--rail">
         {meetings.map((meeting) => {
-          const date = formatTimelineDate(meeting.startsAt);
+          const date = formatTimelineDate(meeting.startsAt, locale);
           const isSelected = selectedMeetingId === meeting.id;
           const accent = pickAccent(meeting.seriesId ?? meeting.venueId ?? meeting.groupId ?? meeting.id);
           const style = { "--timeline-accent": accent } as CSSProperties;
@@ -140,8 +132,8 @@ export function EventTimeline({
             secondaryMeta === "location"
               ? [`@${meeting.locationName}`]
               : secondaryMeta === "group"
-                ? [`from ${meeting.groupName}`]
-                : [`from ${meeting.groupName}`, `@${meeting.locationName}`];
+                ? [t("timeline.from", { value: meeting.groupName })]
+                : [t("timeline.from", { value: meeting.groupName }), t("timeline.location", { value: meeting.locationName })];
 
           const card = (
             <>
@@ -157,20 +149,20 @@ export function EventTimeline({
                   </div>
                 </div>
                 <div className="timeline-card__side-stack">
-                  {meeting.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
-                  <span className="badge">{formatSessionPrice(meeting)}</span>
+                  {meeting.status === "cancelled" ? <span className="badge-cancelled">{t("common.cancelled")}</span> : null}
+                  <span className="badge">{formatPrice(meeting.pricing, meeting.costPerPerson)}</span>
                   <span className="badge-outline">{`${meeting.claimedSpots}/${meeting.capacity}`}</span>
                 </div>
               </div>
               <div className="timeline-card__meta-row">
                 <div className="timeline-card__tags timeline-card__tags--bottom-right">
-                  {meeting.seriesId && !meeting.viewerHasClaimed ? <span className="badge-outline">Series</span> : null}
-                  {meeting.viewerHasClaimed ? <span className="badge-accent">Claimed</span> : null}
+                  {meeting.seriesId && !meeting.viewerHasClaimed ? <span className="badge-outline">{t("timeline.series")}</span> : null}
+                  {meeting.viewerHasClaimed ? <span className="badge-accent">{t("common.claimed")}</span> : null}
                 </div>
               </div>
               {date.isToday ? (
                 <div className="timeline-card__notice-row">
-                  <span className="badge-accent">Today</span>
+                  <span className="badge-accent">{t("common.today")}</span>
                 </div>
               ) : null}
             </>

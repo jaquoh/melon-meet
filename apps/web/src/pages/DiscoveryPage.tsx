@@ -46,6 +46,7 @@ import {
   unclaimMeeting,
 } from "../lib/api";
 import { formatDateTimeWithWeekdayShort } from "../lib/format";
+import { useI18n } from "../lib/i18n";
 import { createNavigationState } from "../lib/navigation";
 import { queryClient } from "../lib/query-client";
 
@@ -112,27 +113,22 @@ function toIso(date: Date) {
   return new Date(date).toISOString();
 }
 
-function formatSessionPrice(meeting: MeetingSummary) {
-  if (meeting.pricing === "free") {
-    return "Free";
-  }
-  if (typeof meeting.costPerPerson === "number") {
-    return `${meeting.costPerPerson}€ / person`;
-  }
-  return "Paid";
-}
-
 function formatPlayingLevelTag(level: string | null | undefined) {
   const trimmed = level?.trim();
   return `LVL ${trimmed && trimmed.length > 0 ? trimmed : "?"}`;
 }
 
-function timePresetLabel(preset: TimePreset) {
-  if (preset === "all-sessions") return "All sessions";
-  if (preset === "next-week") return "Next week";
-  if (preset === "this-week") return "This week";
-  if (preset === "this-month") return "This month";
-  return preset.charAt(0).toUpperCase() + preset.slice(1).replace("-", " ");
+function timePresetLabel(
+  preset: TimePreset,
+  t: (key: string, values?: Record<string, string | number | null | undefined>) => string,
+) {
+  if (preset === "all-sessions") return t("common.allSessions");
+  if (preset === "next-week") return t("common.nextWeek");
+  if (preset === "this-week") return t("common.thisWeek");
+  if (preset === "this-month") return t("common.thisMonth");
+  if (preset === "today") return t("common.today");
+  if (preset === "tomorrow") return t("common.tomorrow");
+  return t("common.custom");
 }
 
 function windowForPreset(preset: TimePreset, customStartAt: string, customEndAt: string) {
@@ -197,6 +193,7 @@ export function DiscoveryPage({
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
+  const { formatPrice, formatRole, formatVisibility, locale, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const { groupId: routeGroupId, meetingId: routeMeetingId, profileId: routeProfileId, venueId: routeVenueId } = useParams();
@@ -930,7 +927,7 @@ export function DiscoveryPage({
   const selectedProfileResponsible = selectedProfileDetailQuery.data?.responsible ?? [];
   const selectedMeetingClaims = selectedMeetingDetailQuery.data?.claims ?? [];
   const isOwnProfile = Boolean(selectedProfileId && viewer?.id === selectedProfileId);
-  const createdSessionsHeading = isOwnProfile ? "Your created Sessions" : "Created Sessions";
+  const createdSessionsHeading = isOwnProfile ? t("profile.ownCreatedSessions") : t("profile.createdSessions");
   const activeProfileDraft = profileDraft ?? (selectedProfileDetail ? createProfileDraft(selectedProfileDetail) : null);
   const selectedTitle =
     selectedMeetingDetail?.title ??
@@ -939,7 +936,8 @@ export function DiscoveryPage({
     selectedGroupDetail?.name ??
     selectedProfileDetail?.displayName ??
     "";
-  const listHeading = itemMode === "groups" ? "Groups" : itemMode === "venues" ? "Venues" : "Sessions";
+  const listHeading =
+    itemMode === "groups" ? t("discovery.listHeadingGroups") : itemMode === "venues" ? t("discovery.listHeadingVenues") : t("discovery.listHeadingSessions");
   const navState = createNavigationState(location, "Workspace");
   const selectedVenueMeetings =
     selectedVenueDetailQuery.data?.venue.id === selectedVenueId
@@ -1003,9 +1001,9 @@ export function DiscoveryPage({
   const hasSelection = Boolean(selectedMeetingId || selectedMeetingCluster || selectedVenueId || selectedGroupId || selectedProfileId);
   const showUpcomingSessions = displayMode === "map" || itemMode !== "sessions";
   const activeFilterTags = [
-    timePreset !== "all-sessions" ? timePresetLabel(timePreset) : null,
-    bounds.pricing !== "all" ? (bounds.pricing === "free" ? "Free" : "Paid") : null,
-    bounds.openOnly ? "Free spots" : null,
+    timePreset !== "all-sessions" ? timePresetLabel(timePreset, t) : null,
+    bounds.pricing !== "all" ? (bounds.pricing === "free" ? t("common.free") : t("common.paid")) : null,
+    bounds.openOnly ? t("discovery.freeSpots") : null,
   ].filter((tag): tag is string => Boolean(tag));
   const hasActiveFilters = activeFilterTags.length > 0;
   const returnPath = workspaceReturnStack[workspaceReturnStack.length - 1];
@@ -1252,8 +1250,8 @@ export function DiscoveryPage({
     editingTarget?.kind === "group" && selectedGroupDetail ? (
       <div className="workspace-edit-surface">
         <div className="screen-heading">
-          <p className="eyebrow">Edit</p>
-          <h2 className="screen-heading__title">Group</h2>
+          <p className="eyebrow">{t("discovery.editMode")}</p>
+          <h2 className="screen-heading__title">{t("discovery.selectionGroup")}</h2>
         </div>
         <GroupForm
           formId="workspace-group-edit-form"
@@ -1271,10 +1269,10 @@ export function DiscoveryPage({
         <div className="editor-action-row">
           <div className="editor-action-row__right">
             <button className="button-secondary" onClick={() => setEditingTarget(null)} type="button">
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="button-primary" form="workspace-group-edit-form" type="submit">
-              Save group
+              {t("common.save")}
             </button>
           </div>
         </div>
@@ -1282,8 +1280,8 @@ export function DiscoveryPage({
     ) : editingTarget?.kind === "meeting" && selectedMeetingDetail ? (
       <div className="workspace-edit-surface">
         <div className="screen-heading">
-          <p className="eyebrow">Edit</p>
-          <h2 className="screen-heading__title">{editingTarget.mode === "series" ? "Session Series" : "Session"}</h2>
+          <p className="eyebrow">{t("discovery.editMode")}</p>
+          <h2 className="screen-heading__title">{editingTarget.mode === "series" ? t("discovery.sessionSeries") : t("discovery.selectionSession")}</h2>
         </div>
         <MeetingForm
           formId="workspace-meeting-edit-form"
@@ -1299,10 +1297,10 @@ export function DiscoveryPage({
         <div className="editor-action-row">
           <div className="editor-action-row__right">
             <button className="button-secondary" onClick={() => setEditingTarget(null)} type="button">
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="button-primary" form="workspace-meeting-edit-form" type="submit">
-              Save session
+              {t("common.save")}
             </button>
           </div>
         </div>
@@ -1316,14 +1314,14 @@ export function DiscoveryPage({
           {selectionHeaderActions}
           <div className="detail-card__eyebrow">
             <Users size={14} strokeWidth={2} />
-            <span className="panel-caption">Profile</span>
+            <span className="panel-caption">{t("discovery.selectionProfile")}</span>
           </div>
           <h2 className="info-panel__title">{selectedProfileDetail.displayName}</h2>
           <div className="info-tags">
-            <span className="mini-chip">{selectedProfileDetail.isProfilePublic ? "public" : "private"}</span>
+            <span className="mini-chip">{selectedProfileDetail.isProfilePublic ? t("common.public") : t("common.private")}</span>
             <span className="mini-chip">{formatPlayingLevelTag(selectedProfileDetail.playingLevel)}</span>
-            {selectedProfileMemberships.length > 0 ? <span className="mini-chip">{selectedProfileMemberships.length} groups</span> : null}
-            {selectedProfileAttending.length > 0 ? <span className="mini-chip">{selectedProfileAttending.length} attending</span> : null}
+            {selectedProfileMemberships.length > 0 ? <span className="mini-chip">{`${selectedProfileMemberships.length} ${t("common.groups").toLowerCase()}`}</span> : null}
+            {selectedProfileAttending.length > 0 ? <span className="mini-chip">{`${selectedProfileAttending.length} ${t("discovery.attending")}`}</span> : null}
           </div>
         </div>
         <div className={`detail-hero__media info-panel__hero ${selectedProfileDetail.avatarUrl ? "has-image" : ""}`.trim()}>
@@ -1353,10 +1351,10 @@ export function DiscoveryPage({
                   }}
                   type="button"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button className="button-primary" form="workspace-profile-edit-form" type="submit">
-                  Save profile
+                  {t("common.save")}
                 </button>
               </div>
             </div>
@@ -1365,27 +1363,27 @@ export function DiscoveryPage({
         ) : (
           <>
             {selectedProfileDetailQuery.data?.profileIsPrivate && !isOwnProfile ? (
-              <p className="muted-copy">This profile is private.</p>
+              <p className="muted-copy">{t("profile.privateProfile")}</p>
             ) : (
               <>
-                <p className="detail-quote detail-quote--hero">{selectedProfileDetail.bio || "No bio yet."}</p>
+                <p className="detail-quote detail-quote--hero">{selectedProfileDetail.bio || t("profile.noBioYet")}</p>
                 <section className="info-grid">
                   {selectedProfileDetail.homeArea ? (
                     <div>
-                      <span className="panel-caption">Home area</span>
+                      <span className="panel-caption">{t("forms.homeArea")}</span>
                       <strong>{selectedProfileDetail.homeArea}</strong>
                     </div>
                   ) : null}
                   {selectedProfileDetail.email ? (
                     <div>
-                      <span className="panel-caption">Email</span>
+                      <span className="panel-caption">{t("landing.email")}</span>
                       <strong>{selectedProfileDetail.email}</strong>
                     </div>
                   ) : null}
                 </section>
                 {selectedProfileMemberships.length > 0 ? (
                   <div className="stack-panel">
-                    <p className="panel-caption">Groups</p>
+                    <p className="panel-caption">{t("profile.groups")}</p>
                     <div className="subtle-action-row">
                       {selectedProfileMemberships.map((membership) => (
                         <Link
@@ -1401,7 +1399,7 @@ export function DiscoveryPage({
                           })}
                           to={`/groups/${membership.id}`}
                         >
-                          {membership.name} · {membership.role}
+                          {membership.name} · {formatRole(membership.role)}
                         </Link>
                       ))}
                     </div>
@@ -1418,7 +1416,7 @@ export function DiscoveryPage({
                       type="button"
                     >
                       <Edit3 size={14} strokeWidth={2} />
-                      Edit
+                      {t("common.edit")}
                     </button>
                   ) : null}
                   {isOwnProfile ? (
@@ -1430,8 +1428,8 @@ export function DiscoveryPage({
                 {selectedProfileAttending.length > 0 ? (
                   <EventTimeline
                     contextLabel="Profile"
-                    emptyLabel="No upcoming sessions."
-                    heading="Attending"
+                    emptyLabel={t("profile.noUpcomingSessions")}
+                    heading={t("profile.attending")}
                     meetings={selectedProfileAttending}
                     onSelectMeeting={selectMeeting}
                     secondaryMeta="location"
@@ -1440,7 +1438,7 @@ export function DiscoveryPage({
                 {selectedProfileResponsible.length > 0 ? (
                   <EventTimeline
                     contextLabel="Profile"
-                    emptyLabel="No hosted sessions."
+                    emptyLabel={t("profile.noHostedSessions")}
                     heading={createdSessionsHeading}
                     meetings={selectedProfileResponsible}
                     onSelectMeeting={selectMeeting}
@@ -1455,12 +1453,12 @@ export function DiscoveryPage({
     ) : selectedProfileDetailQuery.isLoading ? (
       <div className="info-panel info-panel--empty">
         <MessageSquare size={18} strokeWidth={2} />
-        <h2 className="info-panel__title">Loading profile...</h2>
+        <h2 className="info-panel__title">{t("common.loadingProfile")}</h2>
       </div>
     ) : (
       <div className="info-panel info-panel--empty">
         <MessageSquare size={18} strokeWidth={2} />
-        <h2 className="info-panel__title">Profile not found.</h2>
+        <h2 className="info-panel__title">{t("discovery.profileNotFound")}</h2>
       </div>
     )
   ) : selectedMeetingCluster ? (
@@ -1469,15 +1467,15 @@ export function DiscoveryPage({
         {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
-          <span className="panel-caption">Session cluster</span>
+          <span className="panel-caption">{t("discovery.selectionCluster")}</span>
         </div>
         <h2 className="info-panel__title">{selectedMeetingCluster.title}</h2>
-        <p className="muted-copy">{selectedMeetingCluster.meetings.length} sessions at this location</p>
+        <p className="muted-copy">{t("status.sessionsAtLocation", { count: selectedMeetingCluster.meetings.length })}</p>
       </div>
       <EventTimeline
         contextLabel="Workspace"
-        emptyLabel="No sessions at this location."
-        heading="Sessions at this location"
+        emptyLabel={t("discovery.noSessionsAtLocation")}
+        heading={t("discovery.sessionsAtLocation")}
         meetings={selectedMeetingCluster.meetings}
         onSelectMeeting={selectMeeting}
       />
@@ -1488,45 +1486,45 @@ export function DiscoveryPage({
         {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <CalendarRange size={14} strokeWidth={2} />
-          <span className="panel-caption">Session</span>
+          <span className="panel-caption">{t("discovery.selectionSession")}</span>
         </div>
         <h2 className={`info-panel__title ${selectedMeetingDetail.status === "cancelled" ? "session-title--cancelled" : ""}`.trim()}>
           {selectedMeetingDetail.title}
         </h2>
         <div className="info-tags">
-          {selectedMeetingDetail.status === "cancelled" ? <span className="badge-cancelled">Cancelled</span> : null}
-          <span className="mini-chip">{selectedMeetingDetail.groupVisibility}</span>
-          <span className="mini-chip">{formatSessionPrice(selectedMeetingDetail)}</span>
-          {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">Claimed</span> : null}
+          {selectedMeetingDetail.status === "cancelled" ? <span className="badge-cancelled">{t("common.cancelled")}</span> : null}
+          <span className="mini-chip">{formatVisibility(selectedMeetingDetail.groupVisibility)}</span>
+          <span className="mini-chip">{formatPrice(selectedMeetingDetail.pricing, selectedMeetingDetail.costPerPerson, true)}</span>
+          {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--accent">{t("common.claimed")}</span> : null}
         </div>
       </div>
       {renderImagePane({
         imageUrl: selectedMeetingDetail.heroImageUrl,
-        quote: selectedMeetingDetail.description || "No description yet.",
+        quote: selectedMeetingDetail.description || t("common.noDescriptionYet"),
         title: selectedMeetingDetail.title,
       })}
-      <p className="detail-quote detail-quote--hero">{selectedMeetingDetail.description || "No description yet."}</p>
+      <p className="detail-quote detail-quote--hero">{selectedMeetingDetail.description || t("common.noDescriptionYet")}</p>
       <section className="availability-callout">
-        <span className="panel-caption">Availability</span>
-        <strong>{selectedMeetingDetail.openSpots} spots open</strong>
-        <span>{selectedMeetingDetail.claimedSpots}/{selectedMeetingDetail.capacity} claimed</span>
+        <span className="panel-caption">{t("discovery.availability")}</span>
+        <strong>{t("status.openSpots", { count: selectedMeetingDetail.openSpots })}</strong>
+        <span>{t("status.claimedCount", { claimed: selectedMeetingDetail.claimedSpots, capacity: selectedMeetingDetail.capacity })}</span>
         {viewer ? (
           <div className="availability-callout__actions">
-            {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--success">You are attending</span> : null}
+            {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--success">{t("discovery.youAreAttending")}</span> : null}
             <button className="button-primary button-inline" onClick={() => claimMutation.mutate(selectedMeetingDetail)} type="button">
               <Users size={14} strokeWidth={2} />
-              {selectedMeetingDetail.viewerHasClaimed ? "Release your spot" : "Claim your spot"}
+              {selectedMeetingDetail.viewerHasClaimed ? t("discovery.releaseSpot") : "Claim your spot"}
             </button>
           </div>
         ) : null}
       </section>
       <section className="info-grid">
         <div>
-          <span className="panel-caption">Time</span>
-          <strong>{formatDateTimeWithWeekdayShort(selectedMeetingDetail.startsAt)}</strong>
+          <span className="panel-caption">{t("discovery.time")}</span>
+          <strong>{formatDateTimeWithWeekdayShort(selectedMeetingDetail.startsAt, locale)}</strong>
         </div>
         <div>
-          <span className="panel-caption">Venue</span>
+          <span className="panel-caption">{t("common.venue")}</span>
           <Link
             state={
               selectedMeetingDetail.venueId
@@ -1546,7 +1544,7 @@ export function DiscoveryPage({
           </Link>
         </div>
         <div>
-          <span className="panel-caption">Group</span>
+          <span className="panel-caption">{t("discovery.group")}</span>
           <Link
             state={detailNavigationState({
               itemMode: "groups",
@@ -1562,12 +1560,12 @@ export function DiscoveryPage({
           </Link>
         </div>
         <div>
-          <span className="panel-caption">Address</span>
+          <span className="panel-caption">{t("forms.address")}</span>
           <strong>{selectedMeetingDetail.locationAddress}</strong>
         </div>
       </section>
       <section className="stack-panel">
-        <span className="panel-caption">Attending Players</span>
+        <span className="panel-caption">{t("discovery.attendingPlayers")}</span>
         {selectedMeetingClaims.length > 0 ? (
           <div className="attending-player-list">
             {selectedMeetingClaims.map((claim) => (
@@ -1587,26 +1585,26 @@ export function DiscoveryPage({
             ))}
           </div>
         ) : (
-          <p className="muted-copy">Nobody has claimed a spot yet.</p>
+          <p className="muted-copy">{t("discovery.nobodyClaimed")}</p>
         )}
       </section>
       <div className="subtle-action-row">
-        <CopyTextButton label="Copy address" value={selectedMeetingDetail.locationAddress} />
+        <CopyTextButton label={t("discovery.copyAddress")} value={selectedMeetingDetail.locationAddress} />
         <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMeetingDetail.locationAddress)}`} rel="noreferrer" target="_blank">
           <Compass size={14} strokeWidth={2} />
-          <span>Maps</span>
+          <span>{t("common.maps")}</span>
           <ExternalLink size={14} strokeWidth={2} />
         </a>
         {selectedMeetingDetail.viewerCanEdit ? (
           <>
             <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "meeting", mode: "single" })} type="button">
               <Edit3 size={14} strokeWidth={2} />
-              Edit
+              {t("common.edit")}
             </button>
             {selectedMeetingDetail.seriesId ? (
               <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "meeting", mode: "series" })} type="button">
                 <Shield size={14} strokeWidth={2} />
-                Edit Series
+                {t("discovery.editSeries")}
               </button>
             ) : null}
           </>
@@ -1614,13 +1612,13 @@ export function DiscoveryPage({
       </div>
       {selectedMeetingDetailQuery.data ? (
         <PostBoard
-          buttonLabel="Post update"
+          buttonLabel={t("discovery.postUpdate")}
           canPost={Boolean(viewer)}
           compact
-          emptyLabel="No updates yet."
+          emptyLabel={t("discovery.noUpdatesYet")}
           onSubmit={async (content) => meetingPostMutation.mutateAsync(content)}
           posts={selectedMeetingDetailQuery.data.posts}
-          title="Updates"
+          title={t("discovery.updatesTitle")}
         />
       ) : null}
     </div>
@@ -1630,35 +1628,35 @@ export function DiscoveryPage({
         {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <MapPin size={14} strokeWidth={2} />
-          <span className="panel-caption">Venue</span>
+          <span className="panel-caption">{t("discovery.selectionVenue")}</span>
         </div>
         <h2 className="info-panel__title">{selectedVenueDetail.name}</h2>
         <div className="info-tags">
-          <span className="mini-chip">{selectedVenueDetail.pricing}</span>
-          <span className="mini-chip">{selectedVenueMeetings.length} sessions</span>
+          <span className="mini-chip">{formatPrice(selectedVenueDetail.pricing, null)}</span>
+          <span className="mini-chip">{t("status.sessions", { count: selectedVenueMeetings.length })}</span>
         </div>
       </div>
       {renderImagePane({
         imageUrl: selectedVenueDetail.heroImageUrl,
-        quote: selectedVenueDetail.description || "No description yet.",
+        quote: selectedVenueDetail.description || t("common.noDescriptionYet"),
         title: selectedVenueDetail.name,
       })}
-      <p className="detail-quote detail-quote--hero">{selectedVenueDetail.description || "No description yet."}</p>
+      <p className="detail-quote detail-quote--hero">{selectedVenueDetail.description || t("common.noDescriptionYet")}</p>
       <section className="info-grid">
         <div>
-          <span className="panel-caption">Address</span>
+          <span className="panel-caption">{t("forms.address")}</span>
           <strong>{selectedVenueDetail.address}</strong>
         </div>
         <div>
-          <span className="panel-caption">Opening hours</span>
-          <strong>{selectedVenueDetail.openingHoursText || "Check source before you go"}</strong>
+          <span className="panel-caption">{t("discovery.openingHours")}</span>
+          <strong>{selectedVenueDetail.openingHoursText || t("discovery.openingHoursFallback")}</strong>
         </div>
       </section>
       <div className="subtle-action-row">
-        <CopyTextButton label="Copy address" value={selectedVenueDetail.address} />
+        <CopyTextButton label={t("discovery.copyAddress")} value={selectedVenueDetail.address} />
         <a className="button-secondary button-inline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedVenueDetail.address)}`} rel="noreferrer" target="_blank">
           <Compass size={14} strokeWidth={2} />
-          <span>Maps</span>
+          <span>{t("common.maps")}</span>
           <ExternalLink size={14} strokeWidth={2} />
         </a>
         {(() => {
@@ -1670,14 +1668,14 @@ export function DiscoveryPage({
           }
           return (
             <a className="button-secondary button-inline" href={primaryUrl} rel="noreferrer" target="_blank">
-              {bookingUrl ? "Booking" : "Website"}
+              {bookingUrl ? t("common.booking") : t("common.website")}
             </a>
           );
         })()}
       </div>
       <EventTimeline
         contextLabel="Venue"
-        emptyLabel="No sessions at this venue yet."
+        emptyLabel={t("discovery.noSessionsAtVenue")}
         heading={`Sessions @${selectedVenueDetail.name}`}
         meetings={selectedVenueMeetings}
         onSelectMeeting={selectMeeting}
@@ -1690,59 +1688,59 @@ export function DiscoveryPage({
         {selectionHeaderActions}
         <div className="detail-card__eyebrow">
           <Users size={14} strokeWidth={2} />
-          <span className="panel-caption">Group</span>
+          <span className="panel-caption">{t("discovery.selectionGroup")}</span>
         </div>
         <h2 className="info-panel__title">{selectedGroupDetail.name}</h2>
         <div className="info-tags">
-          <span className="mini-chip">{selectedGroupDetail.visibility}</span>
-          <span className="mini-chip">{selectedGroupMeetings.length} sessions</span>
-          {selectedGroupDetail.viewerRole ? <span className="mini-chip mini-chip--accent">{selectedGroupDetail.viewerRole}</span> : null}
+          <span className="mini-chip">{formatVisibility(selectedGroupDetail.visibility)}</span>
+          <span className="mini-chip">{t("status.sessions", { count: selectedGroupMeetings.length })}</span>
+          {selectedGroupDetail.viewerRole ? <span className="mini-chip mini-chip--accent">{formatRole(selectedGroupDetail.viewerRole)}</span> : null}
         </div>
       </div>
       {renderImagePane({
         imageUrl: selectedGroupDetail.heroImageUrl,
-        quote: selectedGroupDetail.description || "No description yet.",
+        quote: selectedGroupDetail.description || t("common.noDescriptionYet"),
         title: selectedGroupDetail.name,
       })}
-      <p className="detail-quote">{selectedGroupDetail.description || "No description yet."}</p>
+      <p className="detail-quote">{selectedGroupDetail.description || t("common.noDescriptionYet")}</p>
       <section className="info-grid">
         <div>
-          <span className="panel-caption">Activity</span>
-          <strong>{selectedGroupDetail.activityLabel || "Beach volleyball"}</strong>
+          <span className="panel-caption">{t("forms.activity")}</span>
+          <strong>{selectedGroupDetail.activityLabel || t("discovery.activityFallback")}</strong>
         </div>
         <div>
-          <span className="panel-caption">Members</span>
+          <span className="panel-caption">{t("discovery.members")}</span>
           <strong>{selectedGroupDetailQuery.data?.members.length ?? selectedGroup?.memberCount ?? 0}</strong>
         </div>
       </section>
       <div className="subtle-action-row">
         {!selectedGroupDetail.viewerRole && viewer ? (
           <button className="button-primary button-inline" onClick={() => membershipMutation.mutate(selectedGroupDetail.id)} type="button">
-            Request membership
+            {t("common.requestMembership")}
           </button>
         ) : null}
-        {selectedGroupDetail.messengerUrl ? <a className="button-secondary button-inline" href={selectedGroupDetail.messengerUrl} rel="noreferrer" target="_blank">Messenger</a> : null}
+        {selectedGroupDetail.messengerUrl ? <a className="button-secondary button-inline" href={selectedGroupDetail.messengerUrl} rel="noreferrer" target="_blank">{t("common.messenger")}</a> : null}
         {"viewerCanEditGroup" in selectedGroupDetail && selectedGroupDetail.viewerCanEditGroup ? (
           <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "group" })} type="button">
             <Edit3 size={14} strokeWidth={2} />
-            Edit
+            {t("common.edit")}
           </button>
         ) : null}
       </div>
       {selectedGroupDetailQuery.data ? (
         <PostBoard
-          buttonLabel="Post to group"
+          buttonLabel={t("discovery.postToGroup")}
           canPost={Boolean(selectedGroupDetailQuery.data.group.viewerRole)}
           compact
-          emptyLabel="No posts yet."
+          emptyLabel={t("discovery.noPostsYet")}
           onSubmit={async (content) => groupPostMutation.mutateAsync(content)}
           posts={selectedGroupDetailQuery.data.posts}
-          title="Updates"
+          title={t("discovery.updatesTitle")}
         />
       ) : null}
       <EventTimeline
         contextLabel="Group"
-        emptyLabel="No sessions created by this group yet."
+        emptyLabel={t("discovery.noSessionsByGroup")}
         heading={`Sessions from ${selectedGroupDetail.name}`}
         meetings={selectedGroupMeetings}
         onSelectMeeting={selectMeeting}
@@ -1752,10 +1750,10 @@ export function DiscoveryPage({
   ) : (
     <div className="info-panel info-panel--empty">
       <MessageSquare size={18} strokeWidth={2} />
-      <h2 className="info-panel__title">Pick a court, group, or session.</h2>
-      <p className="muted-copy">Details, sessions, actions, and updates appear here.</p>
+      <h2 className="info-panel__title">{t("discovery.emptyWorkspaceTitle")}</h2>
+      <p className="muted-copy">{t("discovery.emptyWorkspaceText")}</p>
       {showUpcomingSessions ? (
-        <EventTimeline contextLabel="Workspace" emptyLabel="No sessions available." heading="Upcoming sessions" meetings={meetings} />
+        <EventTimeline contextLabel="Workspace" emptyLabel={t("discovery.noSessionsAvailable")} heading={t("discovery.upcomingSessions")} meetings={meetings} />
       ) : null}
     </div>
   );
@@ -1769,9 +1767,9 @@ export function DiscoveryPage({
           type="button"
         >
           <Filter size={14} strokeWidth={2} />
-          <span>Filter</span>
+          <span>{t("common.filter")}</span>
         </button>
-        <div className={`active-filter-tags ${hasActiveFilters ? "" : "is-empty"}`.trim()} aria-label="Active filters">
+        <div className={`active-filter-tags ${hasActiveFilters ? "" : "is-empty"}`.trim()} aria-label={t("common.filters")}>
           {hasActiveFilters ? (
             activeFilterTags.map((tag) => (
               <span className="active-filter-tag" key={tag}>
@@ -1780,14 +1778,14 @@ export function DiscoveryPage({
             ))
           ) : (
             <span className="active-filter-tag" aria-hidden="true">
-              All
+              {t("common.all")}
             </span>
           )}
         </div>
       </div>
       {showMobileFilters ? (
         <div className="filter-dropdown__panel">
-          <p className="panel-caption">Price</p>
+          <p className="panel-caption">{t("forms.pricing")}</p>
           <div className="workspace-segmented workspace-segmented--fit filter-price-group">
             {(["all", "free", "paid"] as const).map((pricing) => (
               <button
@@ -1805,11 +1803,11 @@ export function DiscoveryPage({
                 }
                 type="button"
               >
-                {pricing}
+                {pricing === "all" ? t("common.all") : pricing === "free" ? t("common.free") : t("common.paid")}
               </button>
             ))}
           </div>
-          <p className="panel-caption">Time</p>
+          <p className="panel-caption">{t("discovery.time")}</p>
           <div className="time-filter-group">
             {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
               <button
@@ -1821,14 +1819,14 @@ export function DiscoveryPage({
                 }}
                 type="button"
               >
-                {timePresetLabel(preset)}
+                {timePresetLabel(preset, t)}
               </button>
             ))}
           </div>
           {timePreset === "custom" ? (
             <div className="custom-range-grid">
               <label className="field-stack">
-                <span className="field-label">From</span>
+                <span className="field-label">{t("common.from")}</span>
                 <input
                   className="field-input"
                   onChange={(event) => {
@@ -1840,7 +1838,7 @@ export function DiscoveryPage({
                 />
               </label>
               <label className="field-stack">
-                <span className="field-label">To</span>
+                <span className="field-label">{t("common.to")}</span>
                 <input
                   className="field-input"
                   onChange={(event) => {
@@ -1853,7 +1851,7 @@ export function DiscoveryPage({
               </label>
             </div>
           ) : null}
-          <p className="panel-caption">Availability</p>
+          <p className="panel-caption">{t("discovery.availability")}</p>
           <button
             className={`filter-chip ${bounds.openOnly ? "is-active" : ""}`}
             onClick={() =>
@@ -1865,7 +1863,7 @@ export function DiscoveryPage({
             }
             type="button"
           >
-            Free spots only
+            {t("discovery.freeSpotsOnly")}
           </button>
         </div>
       ) : null}
@@ -1883,7 +1881,7 @@ export function DiscoveryPage({
       type="button"
     >
       {displayMode === "map" ? <List size={14} strokeWidth={2} /> : <MapIcon size={14} strokeWidth={2} />}
-      <span>{displayMode === "map" ? "List" : "Map"}</span>
+      <span>{displayMode === "map" ? t("common.list") : t("common.map")}</span>
     </button>
   );
 
@@ -1891,11 +1889,11 @@ export function DiscoveryPage({
     <div className="workspace-segmented workspace-segmented--fit workspace-segmented--mode">
       <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
         <MapPin size={14} strokeWidth={2} />
-        <span>Venues</span>
+        <span>{t("common.venues")}</span>
       </button>
       <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
         <Users size={14} strokeWidth={2} />
-        <span>Groups</span>
+        <span>{t("common.groups")}</span>
       </button>
       <button
         className={itemMode === "sessions" ? "is-active" : ""}
@@ -1903,7 +1901,7 @@ export function DiscoveryPage({
         type="button"
       >
         <CalendarRange size={14} strokeWidth={2} />
-        <span>Sessions</span>
+        <span>{t("common.sessions")}</span>
       </button>
     </div>
   );
@@ -1919,7 +1917,7 @@ export function DiscoveryPage({
     itemMode === "sessions" ? (
       <EventTimeline
         contextLabel="Workspace"
-        emptyLabel="No sessions match the current filters."
+        emptyLabel={t("discovery.noSessionsFiltered")}
         meetings={meetings}
         onSelectMeeting={selectMeeting}
         selectedMeetingId={selectedMeetingId}
@@ -1946,8 +1944,8 @@ export function DiscoveryPage({
                     <p className="browse-listing__meta">{venue.address}</p>
                     </span>
                     <span className="compact-badges">
-                      <span className="badge-outline">{venue.pricing}</span>
-                      <span className="badge">{venueMeetingsById[venue.id]?.length ?? 0} sessions</span>
+                      <span className="badge-outline">{formatPrice(venue.pricing, null)}</span>
+                      <span className="badge">{t("status.sessions", { count: venueMeetingsById[venue.id]?.length ?? 0 })}</span>
                     </span>
                   </span>
                   <span className="browse-listing__copy">{venue.description}</span>
@@ -1955,7 +1953,7 @@ export function DiscoveryPage({
               </button>
             ))
           : <>
-              {viewer && memberGroups.length > 0 ? <p className="list-separator list-separator--plain">Your groups</p> : null}
+              {viewer && memberGroups.length > 0 ? <p className="list-separator list-separator--plain">{t("common.yourGroups")}</p> : null}
               {viewer
                 ? memberGroups.map((group) => (
                     <button
@@ -1973,12 +1971,12 @@ export function DiscoveryPage({
                         <span className="browse-listing__row">
                           <span className="browse-listing__copy-block">
                           <strong className="browse-listing__title">{group.name}</strong>
-                            <p className="browse-listing__meta">{group.activityLabel || "Beach volleyball"}</p>
+                            <p className="browse-listing__meta">{group.activityLabel || t("discovery.activityFallback")}</p>
                           </span>
                           <span className="compact-badges">
-                            {group.viewerRole ? <span className="badge">{group.viewerRole}</span> : null}
-                            <span className="badge-outline">{group.memberCount} members</span>
-                            <span className="badge-outline">{group.publicSessionCount} sessions</span>
+                            {group.viewerRole ? <span className="badge">{formatRole(group.viewerRole)}</span> : null}
+                            <span className="badge-outline">{`${group.memberCount} ${t("common.members")}`}</span>
+                            <span className="badge-outline">{t("status.sessions", { count: group.publicSessionCount })}</span>
                           </span>
                         </span>
                         <span className="browse-listing__copy">{group.description}</span>
@@ -1987,7 +1985,7 @@ export function DiscoveryPage({
                   ))
                 : null}
               {viewer && memberGroups.length > 0 && publicGroups.length > 0 ? <div className="list-divider" /> : null}
-              <p className="list-separator list-separator--plain">Public groups</p>
+              <p className="list-separator list-separator--plain">{t("discovery.publicGroups")}</p>
               {publicGroups.map((group) => (
                 <button
                   className={`browse-listing ${selectedGroupId === group.id ? "is-selected" : ""}`}
@@ -2004,11 +2002,11 @@ export function DiscoveryPage({
                     <span className="browse-listing__row">
                       <span className="browse-listing__copy-block">
                       <strong className="browse-listing__title">{group.name}</strong>
-                        <p className="browse-listing__meta">{group.activityLabel || "Beach volleyball"}</p>
+                        <p className="browse-listing__meta">{group.activityLabel || t("discovery.activityFallback")}</p>
                       </span>
                       <span className="compact-badges">
-                        <span className="badge-outline">{group.memberCount} members</span>
-                        <span className="badge">{group.publicSessionCount} sessions</span>
+                        <span className="badge-outline">{`${group.memberCount} ${t("common.members")}`}</span>
+                        <span className="badge">{t("status.sessions", { count: group.publicSessionCount })}</span>
                       </span>
                     </span>
                     <span className="browse-listing__copy">{group.description}</span>
@@ -2059,7 +2057,7 @@ export function DiscoveryPage({
             />
             <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll" ref={listScrollRef}>
               <div className="workspace-list-heading">
-                <p className="eyebrow">Browse</p>
+                <p className="eyebrow">{t("common.browse")}</p>
                 <h2 className="section-title typewriter-title">{listHeading}</h2>
               </div>
               {listContent}
@@ -2084,7 +2082,7 @@ export function DiscoveryPage({
               type="button"
             >
               <MapIcon size={14} strokeWidth={2} />
-              <span>Map</span>
+              <span>{t("common.map")}</span>
             </button>
             <button
               className={displayMode === "list" ? "is-active" : ""}
@@ -2095,27 +2093,27 @@ export function DiscoveryPage({
               type="button"
             >
               <List size={14} strokeWidth={2} />
-              <span>List</span>
+              <span>{t("common.list")}</span>
             </button>
           </div>
 
           <div className="workspace-segmented workspace-segmented--column workspace-segmented--mode-nav">
             <button className={itemMode === "venues" ? "is-active" : ""} onClick={() => setItemModeSafely("venues")} type="button">
               <MapPin size={14} strokeWidth={2} />
-              <span>Venues</span>
+              <span>{t("common.venues")}</span>
             </button>
             <button className={itemMode === "groups" ? "is-active" : ""} onClick={() => setItemModeSafely("groups")} type="button">
               <Users size={14} strokeWidth={2} />
-              <span>Groups</span>
+              <span>{t("common.groups")}</span>
             </button>
             <button className={itemMode === "sessions" ? "is-active" : ""} onClick={() => setItemModeSafely("sessions")} type="button">
               <CalendarRange size={14} strokeWidth={2} />
-              <span>Sessions</span>
+              <span>{t("common.sessions")}</span>
             </button>
           </div>
 
           <div className="stack-panel">
-            <p className="panel-caption">Filters</p>
+            <p className="panel-caption">{t("common.filters")}</p>
           <div className="time-filter-group">
               {(["all-sessions", "today", "tomorrow", "this-week", "next-week", "this-month", "custom"] as TimePreset[]).map((preset) => (
                 <button
@@ -2127,14 +2125,14 @@ export function DiscoveryPage({
                 }}
                 type="button"
               >
-                {timePresetLabel(preset)}
+                {timePresetLabel(preset, t)}
                 </button>
               ))}
             </div>
             {timePreset === "custom" ? (
               <div className="custom-range-grid">
                 <label className="field-stack">
-                  <span className="field-label">From</span>
+                  <span className="field-label">{t("common.from")}</span>
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -2146,7 +2144,7 @@ export function DiscoveryPage({
                   />
                 </label>
                 <label className="field-stack">
-                  <span className="field-label">To</span>
+                  <span className="field-label">{t("common.to")}</span>
                   <input
                     className="field-input"
                     onChange={(event) => {
@@ -2161,7 +2159,7 @@ export function DiscoveryPage({
             ) : null}
             <FilterCheckbox
               checked={bounds.pricing !== "paid"}
-              label="Free"
+              label={t("common.free")}
               onChange={(checked) =>
                 setBounds((current) => {
                   const next: DiscoveryBounds = {
@@ -2175,7 +2173,7 @@ export function DiscoveryPage({
             />
             <FilterCheckbox
               checked={bounds.pricing !== "free"}
-              label="Paid"
+              label={t("common.paid")}
               onChange={(checked) =>
                 setBounds((current) => {
                   const next: DiscoveryBounds = {
@@ -2189,7 +2187,7 @@ export function DiscoveryPage({
             />
             <FilterCheckbox
               checked={bounds.openOnly}
-              label="Free spots only"
+              label={t("discovery.freeSpotsOnly")}
               onChange={(checked) =>
                 setBounds((current) => {
                   const next = { ...current, openOnly: checked };
@@ -2201,15 +2199,15 @@ export function DiscoveryPage({
           </div>
 
           <div className="stack-panel">
-            <p className="panel-caption">Your groups</p>
+            <p className="panel-caption">{t("common.yourGroups")}</p>
             {viewer ? (
               memberGroups.map((group) => (
                 <Link className="mini-link" key={group.id} state={navState} to={`/groups/${group.id}`}>
-                  {group.name} · {group.visibility}
+                  {group.name} · {formatVisibility(group.visibility)}
                 </Link>
               ))
             ) : (
-              <p className="muted-copy">Sign in to manage private groups and attend sessions.</p>
+              <p className="muted-copy">{t("profile.signInToParticipate")}</p>
             )}
           </div>
         </div>
@@ -2226,7 +2224,7 @@ export function DiscoveryPage({
             <h2 className="fullscreen-image-view__title">{fullscreenImage.title}</h2>
             <p className="fullscreen-image-view__quote">{fullscreenImage.quote}</p>
             <button
-              aria-label="Close image"
+              aria-label={t("discovery.viewImageClose")}
               className="button-secondary workspace-panel-close-square fullscreen-image-view__close"
               onClick={() => setFullscreenImage(null)}
               type="button"

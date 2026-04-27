@@ -4,9 +4,11 @@ import { Link, useLocation } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
 import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { useI18n, useTranslationValue } from "../lib/i18n";
 
 export const APP_DESCRIPTION = {
   body: [
@@ -212,8 +214,17 @@ export function InfoPage({
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
+  const { t } = useI18n();
+  const pages = useTranslationValue("info.pages") as Record<string, { description: string; sections: Array<{ body: string[]; title: string }>; title: string }>;
+  const appDescription = useTranslationValue("info.appDescription") as { body: string[]; title: string };
+  const infoLinks = [
+    { key: "info", label: t("info.links.info"), to: "/about" },
+    { key: "privacy", label: t("info.links.privacy"), to: "/privacy" },
+    { key: "terms", label: t("info.links.terms"), to: "/terms" },
+    { key: "impressum", label: t("info.links.impressum"), to: "/impressum" },
+  ] as const;
   const location = useLocation();
-  const content = PAGE_CONTENT[page];
+  const content = pages[page] ?? PAGE_CONTENT[page];
   const locationState =
     location.state && typeof location.state === "object"
       ? (location.state as { infoReturnTo?: string })
@@ -229,8 +240,9 @@ export function InfoPage({
   const infoLinkState = { infoReturnTo: closeTo };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
+      <LanguageSwitcher compact />
       <button
-        aria-label="Toggle theme"
+        aria-label={t("workspace.toggleTheme")}
         className="landing-theme-toggle"
         onClick={toggleTheme}
         type="button"
@@ -239,7 +251,7 @@ export function InfoPage({
       </button>
       <Link className="landing-header-button landing-header-button--label" to={closeTo}>
         <X size={16} strokeWidth={2} />
-        <span>Close</span>
+        <span>{t("common.close")}</span>
       </Link>
     </div>
   );
@@ -300,7 +312,7 @@ export function InfoPage({
                   <img alt="Melon Meet" className="landing-shell__logo" src={watermelonMark} />
                   <div className="landing-brand-lockup__copy">
                     <h1 className="landing-brand-lockup__title">Melon Meet</h1>
-                    <p className="landing-brand-lockup__meta">Berlin Beachvolleyball</p>
+                    <p className="landing-brand-lockup__meta">{t("workspace.berlinBeachVolleyball")}</p>
                   </div>
                 </div>
                 <div className="landing-mobile-actions">{renderHeaderControls()}</div>
@@ -328,8 +340,8 @@ export function InfoPage({
               {renderHeaderControls()}
             </section>
           </div>
-          <div className="landing-legal-links landing-legal-links--floating" aria-label="Legal pages">
-            {INFO_LINKS.map((link) => (
+          <div className="landing-legal-links landing-legal-links--floating" aria-label={t("workspace.infoAndLegalPages")}>
+            {infoLinks.map((link) => (
               <Link
                 className={page === link.key ? "is-active" : undefined}
                 key={link.key}
@@ -341,7 +353,7 @@ export function InfoPage({
             ))}
           </div>
           <button
-            aria-label="Scroll to top"
+            aria-label={t("discovery.scrollToTop")}
             className={`info-scroll-top ${showScrollTop ? "is-visible" : ""}`}
             onClick={scrollInfoPageToTop}
             type="button"
@@ -359,23 +371,23 @@ export function InfoPage({
   const infoNavigation = (
     <div className="stack-md info-nav">
       <div className="info-rail-header">
-        <Link aria-label="Back to map" className="button-secondary info-rail-close" to="/map">
+        <Link aria-label={t("workspace.backToMap")} className="button-secondary info-rail-close" to="/map">
           <X size={18} strokeWidth={2} />
         </Link>
       </div>
 
       <div className="stack-sm">
         <p className="eyebrow">Melon Meet</p>
-        <h2 className="column-title">{APP_DESCRIPTION.title}</h2>
-        {APP_DESCRIPTION.body.map((paragraph) => (
+        <h2 className="column-title">{appDescription.title}</h2>
+        {appDescription.body.map((paragraph) => (
           <p className="muted-copy" key={paragraph}>
             {paragraph}
           </p>
         ))}
       </div>
 
-      <nav aria-label="Info and legal pages" className="info-nav__links">
-        {INFO_LINKS.map((link) => (
+      <nav aria-label={t("workspace.infoAndLegalPages")} className="info-nav__links">
+        {infoLinks.map((link) => (
           <Link className={`info-nav__link ${selectedPage === link.key ? "is-active" : ""}`} key={link.key} to={link.to}>
             {link.label}
           </Link>
@@ -391,7 +403,7 @@ export function InfoPage({
           <div className="info-page__mobile-close">
             <Link className="button-secondary button-inline" to="/about">
               <X size={14} strokeWidth={2} />
-              <span>Close</span>
+              <span>{t("common.close")}</span>
             </Link>
           </div>
         ) : null}

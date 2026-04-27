@@ -1,15 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { CalendarDays, LogIn, Map, Moon, Sun, User, Users, X } from "lucide-react";
+import { ArrowRight, LogIn, Moon, Sun, User, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
 import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { logIn, signUp } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import { queryClient } from "../lib/query-client";
-import { INFO_LINKS } from "./InfoPage";
 
 export function LandingPage({
   theme,
@@ -20,6 +21,7 @@ export function LandingPage({
   toggleTheme: () => void;
   viewer: ViewerSummary | null;
 }) {
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -31,27 +33,31 @@ export function LandingPage({
   const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
-      <button
-        aria-label="Toggle theme"
-        className="landing-theme-toggle"
-        onClick={toggleTheme}
-        type="button"
-      >
-        {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
-      </button>
+      <div className="landing-shell__right-header-left">
+        <LanguageSwitcher compact />
+        <button
+          aria-label={t("workspace.toggleTheme")}
+          className="landing-theme-toggle"
+          onClick={toggleTheme}
+          type="button"
+        >
+          {theme === "dark" ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+        </button>
+      </div>
       {viewer ? (
-        <Link className="landing-header-button landing-header-button--label" to={`/profile/${viewer.id}`}>
+        <Link className="landing-header-button landing-header-button--label landing-header-button--edge" to={`/profile/${viewer.id}`}>
           <User size={16} strokeWidth={2} />
-          <span>Profile</span>
+          <span>{t("landing.profile")}</span>
         </Link>
       ) : (
         <button
-          className="landing-header-button landing-header-button--label landing-header-button--auth"
+          aria-label={showAuthPanel ? t("landing.closeAuth") : t("common.signIn")}
+          className="landing-header-button landing-header-button--label landing-header-button--auth landing-header-button--edge"
           onClick={() => setShowAuthPanel((current) => !current)}
           type="button"
         >
           {showAuthPanel ? <X size={16} strokeWidth={2} /> : <LogIn size={16} strokeWidth={2} />}
-          <span>{showAuthPanel ? "Close" : "Sign in"}</span>
+          <span className="landing-header-button__label">{showAuthPanel ? t("landing.closeAuth") : t("common.signIn")}</span>
         </button>
       )}
     </div>
@@ -78,7 +84,7 @@ export function LandingPage({
                 <img alt="Melon Meet" className="landing-shell__logo" src={watermelonMark} />
                 <div className="landing-brand-lockup__copy">
                   <h1 className="landing-brand-lockup__title">Melon Meet</h1>
-                  <p className="landing-brand-lockup__meta">Berlin Beachvolleyball</p>
+                  <p className="landing-brand-lockup__meta">{t("landing.meta")}</p>
                 </div>
               </div>
               <div className="landing-mobile-actions">{renderHeaderControls()}</div>
@@ -86,28 +92,17 @@ export function LandingPage({
 
             <div className="landing-hero-grid">
               <div className="stack-sm landing-shell__intro">
-                <h2 className="landing-hero__title">Meet your sporty Mellows!</h2>
-                <p className="landing-hero__text">
-                  Find the court, catch the vibe, and jump into Berlin beach volleyball with people who are ready to play.
-                </p>
+                <h2 className="landing-hero__title">{t("landing.heroTitle")}</h2>
               </div>
             </div>
 
             <div className="landing-entry-actions landing-entry-actions--single">
               <Link className="landing-entry-button" to="/map">
-                <Map size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Find your beach</span>
-                <span className="landing-entry-button__copy">Open the live melon map for courts, venues, nearby play, and public crews.</span>
-              </Link>
-              <Link className="landing-entry-button" to="/groups">
-                <Users size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Join the Mellows</span>
-                <span className="landing-entry-button__copy">Browse friendly crews, private circles, and public communities looking for players.</span>
-              </Link>
-              <Link className="landing-entry-button" to="/sessions">
-                <CalendarDays size={18} strokeWidth={2} />
-                <span className="landing-entry-button__title">Catch a session</span>
-                <span className="landing-entry-button__copy">See upcoming sessions by time and claim a sandy spot when you are ready.</span>
+                <span className="landing-entry-button__title">{t("landing.discoverBeachTitle")}</span>
+                <span className="landing-entry-button__copy">{t("landing.discoverBeachCopy")}</span>
+                <span className="landing-entry-button__arrow" aria-hidden="true">
+                  <ArrowRight size={34} strokeWidth={2.1} />
+                </span>
               </Link>
             </div>
           </section>
@@ -118,13 +113,9 @@ export function LandingPage({
             {viewer ? null : showAuthPanel ? (
               <div className="landing-shell__right-body">
                 <div className="stack-sm">
-                  <p className="eyebrow">Participation</p>
-                  <p className="landing-hero__text typewriter-title">
-                    Sign up when you want to contribute, organise, and unlock the full board.
-                  </p>
-                  <p className="landing-hero__text">
-                    Contribute, create public or private groups and attend sessions. Public browsing stays open, but signing in turns discovery into participation.
-                  </p>
+                  <p className="eyebrow">{t("landing.participationEyebrow")}</p>
+                  <p className="landing-hero__text typewriter-title">{t("landing.participationTitle")}</p>
+                  <p className="landing-hero__text">{t("landing.participationText")}</p>
                 </div>
 
                 <div className="mode-switch">
@@ -133,14 +124,14 @@ export function LandingPage({
                     onClick={() => setMode("login")}
                     type="button"
                   >
-                    Log in
+                    {t("common.signIn")}
                   </button>
                   <button
                     className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
                     onClick={() => setMode("signup")}
                     type="button"
                   >
-                    Sign up
+                    {t("common.signUp")}
                   </button>
                 </div>
 
@@ -155,12 +146,12 @@ export function LandingPage({
                   }}
                 >
                   <label className="field-stack">
-                    <span className="field-label">Email</span>
+                    <span className="field-label">{t("landing.email")}</span>
                     <input className="field-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
                   </label>
 
                   <label className="field-stack">
-                    <span className="field-label">Password</span>
+                    <span className="field-label">{t("landing.password")}</span>
                     <input
                       className="field-input"
                       minLength={8}
@@ -180,13 +171,13 @@ export function LandingPage({
                         type="checkbox"
                       />
                       <label htmlFor="signup-legal-consent">
-                        I have read the{" "}
+                        {t("landing.consentPrefix")}{" "}
                         <Link state={infoLinkState} to="/privacy">
-                          Privacy Policy
+                          {t("info.pages.privacy.title")}
                         </Link>{" "}
-                        and agree to the{" "}
+                        {t("landing.consentMiddle")}{" "}
                         <Link state={infoLinkState} to="/terms">
-                          Terms
+                          {t("info.pages.terms.title")}
                         </Link>
                         .
                       </label>
@@ -201,7 +192,7 @@ export function LandingPage({
 
                   <div className="form-actions form-actions--start">
                     <button className="button-primary" disabled={authMutation.isPending || (mode === "signup" && !acceptedSignupTerms)}>
-                      {authMutation.isPending ? "Working" : mode === "login" ? "Log in" : "Create account"}
+                      {authMutation.isPending ? t("common.working") : mode === "login" ? t("common.signIn") : t("landing.createAccount")}
                     </button>
                   </div>
                 </form>
@@ -209,8 +200,13 @@ export function LandingPage({
             ) : null}
           </section>
         </div>
-        <div className="landing-legal-links landing-legal-links--landing" aria-label="Legal pages">
-          {INFO_LINKS.map((link) => (
+        <div className="landing-legal-links landing-legal-links--landing" aria-label={t("workspace.infoAndLegalPages")}>
+          {[
+            { key: "info", label: t("info.links.info"), to: "/about" },
+            { key: "privacy", label: t("info.links.privacy"), to: "/privacy" },
+            { key: "terms", label: t("info.links.terms"), to: "/terms" },
+            { key: "impressum", label: t("info.links.impressum"), to: "/impressum" },
+          ].map((link) => (
             <Link
               key={link.key}
               state={infoLinkState}

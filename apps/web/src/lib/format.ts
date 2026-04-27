@@ -1,28 +1,19 @@
-export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
+export function formatDateTime(value: string, locale?: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-export function formatDateTimeWithWeekdayShort(value: string) {
-  const parts = new Intl.DateTimeFormat("de-DE", {
+export function formatDateTimeWithWeekdayShort(value: string, locale?: string) {
+  return new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).formatToParts(new Date(value));
-
-  const weekday = (parts.find((part) => part.type === "weekday")?.value ?? "").replaceAll(".", "");
-  const day = parts.find((part) => part.type === "day")?.value ?? "";
-  const month = (parts.find((part) => part.type === "month")?.value ?? "").replaceAll(".", "");
-  const year = parts.find((part) => part.type === "year")?.value ?? "";
-  const hour = parts.find((part) => part.type === "hour")?.value ?? "";
-  const minute = parts.find((part) => part.type === "minute")?.value ?? "";
-
-  return `${weekday}, ${day} ${month} ${year}, ${hour}:${minute}`;
+  }).format(new Date(value));
 }
 
 export function toDateTimeLocalInput(value: string) {

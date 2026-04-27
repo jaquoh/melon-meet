@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../lib/i18n";
 
 interface GroupFormProps {
   formId?: string;
@@ -23,6 +24,7 @@ interface GroupFormProps {
 }
 
 export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
+  const { t, formatVisibility } = useI18n();
   const [name, setName] = useState(initialValues?.name ?? "");
   const [slug, setSlug] = useState(initialValues?.slug ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
@@ -55,12 +57,12 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
   return (
     <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
-        <span className="field-label">Name</span>
+        <span className="field-label">{t("forms.name")}</span>
         <input className="field-input" onChange={(event) => setName(event.target.value)} required value={name} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Slug</span>
+        <span className="field-label">{t("forms.slug")}</span>
         <input
           className="field-input"
           onChange={(event) => setSlug(event.target.value)}
@@ -71,30 +73,30 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Activity label</span>
+        <span className="field-label">{t("forms.activityLabel")}</span>
         <input className="field-input" onChange={(event) => setActivityLabel(event.target.value)} value={activityLabel} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Visibility</span>
+        <span className="field-label">{t("forms.visibility")}</span>
         <select className="field-select" onChange={(event) => setVisibility(event.target.value as "public" | "private")} value={visibility}>
-          <option value="public">Public</option>
-          <option value="private">Private</option>
+          <option value="public">{formatVisibility("public")}</option>
+          <option value="private">{formatVisibility("private")}</option>
         </select>
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Description</span>
+        <span className="field-label">{t("forms.description")}</span>
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} required value={description} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Hero image URL</span>
+        <span className="field-label">{t("forms.heroImageUrl")}</span>
         <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Messenger URL</span>
+        <span className="field-label">{t("forms.messengerUrl")}</span>
         <input className="field-input" onChange={(event) => setMessengerUrl(event.target.value)} placeholder="https://t.me/..." type="url" value={messengerUrl} />
       </label>
 

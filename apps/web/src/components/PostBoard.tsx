@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatDateTime } from "../lib/format";
+import { useI18n } from "../lib/i18n";
 import { PanelCard } from "./PanelCard";
 
 interface PostBoardProps {
@@ -26,6 +27,7 @@ export function PostBoard({
   posts,
   title,
 }: PostBoardProps) {
+  const { locale, t } = useI18n();
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,7 +46,7 @@ export function PostBoard({
   return (
     <PanelCard className={`stack-md ${compact ? "pinboard pinboard--compact" : "pinboard"}`.trim()}>
       <div className="pinboard__header">
-        <p className="eyebrow">Pinboard</p>
+        <p className="eyebrow">{t("postBoard.pinboard")}</p>
         <h3 className="detail-title">{title}</h3>
       </div>
 
@@ -53,12 +55,12 @@ export function PostBoard({
           <textarea
             className="field-area"
             onChange={(event) => setContent(event.target.value)}
-            placeholder="Share a quick update, game note, or meetup detail..."
+            placeholder={t("postBoard.placeholder")}
             value={content}
           />
           <div className="form-actions">
             <button className="button-primary" disabled={submitting}>
-              {submitting ? "Sending" : buttonLabel}
+              {submitting ? t("postBoard.sending") : buttonLabel}
             </button>
           </div>
         </form>
@@ -72,7 +74,7 @@ export function PostBoard({
             <article className="terminal-item" key={post.id}>
               <div className="terminal-item__row">
                 <p className="terminal-item__title">{post.author.displayName}</p>
-                <p className="terminal-item__meta">{formatDateTime(post.createdAt)}</p>
+                <p className="terminal-item__meta">{formatDateTime(post.createdAt, locale)}</p>
               </div>
               <p className="pinboard__message">
                 {post.content}

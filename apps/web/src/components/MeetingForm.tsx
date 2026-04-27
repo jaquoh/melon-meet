@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import type { GroupSummary, MeetingSummary } from "../../../../packages/shared/src";
 import { getVenues } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { fromDateTimeLocalInput, toDateTimeLocalInput } from "../lib/format";
 
@@ -37,6 +38,7 @@ export function MeetingForm({
   onSubmit,
   seriesMode = false,
 }: MeetingFormProps) {
+  const { formatPrice, formatVisibility, locale, t } = useI18n();
   const creatableGroups = groups.filter(canCreateForGroup);
   const venuesQuery = useQuery({
     queryFn: getVenues,
@@ -203,7 +205,7 @@ export function MeetingForm({
   if (!initialMeeting && creatableGroups.length === 0) {
     return (
       <p className="empty-state">
-        Join a private group or become an owner/admin in a public group before creating meetings.
+        {t("forms.joinGroupRequirement")}
       </p>
     );
   }
@@ -212,11 +214,11 @@ export function MeetingForm({
     <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       {!initialMeeting ? (
         <label className="field-stack field-full">
-          <span className="field-label">Group</span>
+          <span className="field-label">{t("forms.group")}</span>
           <select className="field-select" onChange={(event) => setGroupId(event.target.value)} value={groupId}>
             {creatableGroups.map((group) => (
               <option key={group.id} value={group.id}>
-                {group.name} ({group.visibility})
+                {group.name} ({formatVisibility(group.visibility)})
               </option>
             ))}
           </select>
@@ -224,67 +226,67 @@ export function MeetingForm({
       ) : null}
 
       <label className="field-stack field-full">
-        <span className="field-label">Short name</span>
+        <span className="field-label">{t("forms.shortName")}</span>
         <input className="field-input" maxLength={24} onChange={(event) => setShortName(event.target.value)} required value={shortName} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Title</span>
+        <span className="field-label">{t("forms.title")}</span>
         <input className="field-input" onChange={(event) => setTitle(event.target.value)} required value={title} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Description</span>
+        <span className="field-label">{t("forms.description")}</span>
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} value={description} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Hero image URL</span>
+        <span className="field-label">{t("forms.heroImageUrl")}</span>
         <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Starts</span>
+        <span className="field-label">{t("forms.starts")}</span>
         <input className="field-input" onChange={(event) => setStartsAt(event.target.value)} required type="datetime-local" value={startsAt} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Ends</span>
+        <span className="field-label">{t("forms.ends")}</span>
         <input className="field-input" onChange={(event) => setEndsAt(event.target.value)} required type="datetime-local" value={endsAt} />
       </label>
 
       <div className="field-full stack-sm">
         {seriesMode ? (
-          <p className="muted-copy">Editing the whole session series. Add or remove dates to update every session in it.</p>
+          <p className="muted-copy">{t("forms.editingSeriesHint")}</p>
         ) : (
-          <FilterCheckbox checked={buildSeries} label="Build a session series from multiple dates" onChange={setBuildSeries} />
+          <FilterCheckbox checked={buildSeries} label={t("forms.buildSeries")} onChange={setBuildSeries} />
         )}
         <div className="form-actions">
           <button className="button-secondary button-inline" disabled={!(buildSeries || seriesMode)} onClick={addSeriesDate} type="button">
             <Plus size={14} strokeWidth={2} />
-            <span>Add session</span>
+            <span>{t("forms.addSession")}</span>
           </button>
         </div>
       </div>
 
       {buildSeries || seriesMode ? (
         <div className="field-full stack-sm">
-          <span className="panel-caption">Session dates</span>
+          <span className="panel-caption">{t("forms.sessionDates")}</span>
           {seriesDates.length === 0 ? (
-            <p className="muted-copy">Use the add session button next to the start time to build the series.</p>
+            <p className="muted-copy">{t("forms.useAddSessionHint")}</p>
           ) : (
             <div className="series-slot-list">
               {seriesDates.map((entry) => (
                 <div className="series-slot-item" key={entry.startsAt}>
                   <div>
-                    <strong>{new Date(entry.startsAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</strong>
+                    <strong>{new Date(entry.startsAt).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}</strong>
                     <p className="muted-copy">
                       {Math.round((new Date(entry.endsAt).getTime() - new Date(entry.startsAt).getTime()) / 60000)} min
                     </p>
                   </div>
                   <button className="button-secondary button-inline" onClick={() => removeSeriesDate(entry.startsAt)} type="button">
                     <Trash2 size={14} strokeWidth={2} />
-                    <span>Remove</span>
+                    <span>{t("forms.remove")}</span>
                   </button>
                 </div>
               ))}
@@ -294,30 +296,30 @@ export function MeetingForm({
       ) : null}
 
       <label className="field-stack">
-        <span className="field-label">Activity</span>
+        <span className="field-label">{t("forms.activity")}</span>
         <input className="field-input" onChange={(event) => setActivityLabel(event.target.value)} value={activityLabel} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Capacity</span>
+        <span className="field-label">{t("forms.capacity")}</span>
         <input className="field-input" min={2} onChange={(event) => setCapacity(Number(event.target.value))} required type="number" value={capacity} />
       </label>
 
       <div className="field-stack">
-        <span className="field-label">Pricing</span>
+        <span className="field-label">{t("forms.pricing")}</span>
         <div className="meeting-pricing-row">
           <div className="workspace-segmented workspace-segmented--fit">
             <button className={pricing === "free" ? "is-active" : ""} onClick={() => setPricing("free")} type="button">
-              Free
+              {t("common.free")}
             </button>
             <button className={pricing === "paid" ? "is-active" : ""} onClick={() => setPricing("paid")} type="button">
-              Paid
+              {t("common.paid")}
             </button>
           </div>
           <div className="meeting-pricing-row__aside">
             {pricing === "paid" ? (
               <label className="field-stack">
-                <span className="field-label">Amount / person</span>
+                <span className="field-label">{t("forms.amountPerPerson")}</span>
                 <input
                   className="field-input"
                   min={0}
@@ -337,39 +339,39 @@ export function MeetingForm({
 
       {initialMeeting?.seriesId && !seriesMode ? (
         <div className="field-full">
-          <FilterCheckbox checked={applyToSeries} label="Apply these changes to future weekly occurrences" onChange={setApplyToSeries} />
+          <FilterCheckbox checked={applyToSeries} label={t("forms.applyToSeries")} onChange={setApplyToSeries} />
         </div>
       ) : null}
 
       <label className="field-stack field-full">
-        <span className="field-label">Location</span>
+        <span className="field-label">{t("forms.location")}</span>
         <select className="field-select" onChange={(event) => setSelectedVenueId(event.target.value)} value={selectedVenueId}>
           {venues.map((venue) => (
             <option key={venue.id} value={venue.id}>
               {venue.name}
             </option>
           ))}
-          <option value="other">Other location</option>
+          <option value="other">{t("forms.otherLocation")}</option>
         </select>
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Location name</span>
+        <span className="field-label">{t("forms.locationName")}</span>
         <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
       </label>
 
       <label className="field-stack field-full">
-        <span className="field-label">Address</span>
+        <span className="field-label">{t("forms.address")}</span>
         <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Latitude</span>
+        <span className="field-label">{t("forms.latitude")}</span>
         <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
       </label>
 
       <label className="field-stack">
-        <span className="field-label">Longitude</span>
+        <span className="field-label">{t("forms.longitude")}</span>
         <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
       </label>
 

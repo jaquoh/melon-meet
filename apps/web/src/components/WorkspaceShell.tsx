@@ -3,15 +3,10 @@ import { Map, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { useI18n } from "../lib/i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 type ThemeMode = "light" | "dark";
-
-const INFO_FOOTER_LINKS = [
-  { label: "About", to: "/about" },
-  { label: "Privacy", to: "/privacy" },
-  { label: "Terms", to: "/terms" },
-  { label: "Impressum", to: "/impressum" },
-] as const;
 
 interface WorkspaceShellProps {
   center: ReactNode;
@@ -53,6 +48,7 @@ export function WorkspaceShell({
   topCenter,
   utilityNavigation = "info",
 }: WorkspaceShellProps) {
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const infoReturnTo = `${location.pathname}${location.search}`;
@@ -76,8 +72,9 @@ export function WorkspaceShell({
 
   const utilityActions = (
     <div className="workspace-action-icons">
+      <LanguageSwitcher compact />
       <button
-        aria-label="Toggle theme"
+        aria-label={t("workspace.toggleTheme")}
         className="workspace-action workspace-action--icon"
         onClick={toggleTheme}
         type="button"
@@ -86,7 +83,7 @@ export function WorkspaceShell({
       </button>
       {utilityNavigation === "map" ? (
         <Link
-          aria-label="Back to map"
+          aria-label={t("workspace.backToMap")}
           className="workspace-action workspace-action--icon"
           to="/map"
         >
@@ -99,7 +96,7 @@ export function WorkspaceShell({
   const primaryAction = detailCloseTo ? (
     <button className="workspace-action workspace-action--close workspace-action--primary-slot" onClick={handleDetailClose} type="button">
       <X size={16} strokeWidth={2} />
-      <span>Close</span>
+      <span>{t("common.close")}</span>
     </button>
   ) : viewer ? (
     <Link className="workspace-action workspace-action--primary workspace-action--primary-slot" state={profileLinkState} to={`/profile/${viewer.id}`}>
@@ -112,7 +109,7 @@ export function WorkspaceShell({
     </Link>
   ) : (
     <Link className="workspace-action workspace-action--primary workspace-action--primary-slot" to="/">
-      Sign in
+      {t("common.signIn")}
     </Link>
   );
 
@@ -135,7 +132,7 @@ export function WorkspaceShell({
                 <img alt="Melon Meet" className="workspace-brand__mark" src={watermelonMark} />
                 <div className="workspace-brand__copy">
                   <span className="workspace-brand__name">Melon Meet</span>
-                  <span className="workspace-brand__meta">Berlin Beachvolleyball</span>
+                  <span className="workspace-brand__meta">{t("workspace.berlinBeachVolleyball")}</span>
                 </div>
               </Link>
               <div className="workspace-mobile-inline__actions">{actions}</div>
@@ -146,7 +143,7 @@ export function WorkspaceShell({
             <img alt="Melon Meet" className="workspace-brand__mark" src={watermelonMark} />
             <div className="workspace-brand__copy">
               <span className="workspace-brand__name">Melon Meet</span>
-              <span className="workspace-brand__meta">Berlin Beachvolleyball</span>
+              <span className="workspace-brand__meta">{t("workspace.berlinBeachVolleyball")}</span>
             </div>
           </Link>
 
@@ -200,8 +197,13 @@ export function WorkspaceShell({
           </section>
 
           {showInfoFooter ? (
-            <nav className="workspace-cell workspace-legal-cell" aria-label="Info and legal pages">
-              {INFO_FOOTER_LINKS.map((link) => (
+            <nav className="workspace-cell workspace-legal-cell" aria-label={t("workspace.infoAndLegalPages")}>
+              {[
+                { label: t("workspace.about"), to: "/about" },
+                { label: t("workspace.privacy"), to: "/privacy" },
+                { label: t("workspace.terms"), to: "/terms" },
+                { label: t("workspace.impressum"), to: "/impressum" },
+              ].map((link) => (
                 <Link key={link.to} state={{ infoReturnTo }} to={link.to}>
                   {link.label}
                 </Link>
