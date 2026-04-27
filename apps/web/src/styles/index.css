@@ -4274,6 +4274,35 @@ img {
   }
 }
 
+@media (max-width: 430px) {
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--filter,
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--display {
+    width: 2.9rem;
+    min-width: 2.9rem;
+    padding-inline: 0;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--filter span,
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--display span {
+    display: none;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--filter svg,
+  .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--display svg {
+    margin: 0;
+  }
+
+  .workspace-frame--unified .mode-overlay-controls .workspace-segmented button {
+    gap: 0;
+    padding-inline: 0.45rem;
+    font-size: 0.92rem;
+  }
+
+  .workspace-frame--unified .mode-overlay-controls .workspace-segmented button svg {
+    display: none;
+  }
+}
+
 .profile-avatar {
   width: 4.5rem;
   height: 4.5rem;
