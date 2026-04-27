@@ -4081,32 +4081,21 @@ img {
   }
 
   .workspace-frame--unified .map-overlay-controls .workspace-control-row {
+    position: relative;
     width: 100%;
-    justify-content: stretch;
+    justify-content: flex-end;
   }
 
   .workspace-frame--unified .map-overlay-controls .workspace-control-row .filter-dropdown {
     position: static;
-    flex: 1 1 100%;
-    width: 100%;
-  }
-
-  .workspace-frame--unified .map-overlay-controls .filter-trigger-stack {
-    justify-items: stretch;
-  }
-
-  .workspace-frame--unified .map-overlay-controls .workspace-control-row .filter-dropdown .workspace-ghost-button--filter,
-  .workspace-frame--unified .map-overlay-controls .filter-dropdown__panel {
-    width: 100%;
-    max-width: none;
+    flex: 0 0 auto;
+    width: auto;
   }
 
   .workspace-frame--unified .map-overlay-controls .filter-dropdown__panel {
     left: 0;
     right: 0;
-  }
-
-  .workspace-frame--unified .map-overlay-controls .active-filter-tags {
+    width: auto;
     max-width: none;
   }
 }
