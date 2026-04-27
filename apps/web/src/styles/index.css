@@ -13,8 +13,8 @@
   --panel-strong: #fff2eb;
   --panel-muted: #fff8f4;
   --glass-frame: rgba(255, 250, 246, 0.42);
-  --workspace-cell-overlay: rgba(255, 252, 249, 0.42);
-  --workspace-card-overlay: rgba(235, 225, 215, 0.45);
+  --workspace-cell-overlay: rgba(255, 252, 249, 0.5);
+  --workspace-card-overlay: rgba(235, 225, 215, 0.55);
   --glass-brand: var(--workspace-cell-overlay);
   --glass-top: var(--workspace-cell-overlay);
   --glass-panel-header: var(--workspace-cell-overlay);
@@ -27,7 +27,7 @@
   --workspace-legal-height: 3.35rem;
   --workspace-mobile-legal-height: 2.65rem;
   --workspace-bottom-glass: color-mix(in srgb, var(--glass-panel-header) 58%, transparent);
-  --app-frame-overlay: linear-gradient(180deg, rgba(255, 247, 241, 0.10), rgba(246, 241, 229, 0.30));
+  --app-frame-overlay: linear-gradient(180deg, rgba(255, 247, 241, 0.1), rgba(246, 241, 229, 0.3));
   --text: #231d1c;
   --muted: #756865;
   --line: #e5d6d0;
@@ -61,7 +61,7 @@
   --glass-card-strong: var(--workspace-cell-overlay);
   --glass-selected: rgba(69, 34, 43, 0.88);
   --workspace-bottom-glass: color-mix(in srgb, var(--glass-panel-header) 58%, transparent);
-  --app-frame-overlay: linear-gradient(180deg, rgba(6, 10, 16, 0.22), rgba(5, 9, 15, 0.3));
+  --app-frame-overlay: linear-gradient(180deg, rgba(6, 10, 16, 0.1), rgba(5, 9, 15, 0.3));
   --text: #fff7f2;
   --muted: #c2bdb4;
   --line: #365056;
@@ -2119,12 +2119,6 @@ img {
   background: var(--glass-top);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-}
-
-.workspace-mobile-inline,
-.workspace-mobile-brand,
-.workspace-mobile-inline__actions {
-  background: var(--glass-top);
 }
 
 .workspace-frame--unified .workspace-shell {
@@ -4529,6 +4523,7 @@ img {
     max-height: 5rem;
     position: relative;
     z-index: 12;
+    background: var(--glass-top);
     overflow: visible;
     border-bottom: 1px solid var(--line);
     border-right: 0;
@@ -4738,7 +4733,6 @@ img {
     min-width: clamp(7.25rem, 29vw, 10.5rem);
     border-left: 1px solid var(--line);
     overflow: visible;
-    background: var(--workspace-cell-overlay);
   }
 
   .workspace-mobile-inline__actions .workspace-auth {
@@ -4753,7 +4747,6 @@ img {
   .workspace-mobile-inline__actions .workspace-action-icons {
     border-top: 1px solid var(--line);
     border-right: 0;
-    background: var(--workspace-cell-overlay);
     overflow: visible;
   }
 
@@ -4799,6 +4792,11 @@ img {
   .workspace-mobile-inline__actions .workspace-user-menu > summary {
     min-height: 0;
     padding: 0.45rem 0.55rem;
+  }
+
+  .workspace-mobile-inline__actions .workspace-action-icons .workspace-action,
+  .workspace-mobile-inline__actions .workspace-action-icons .workspace-user-menu > summary,
+  .workspace-mobile-inline__actions .workspace-action-icons .language-switcher {
     border-bottom: 1px solid var(--line);
   }
 
