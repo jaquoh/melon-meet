@@ -2533,6 +2533,17 @@ img {
   pointer-events: auto;
 }
 
+.workspace-frame--unified .workspace-discovery-center.is-map > .map-stage {
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 9%, #000 84%, transparent 100%);
+  -webkit-mask-composite: destination-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 9%, #000 84%, transparent 100%);
+  mask-composite: intersect;
+}
+
 .workspace-discovery-center:not(.is-map) .maplibregl-control-container,
 .workspace-discovery-center:not(.is-map) .maplibregl-ctrl-bottom-left,
 .workspace-discovery-center:not(.is-map) .maplibregl-ctrl-bottom-right,
