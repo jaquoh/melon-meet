@@ -4074,6 +4074,43 @@ img {
   }
 }
 
+@media (max-width: 640px) {
+  .workspace-frame--unified .map-overlay-controls {
+    left: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .workspace-control-row {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .workspace-control-row .filter-dropdown {
+    position: static;
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .filter-trigger-stack {
+    justify-items: stretch;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .workspace-control-row .filter-dropdown .workspace-ghost-button--filter,
+  .workspace-frame--unified .map-overlay-controls .filter-dropdown__panel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .filter-dropdown__panel {
+    left: 0;
+    right: 0;
+  }
+
+  .workspace-frame--unified .map-overlay-controls .active-filter-tags {
+    max-width: none;
+  }
+}
+
 @media (max-width: 680px) {
   .workspace-frame--unified .maplibregl-ctrl-top-right {
     top: 3.7rem;
