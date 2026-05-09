@@ -19,6 +19,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { CopyTextButton } from "../components/CopyTextButton";
+import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
 import { GroupForm } from "../components/GroupForm";
@@ -30,6 +31,7 @@ import { WorkspaceShell } from "../components/WorkspaceShell";
 import {
   claimMeeting,
   createGroupPost,
+  changePassword,
   createMeeting,
   createMeetingPost,
   createMembershipRequest,
@@ -231,6 +233,8 @@ export function DiscoveryPage({
   const [selectedGroup, setSelectedGroup] = useState<GroupSummary | null>(null);
   const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const [isClearingSelection, setIsClearingSelection] = useState(false);
@@ -717,6 +721,8 @@ export function DiscoveryPage({
     setSelectedGroup(null);
     setEditingTarget(null);
     setEditingProfile(false);
+    setChangingPassword(false);
+    setChangePasswordStatus(null);
     setProfileDraft(null);
   }, [routeProfileId]);
 
@@ -827,6 +833,23 @@ export function DiscoveryPage({
       setProfileDraft(null);
       await queryClient.invalidateQueries({ queryKey: ["profile", selectedProfileId] });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (payload: { currentPassword: string; password: string }) => changePassword(payload.currentPassword, payload.password),
+    onSuccess: () => {
+      setChangePasswordStatus({
+        kind: "success",
+        message: "Your password has been updated. Other devices have been signed out.",
+      });
+      setChangingPassword(false);
+    },
+    onError: (error: Error) => {
+      setChangePasswordStatus({
+        kind: "error",
+        message: error.message,
+      });
     },
   });
 
@@ -1367,9 +1390,11 @@ export function DiscoveryPage({
                 <button
                   className="button-secondary"
                   onClick={() => {
-                    setEditingProfile(false);
-                    setProfileDraft(null);
-                  }}
+                        setEditingProfile(false);
+                        setChangingPassword(false);
+                        setChangePasswordStatus(null);
+                        setProfileDraft(null);
+                      }}
                   type="button"
                 >
                   {t("common.cancel")}
@@ -1441,11 +1466,41 @@ export function DiscoveryPage({
                     </button>
                   ) : null}
                   {isOwnProfile ? (
+                    <button
+                      className="button-secondary button-inline"
+                      onClick={() => {
+                        setChangingPassword((current) => !current);
+                        setChangePasswordStatus(null);
+                      }}
+                      type="button"
+                    >
+                      <Shield size={14} strokeWidth={2} />
+                      Change password
+                    </button>
+                  ) : null}
+                  {isOwnProfile ? (
                     <button className="button-danger button-inline" onClick={onLogOut} type="button">
                       Sign out
                     </button>
                   ) : null}
                 </div>
+                {isOwnProfile && changingPassword ? (
+                  <div className="stack-panel">
+                    <p className="panel-caption">Account security</p>
+                    <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
+                    {changePasswordStatus ? (
+                      <p
+                        className="empty-state"
+                        style={changePasswordStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                      >
+                        {changePasswordStatus.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {isOwnProfile && !changingPassword && changePasswordStatus?.kind === "success" ? (
+                  <p className="empty-state">{changePasswordStatus.message}</p>
+                ) : null}
                 {selectedProfileAttending.length > 0 ? (
                   <EventTimeline
                     contextLabel="Profile"

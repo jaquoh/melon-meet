@@ -65,8 +65,17 @@ export function LandingPage({
 
   const authMutation = useMutation({
     mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
-    onSuccess: async () => {
+    onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      if (response.verificationRequired || !response.user.emailVerified) {
+        navigate("/verify-email", {
+          state: {
+            devVerificationUrl: response.devVerificationUrl ?? null,
+            email: response.user.email,
+          },
+        });
+        return;
+      }
       navigate("/map");
     },
   });
@@ -151,7 +160,14 @@ export function LandingPage({
                   </label>
 
                   <label className="field-stack">
-                    <span className="field-label">{t("landing.password")}</span>
+                    <span className="field-label" style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
+                      <span>{t("landing.password")}</span>
+                      {mode === "login" ? (
+                        <Link className="muted-copy" to="/forgot-password">
+                          Forgot your password?
+                        </Link>
+                      ) : null}
+                    </span>
                     <input
                       className="field-input"
                       minLength={8}

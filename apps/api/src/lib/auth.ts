@@ -34,6 +34,14 @@ async function sha256(value: string) {
   return bytesToBase64Url(new Uint8Array(digest));
 }
 
+export function generateOpaqueToken() {
+  return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+export async function hashOpaqueToken(value: string) {
+  return sha256(value);
+}
+
 async function derivePasswordHash(password: string, saltBytes: Uint8Array) {
   const passwordKey = await crypto.subtle.importKey(
     "raw",
@@ -97,8 +105,8 @@ export async function createSession(
   userId: string,
 ) {
   const sessionId = crypto.randomUUID();
-  const rawToken = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
-  const tokenHash = await sha256(rawToken);
+  const rawToken = generateOpaqueToken();
+  const tokenHash = await hashOpaqueToken(rawToken);
   const createdAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
@@ -138,8 +146,26 @@ export async function revokeSessionByToken(db: D1Database, rawToken: string | nu
     return;
   }
 
-  const tokenHash = await sha256(rawToken);
+  const tokenHash = await hashOpaqueToken(rawToken);
   await runStatement(db, "DELETE FROM sessions WHERE token_hash = ?", tokenHash);
+}
+
+export async function revokeAllSessionsForUser(db: D1Database, userId: string) {
+  await runStatement(db, "DELETE FROM sessions WHERE user_id = ?", userId);
+}
+
+export async function revokeOtherSessionsForUser(db: D1Database, userId: string, currentSessionId: string | null) {
+  if (!currentSessionId) {
+    await revokeAllSessionsForUser(db, userId);
+    return;
+  }
+
+  await runStatement(
+    db,
+    "DELETE FROM sessions WHERE user_id = ? AND id != ?",
+    userId,
+    currentSessionId,
+  );
 }
 
 export async function resolveSessionViewer(
@@ -150,11 +176,12 @@ export async function resolveSessionViewer(
     return null;
   }
 
-  const tokenHash = await sha256(rawToken);
+  const tokenHash = await hashOpaqueToken(rawToken);
   const row = await firstRow<{
     session_id: string;
     id: string;
     email: string;
+    email_verified_at: string | null;
     display_name: string;
     bio: string;
     home_area: string;
@@ -168,6 +195,7 @@ export async function resolveSessionViewer(
        sessions.id AS session_id,
        users.id,
        users.email,
+       users.email_verified_at,
        users.display_name,
        users.bio,
        users.home_area,
@@ -194,6 +222,7 @@ export async function resolveSessionViewer(
       bio: row.bio,
       displayName: row.display_name,
       email: row.email,
+      emailVerified: Boolean(row.email_verified_at),
       homeArea: row.home_area,
       id: row.id,
       playingLevel: row.playing_level,

@@ -8,8 +8,11 @@ import { usePrelineAutoInit } from "./hooks/use-preline-auto-init";
 import { queryClient } from "./lib/query-client";
 import { I18nProvider } from "./lib/i18n";
 import { DiscoveryPage } from "./pages/DiscoveryPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { InfoPage } from "./pages/InfoPage";
 import { LandingPage } from "./pages/LandingPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 
 export type ThemeMode = "light" | "dark";
 
@@ -78,6 +81,9 @@ function AppShell() {
       <Route path="/privacy" element={<InfoPage page="privacy" {...infoPageProps} />} />
       <Route path="/terms" element={<InfoPage page="terms" {...infoPageProps} />} />
       <Route path="/impressum" element={<InfoPage page="impressum" {...infoPageProps} />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage theme={theme} toggleTheme={toggleTheme} />} />
+      <Route path="/reset-password" element={<ResetPasswordPage theme={theme} toggleTheme={toggleTheme} />} />
+      <Route path="/verify-email" element={<VerifyEmailPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
       <Route
         path="/map"
         element={

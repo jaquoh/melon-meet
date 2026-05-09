@@ -15,6 +15,12 @@ export interface MeResponse {
   viewer: ViewerSummary | null;
 }
 
+export interface AuthResponse {
+  devVerificationUrl?: string | null;
+  user: ViewerSummary;
+  verificationRequired?: boolean;
+}
+
 export interface GroupDetailResponse {
   group: {
     activityLabel: string | null;
@@ -108,15 +114,49 @@ export function getMe() {
 }
 
 export function signUp(email: string, password: string) {
-  return request<{ user: ViewerSummary }>("/api/auth/signup", {
+  return request<AuthResponse>("/api/auth/signup", {
     body: JSON.stringify({ email, password }),
     method: "POST",
   });
 }
 
 export function logIn(email: string, password: string) {
-  return request<{ user: ViewerSummary }>("/api/auth/login", {
+  return request<AuthResponse>("/api/auth/login", {
     body: JSON.stringify({ email, password }),
+    method: "POST",
+  });
+}
+
+export function resendVerificationEmail() {
+  return request<{ devVerificationUrl?: string | null; ok: true }>("/api/auth/verification/resend", {
+    method: "POST",
+  });
+}
+
+export function verifyEmailToken(token: string) {
+  return request<{ ok: true }>("/api/auth/verify-email", {
+    body: JSON.stringify({ token }),
+    method: "POST",
+  });
+}
+
+export function requestPasswordReset(email: string) {
+  return request<{ devResetUrl?: string | null; message: string; ok: true }>("/api/auth/forgot-password", {
+    body: JSON.stringify({ email }),
+    method: "POST",
+  });
+}
+
+export function resetPassword(token: string, password: string) {
+  return request<{ ok: true }>("/api/auth/reset-password", {
+    body: JSON.stringify({ token, password }),
+    method: "POST",
+  });
+}
+
+export function changePassword(currentPassword: string, password: string) {
+  return request<{ ok: true }>("/api/auth/change-password", {
+    body: JSON.stringify({ currentPassword, password }),
     method: "POST",
   });
 }

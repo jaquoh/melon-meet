@@ -23,9 +23,13 @@ import {
 import {
   clearSessionCookie,
   createSession,
+  generateOpaqueToken,
+  hashOpaqueToken,
   hashPassword,
   readSessionCookie,
+  revokeOtherSessionsForUser,
   resolveSessionViewer,
+  revokeAllSessionsForUser,
   revokeSessionByToken,
   verifyPassword,
   writeSessionCookie,
@@ -49,12 +53,15 @@ type GroupVisibility = "public" | "private";
 
 const AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
+const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
+const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
 
 type ViewerRow = {
   avatar_url: string | null;
   bio: string;
   display_name: string;
   email: string;
+  email_verified_at?: string | null;
   home_area: string;
   id: string;
   is_profile_public?: number | boolean;
@@ -195,6 +202,7 @@ function mapViewerSummary(row: ViewerRow) {
     bio: row.bio,
     displayName: row.display_name,
     email: row.email,
+    emailVerified: Boolean(row.email_verified_at),
     homeArea: row.home_area,
     id: row.id,
     isProfilePublic: Boolean(row.is_profile_public),
@@ -227,6 +235,83 @@ function getClientAddress(c: Context<AppEnv>) {
   }
 
   return "unknown-ip";
+}
+
+function appOrigin(c: Context<AppEnv>) {
+  return new URL(c.req.url).origin;
+}
+
+function isLocalOrigin(c: Context<AppEnv>) {
+  const { hostname } = new URL(c.req.url);
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function buildVerifyEmailUrl(c: Context<AppEnv>, token: string) {
+  return `${appOrigin(c)}/verify-email?token=${encodeURIComponent(token)}`;
+}
+
+function buildResetPasswordUrl(c: Context<AppEnv>, token: string) {
+  return `${appOrigin(c)}/reset-password?token=${encodeURIComponent(token)}`;
+}
+
+async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string) {
+  const token = generateOpaqueToken();
+  const tokenHash = await hashOpaqueToken(token);
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS).toISOString();
+
+  await runStatement(
+    c.env.DB,
+    "DELETE FROM email_verification_tokens WHERE user_id = ? AND used_at IS NULL",
+    userId,
+  );
+  await runStatement(
+    c.env.DB,
+    `INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at, created_at, used_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+    crypto.randomUUID(),
+    userId,
+    tokenHash,
+    expiresAt,
+    createdAt,
+  );
+
+  const verificationUrl = buildVerifyEmailUrl(c, token);
+  console.info(`Email verification link for ${userId}: ${verificationUrl}`);
+
+  return {
+    devVerificationUrl: isLocalOrigin(c) ? verificationUrl : null,
+  };
+}
+
+async function issuePasswordResetToken(c: Context<AppEnv>, userId: string) {
+  const token = generateOpaqueToken();
+  const tokenHash = await hashOpaqueToken(token);
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString();
+
+  await runStatement(
+    c.env.DB,
+    "DELETE FROM password_reset_tokens WHERE user_id = ? AND used_at IS NULL",
+    userId,
+  );
+  await runStatement(
+    c.env.DB,
+    `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, created_at, used_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+    crypto.randomUUID(),
+    userId,
+    tokenHash,
+    expiresAt,
+    createdAt,
+  );
+
+  const resetUrl = buildResetPasswordUrl(c, token);
+  console.info(`Password reset link for ${userId}: ${resetUrl}`);
+
+  return {
+    devResetUrl: isLocalOrigin(c) ? resetUrl : null,
+  };
 }
 
 async function enforceAuthRateLimit(
@@ -659,6 +744,12 @@ async function requireViewer(c: Context<AppEnv>) {
   return viewer;
 }
 
+async function requireVerifiedViewer(c: Context<AppEnv>) {
+  const viewer = await requireViewer(c);
+  assertOrThrow(viewer.emailVerified, 403, "Verify your email before participating in groups, sessions, and posts.");
+  return viewer;
+}
+
 async function getMeetingDetail(
   db: D1Database,
   meetingId: string,
@@ -726,9 +817,9 @@ export function createApp() {
       c.env.DB,
       `INSERT INTO users (
          id, email, password_hash, display_name, bio, home_area, avatar_url,
-         is_profile_public, show_email_publicly, playing_level, created_at, updated_at
+         is_profile_public, show_email_publicly, playing_level, email_verified_at, created_at, updated_at
        )
-       VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, '', ?, ?)`,
+       VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, '', NULL, ?, ?)`,
       userId,
       email.toLowerCase(),
       passwordHash,
@@ -739,6 +830,7 @@ export function createApp() {
 
     const session = await createSession(c.env.DB, userId);
     writeSessionCookie(c, session.token, session.expiresAt);
+    const { devVerificationUrl } = await issueEmailVerificationToken(c, userId);
 
     return c.json({
       user: {
@@ -746,12 +838,15 @@ export function createApp() {
         bio: "",
         displayName: email.split("@")[0],
         email: email.toLowerCase(),
+        emailVerified: false,
         homeArea: "",
         id: userId,
         isProfilePublic: false,
         playingLevel: "",
         showEmailPublicly: false,
       },
+      verificationRequired: true,
+      devVerificationUrl,
     }, 201);
   });
 
@@ -766,6 +861,7 @@ export function createApp() {
       bio: string;
       display_name: string;
       email: string;
+      email_verified_at: string | null;
       home_area: string;
       id: string;
       is_profile_public: number;
@@ -774,7 +870,7 @@ export function createApp() {
       show_email_publicly: number;
     }>(
       c.env.DB,
-      `SELECT id, email, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly
+      `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly
        FROM users
        WHERE email = ?`,
       email.toLowerCase(),
@@ -788,8 +884,155 @@ export function createApp() {
 
     return c.json({
       user: mapViewerSummary(row),
+      verificationRequired: !Boolean(row.email_verified_at),
     });
   });
+
+  app.post("/api/auth/verification/resend", async (c) => {
+    const viewer = await requireViewer(c);
+    if (viewer.emailVerified) {
+      return c.json({ ok: true, devVerificationUrl: null });
+    }
+
+    const { devVerificationUrl } = await issueEmailVerificationToken(c, viewer.id);
+    return c.json({ ok: true, devVerificationUrl });
+  });
+
+  app.post("/api/auth/verify-email", zValidator("json", z.object({ token: z.string().min(1) })), async (c) => {
+    const { token } = c.req.valid("json");
+    const tokenHash = await hashOpaqueToken(token);
+    const verification = await firstRow<{ user_id: string }>(
+      c.env.DB,
+      `SELECT user_id
+       FROM email_verification_tokens
+       WHERE token_hash = ?
+         AND used_at IS NULL
+         AND expires_at > ?`,
+      tokenHash,
+      nowIso(),
+    );
+    assertOrThrow(verification, 400, "This verification link is invalid or has expired.");
+
+    const verifiedAt = nowIso();
+    await runStatement(
+      c.env.DB,
+      "UPDATE users SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?",
+      verifiedAt,
+      verification.user_id,
+    );
+    await runStatement(
+      c.env.DB,
+      "UPDATE email_verification_tokens SET used_at = ? WHERE token_hash = ?",
+      verifiedAt,
+      tokenHash,
+    );
+    await runStatement(
+      c.env.DB,
+      "DELETE FROM email_verification_tokens WHERE user_id = ? AND used_at IS NULL",
+      verification.user_id,
+    );
+
+    return c.json({ ok: true });
+  });
+
+  app.post("/api/auth/forgot-password", zValidator("json", z.object({ email: z.string().email() })), async (c) => {
+    const { email } = c.req.valid("json");
+    const normalizedEmail = email.toLowerCase();
+
+    const row = await firstRow<{ id: string }>(
+      c.env.DB,
+      "SELECT id FROM users WHERE email = ?",
+      normalizedEmail,
+    );
+
+    let devResetUrl: string | null = null;
+    if (row) {
+      const issued = await issuePasswordResetToken(c, row.id);
+      devResetUrl = issued.devResetUrl;
+    }
+
+    return c.json({
+      ok: true,
+      devResetUrl,
+      message: "If an account exists for that email, a password reset link has been prepared.",
+    });
+  });
+
+  app.post(
+    "/api/auth/reset-password",
+    zValidator("json", z.object({ password: z.string().min(8), token: z.string().min(1) })),
+    async (c) => {
+      const { password, token } = c.req.valid("json");
+      const tokenHash = await hashOpaqueToken(token);
+      const resetRow = await firstRow<{ user_id: string }>(
+        c.env.DB,
+        `SELECT user_id
+         FROM password_reset_tokens
+         WHERE token_hash = ?
+           AND used_at IS NULL
+           AND expires_at > ?`,
+        tokenHash,
+        nowIso(),
+      );
+      assertOrThrow(resetRow, 400, "This password reset link is invalid or has expired.");
+
+      const passwordHash = await hashPassword(password);
+      const usedAt = nowIso();
+      await runStatement(
+        c.env.DB,
+        "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+        passwordHash,
+        usedAt,
+        resetRow.user_id,
+      );
+      await runStatement(
+        c.env.DB,
+        "UPDATE password_reset_tokens SET used_at = ? WHERE token_hash = ?",
+        usedAt,
+        tokenHash,
+      );
+      await runStatement(
+        c.env.DB,
+        "DELETE FROM password_reset_tokens WHERE user_id = ? AND used_at IS NULL",
+        resetRow.user_id,
+      );
+      await revokeAllSessionsForUser(c.env.DB, resetRow.user_id);
+      clearSessionCookie(c);
+
+      return c.json({ ok: true });
+    },
+  );
+
+  app.post(
+    "/api/auth/change-password",
+    zValidator("json", z.object({ currentPassword: z.string().min(1), password: z.string().min(8) })),
+    async (c) => {
+      const viewer = await requireViewer(c);
+      const { currentPassword, password } = c.req.valid("json");
+
+      const row = await firstRow<{ password_hash: string }>(
+        c.env.DB,
+        "SELECT password_hash FROM users WHERE id = ?",
+        viewer.id,
+      );
+      assertOrThrow(row, 404, "User not found.");
+      const validPassword = await verifyPassword(currentPassword, row.password_hash);
+      assertOrThrow(validPassword, 401, "Current password is incorrect.");
+
+      const passwordHash = await hashPassword(password);
+      const updatedAt = nowIso();
+      await runStatement(
+        c.env.DB,
+        "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+        passwordHash,
+        updatedAt,
+        viewer.id,
+      );
+      await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
+
+      return c.json({ ok: true });
+    },
+  );
 
   app.post("/api/auth/logout", async (c) => {
     await revokeSessionByToken(c.env.DB, readSessionCookie(c));
@@ -812,6 +1055,7 @@ export function createApp() {
       user_bio: string;
       user_display_name: string;
       user_email: string;
+      user_email_verified_at: string | null;
       user_home_area: string;
       user_id: string;
       user_is_profile_public: number;
@@ -824,6 +1068,7 @@ export function createApp() {
          CASE WHEN fc.requester_user_id = ? THEN 'outgoing' ELSE 'incoming' END AS direction,
          u.id AS user_id,
          u.email AS user_email,
+         u.email_verified_at AS user_email_verified_at,
          u.display_name AS user_display_name,
          u.bio AS user_bio,
          u.home_area AS user_home_area,
@@ -855,6 +1100,7 @@ export function createApp() {
           bio: friend.user_bio,
           display_name: friend.user_display_name,
           email: friend.user_email,
+          email_verified_at: friend.user_email_verified_at,
           home_area: friend.user_home_area,
           id: friend.user_id,
           is_profile_public: friend.user_is_profile_public,
@@ -869,7 +1115,7 @@ export function createApp() {
   app.get("/api/profiles/:id", async (c) => {
     const row = await firstRow<ViewerRow>(
       c.env.DB,
-      `SELECT id, email, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
+      `SELECT id, email, email_verified_at, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
              , playing_level
        FROM users
        WHERE id = ?`,
@@ -1031,13 +1277,14 @@ export function createApp() {
   app.delete("/api/profiles/:id", async (c) => {
     const viewer = await requireViewer(c);
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
+    await revokeAllSessionsForUser(c.env.DB, viewer.id);
     await runStatement(c.env.DB, "DELETE FROM users WHERE id = ?", viewer.id);
     clearSessionCookie(c);
     return c.json({ ok: true });
   });
 
   app.post("/api/friends/requests", zValidator("json", friendRequestSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const input = c.req.valid("json");
     const target = input.targetUserId
       ? await firstRow<{ id: string }>(
@@ -1070,7 +1317,7 @@ export function createApp() {
   });
 
   app.post("/api/friends/requests/:id/accept", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const request = await firstRow<{ addressee_user_id: string; id: string }>(
       c.env.DB,
       "SELECT id, addressee_user_id FROM friend_connections WHERE id = ? AND status = 'pending'",
@@ -1088,7 +1335,7 @@ export function createApp() {
   });
 
   app.delete("/api/friends/:id", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     await runStatement(
       c.env.DB,
       `DELETE FROM friend_connections
@@ -1106,7 +1353,7 @@ export function createApp() {
   });
 
   app.post("/api/groups", zValidator("json", groupCreateSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const input = c.req.valid("json");
     const createdAt = nowIso();
     const groupId = crypto.randomUUID();
@@ -1274,7 +1521,7 @@ export function createApp() {
   });
 
   app.patch("/api/groups/:id", zValidator("json", groupUpdateSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can edit the group.");
     const input = c.req.valid("json");
@@ -1307,7 +1554,7 @@ export function createApp() {
   });
 
   app.delete("/api/groups/:id", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can archive the group.");
     await runStatement(
@@ -1321,7 +1568,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/:id/join", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const group = await getGroupRecord(c.env.DB, c.req.param("id"));
     assertOrThrow(group.visibility === "public", 403, "Private groups require an invite link.");
     await runStatement(
@@ -1340,7 +1587,7 @@ export function createApp() {
     "/api/groups/:id/membership-requests",
     zValidator("json", z.object({ note: z.string().trim().max(300).optional().nullable() })),
     async (c) => {
-      const viewer = await requireViewer(c);
+      const viewer = await requireVerifiedViewer(c);
       const group = await getGroupRecord(c.env.DB, c.req.param("id"));
       const existingRole = await getGroupRole(c.env.DB, group.id, viewer.id);
       assertOrThrow(!existingRole, 400, "You are already a member of this group.");
@@ -1418,7 +1665,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/:id/membership-requests/:requestId/approve", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
     const request = await firstRow<{ requester_user_id: string }>(
@@ -1451,7 +1698,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/:id/membership-requests/:requestId/reject", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
     await runStatement(
@@ -1467,7 +1714,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/:id/invite-links", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(group.visibility === "private", 400, "Invite links are only needed for private groups.");
     assertOrThrow(viewerRole === "owner", 403, "Only the group owner can create invite links.");
@@ -1487,7 +1734,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/invite-links/:code/accept", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const invite = await firstRow<{ group_id: string; id: string }>(
       c.env.DB,
       `SELECT id, group_id
@@ -1511,7 +1758,7 @@ export function createApp() {
   });
 
   app.patch("/api/groups/:id/members/:userId", zValidator("json", roleUpdateSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner", 403, "Only the group owner can change member roles.");
     assertOrThrow(c.req.param("userId") !== group.owner_user_id, 400, "The group owner role cannot be reassigned in v1.");
@@ -1544,7 +1791,7 @@ export function createApp() {
   });
 
   app.post("/api/groups/:id/posts", zValidator("json", groupPostSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     await runStatement(
       c.env.DB,
@@ -1646,7 +1893,7 @@ export function createApp() {
   });
 
   app.post("/api/meetings", zValidator("json", meetingCreateSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const input = c.req.valid("json");
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, input.groupId, viewer.id);
 
@@ -1835,7 +2082,7 @@ export function createApp() {
   });
 
   app.patch("/api/meetings/:id", zValidator("json", meetingUpdateSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const meetingId = c.req.param("id");
     const input = c.req.valid("json");
 
@@ -2056,7 +2303,7 @@ export function createApp() {
   });
 
   app.post("/api/meetings/:id/claim", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const meeting = await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(meeting.status === "active", 400, "Cancelled meetings cannot be claimed.");
     assertOrThrow(new Date(meeting.endsAt).getTime() > Date.now(), 400, "Past meetings cannot be claimed.");
@@ -2075,7 +2322,7 @@ export function createApp() {
   });
 
   app.delete("/api/meetings/:id/claim", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
     await runStatement(
       c.env.DB,
@@ -2087,7 +2334,7 @@ export function createApp() {
   });
 
   app.post("/api/meetings/:id/cancel", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2107,7 +2354,7 @@ export function createApp() {
   });
 
   app.post("/api/meetings/:id/revive", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2127,7 +2374,7 @@ export function createApp() {
   });
 
   app.delete("/api/meetings/:id", async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2162,7 +2409,7 @@ export function createApp() {
   });
 
   app.post("/api/meetings/:id/posts", zValidator("json", postSchema), async (c) => {
-    const viewer = await requireViewer(c);
+    const viewer = await requireVerifiedViewer(c);
     await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
     await runStatement(
       c.env.DB,

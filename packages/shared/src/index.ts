@@ -170,6 +170,7 @@ export type MapQueryInput = z.infer<typeof mapQuerySchema>;
 export interface ViewerSummary {
   id: string;
   email: string;
+  emailVerified: boolean;
   displayName: string;
   bio: string;
   homeArea: string;
