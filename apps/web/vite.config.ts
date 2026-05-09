@@ -30,6 +30,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -55,11 +56,7 @@ export default defineConfig({
           }
 
           if (packagePath.startsWith("maplibre-gl/src/")) {
-            const maplibreSection = packagePath.split("/")[2] ?? "core";
-            if (["gl", "render", "shaders", "style", "symbol"].includes(maplibreSection)) {
-              return "vendor-maplibre-engine";
-            }
-            return "vendor-maplibre-core";
+            return "vendor-maplibre";
           }
 
           if (packagePath.startsWith("maplibre-gl")) {
@@ -94,10 +91,6 @@ export default defineConfig({
           if (packagePath.startsWith("lucide-react")) {
             return "vendor-icons";
           }
-
-          const [scopeOrName, maybeName] = packagePath.split("/");
-          const packageName = scopeOrName.startsWith("@") ? `${scopeOrName}-${maybeName}` : scopeOrName;
-          return `vendor-${packageName.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
         },
       },
     },
