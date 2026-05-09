@@ -130,6 +130,10 @@ const MAP_ATTRIBUTION_PLACEMENT = "bottom-right" as const;
 type MapAttributionPlacement = "bottom-left" | "bottom-right";
 type TransitLineRef = string;
 type TransitStationKey = string;
+type MapInteractionEvent =
+  | maplibregl.MapMouseEvent
+  | maplibregl.MapTouchEvent
+  | (maplibregl.MapMouseEvent & { originalEvent?: Event });
 
 const TRANSIT_LAYER_IDS = [
   TRANSIT_LINE_LAYER_ID,
@@ -983,6 +987,7 @@ function addTransitOverlay(
     minzoom: 10,
     paint: {
       "icon-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.24, 12, 0.38, 15, 0.5],
+      "icon-opacity-transition": { delay: 0, duration: 0 },
     },
     source: TRANSIT_SOURCE_ID,
     type: "symbol",
@@ -992,8 +997,9 @@ function addTransitOverlay(
     filter: ["==", ["get", "__never__"], "__never__"],
     id: TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
     layout: {
-      "icon-allow-overlap": false,
+      "icon-allow-overlap": true,
       "icon-image": ["get", "labelIcon"],
+      "icon-ignore-placement": true,
       "icon-keep-upright": true,
       "icon-optional": true,
       "icon-padding": 12,
@@ -1150,13 +1156,11 @@ function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light")
       "icon-opacity",
       ["interpolate", ["linear"], ["zoom"], 10, 0.24, 12, 0.38, 15, 0.5],
     );
+    map.setPaintProperty(TRANSIT_LINE_LABEL_LAYER_ID, "icon-opacity-transition", { delay: 0, duration: 0 });
   }
   if (map.getLayer(TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID)) {
-    map.setPaintProperty(
-      TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
-      "icon-opacity",
-      1,
-    );
+    map.setPaintProperty(TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, "icon-opacity", 1);
+    map.setPaintProperty(TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, "icon-opacity-transition", { delay: 0, duration: 0 });
   }
   if (map.getLayer(TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID)) {
     map.setPaintProperty(
@@ -1254,11 +1258,37 @@ function interpolateTransitStationLabelSize(zoom: number) {
   return 12;
 }
 
-function findTransitStationLabelAtPoint(map: maplibregl.Map, point: maplibregl.Point) {
+function queryRenderedFeaturesNearPoint(map: maplibregl.Map, point: maplibregl.Point, layers: string[], hitSlop: number) {
+  const availableLayers = layers.filter((layerId) => map.getLayer(layerId));
+  if (!availableLayers.length) {
+    return [];
+  }
+  if (hitSlop <= 0) {
+    return map.queryRenderedFeatures(point, { layers: availableLayers });
+  }
+  return map.queryRenderedFeatures(
+    [
+      [point.x - hitSlop, point.y - hitSlop],
+      [point.x + hitSlop, point.y + hitSlop],
+    ],
+    { layers: availableLayers },
+  );
+}
+
+function findTransitPillAtPoint(map: maplibregl.Map, point: maplibregl.Point, hitSlop = 0) {
+  return queryRenderedFeaturesNearPoint(
+    map,
+    point,
+    [TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, TRANSIT_LINE_LABEL_LAYER_ID],
+    hitSlop,
+  )[0];
+}
+
+function findTransitStationLabelAtPoint(map: maplibregl.Map, point: maplibregl.Point, hitSlop = 0) {
   const candidates = map.queryRenderedFeatures(
     [
-      [point.x - 96, point.y - 18],
-      [point.x + 96, point.y + 40],
+      [point.x - (96 + hitSlop), point.y - (18 + hitSlop)],
+      [point.x + (96 + hitSlop), point.y + (40 + hitSlop)],
     ],
     { layers: [TRANSIT_STATION_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)) },
   );
@@ -1276,16 +1306,27 @@ function findTransitStationLabelAtPoint(map: maplibregl.Map, point: maplibregl.P
     }
     const anchor = map.project(coordinates);
     const estimatedWidth = Math.max(textSize * 2.6, name.length * textSize * 0.34);
-    const left = anchor.x - estimatedWidth / 2 - 3;
-    const right = anchor.x + estimatedWidth / 2 + 3;
-    const top = anchor.y + labelTopOffset - 2;
-    const bottom = top + textHeight + 4;
+    const left = anchor.x - estimatedWidth / 2 - 3 - hitSlop;
+    const right = anchor.x + estimatedWidth / 2 + 3 + hitSlop;
+    const top = anchor.y + labelTopOffset - 2 - hitSlop;
+    const bottom = top + textHeight + 4 + hitSlop * 2;
     if (point.x >= left && point.x <= right && point.y >= top && point.y <= bottom) {
       return feature;
     }
   }
 
   return null;
+}
+
+function isTouchLikeInteraction(event: MapInteractionEvent) {
+  const originalEvent = event.originalEvent;
+  if (typeof TouchEvent !== "undefined" && originalEvent instanceof TouchEvent) {
+    return true;
+  }
+  if (typeof PointerEvent !== "undefined" && originalEvent instanceof PointerEvent) {
+    return originalEvent.pointerType !== "mouse";
+  }
+  return false;
 }
 
 function collapseMapAttribution(map: maplibregl.Map) {
@@ -1727,6 +1768,10 @@ export function MapView({
   const [mapReady, setMapReady] = useState(false);
   const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
   const [showTransit, setShowTransit] = useState(true);
+  const coarsePointer = useMemo(
+    () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches,
+    [],
+  );
   const [attributionOpen, setAttributionOpen] = useState(false);
   const [attributionMarkup, setAttributionMarkup] = useState("");
 
@@ -1867,7 +1912,8 @@ export function MapView({
       return true;
     };
 
-    const handleMapClick = async (event: maplibregl.MapMouseEvent) => {
+    const handleMapClick = async (event: MapInteractionEvent) => {
+      const transitHitSlop = isTouchLikeInteraction(event) || coarsePointer ? 18 : 0;
       if (
         (await expandClusterAtPoint(event, CLUSTER_LAYER_ID, SOURCE_ID)) ||
         (await expandClusterAtPoint(event, VENUE_CLUSTER_LAYER_ID, VENUE_SOURCE_ID))
@@ -1905,7 +1951,7 @@ export function MapView({
         return;
       }
 
-      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point);
+      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point, transitHitSlop);
       const transitStationKey = transitStationKeyForFeature(hoveredTransitStation ?? undefined);
       const transitRefs = transitRefsForStationKey(transitDataRef.current, transitStationKey);
       if (transitRefs.length) {
@@ -1917,9 +1963,7 @@ export function MapView({
         return;
       }
 
-      const pillFeature = map.queryRenderedFeatures(event.point, {
-        layers: [TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, TRANSIT_LINE_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)),
-      })[0];
+      const pillFeature = findTransitPillAtPoint(map, event.point, transitHitSlop);
       const pillRefs = transitRefsForPillFeature(pillFeature);
       if (pillRefs.length) {
         setHoveredTransitPillRefs([]);
@@ -1969,9 +2013,7 @@ export function MapView({
     };
 
     const handleTransitHover = (event: maplibregl.MapMouseEvent) => {
-      const pillFeature = map.queryRenderedFeatures(event.point, {
-        layers: [TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, TRANSIT_LINE_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)),
-      })[0];
+      const pillFeature = findTransitPillAtPoint(map, event.point, coarsePointer ? 18 : 0);
       const pillRefs = transitRefsForPillFeature(pillFeature);
       if (pillRefs.length) {
         map.getCanvas().style.cursor = "pointer";
@@ -1980,7 +2022,7 @@ export function MapView({
         return;
       }
 
-      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point);
+      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point, coarsePointer ? 18 : 0);
       map.getCanvas().style.cursor = hoveredTransitStation ? "pointer" : "";
       setHoveredTransitPillRefs([]);
       setHoveredTransitStationKey(transitStationKeyForFeature(hoveredTransitStation ?? undefined));
@@ -2206,7 +2248,16 @@ export function MapView({
           aria-label={showTransit ? "Hide transit overlay" : "Show transit overlay"}
           aria-pressed={showTransit}
           className={`map-transit-toggle__button ${showTransit ? "is-active" : "is-inactive"}`.trim()}
-          onClick={() => setShowTransit((current) => !current)}
+          onClick={(event) => {
+            if (event.detail === 0) {
+              setShowTransit((current) => !current);
+            }
+          }}
+          onPointerUp={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setShowTransit((current) => !current);
+          }}
           type="button"
         >
           <TrainFront size={16} strokeWidth={2} />

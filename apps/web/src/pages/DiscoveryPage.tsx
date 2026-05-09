@@ -2,15 +2,18 @@ import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSPropertie
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarRange,
+  ChevronDown,
   Compass,
   Edit3,
   ExternalLink,
   Filter,
+  KeyRound,
   List,
+  LogOut,
+  Mail,
   Map as MapIcon,
   MapPin,
   MessageSquare,
-  Shield,
   User,
   Users,
   X,
@@ -1477,88 +1480,97 @@ export function DiscoveryPage({
                     </div>
                   </div>
                 ) : null}
-                <div className="subtle-action-row">
-                  {isOwnProfile ? (
-                    <button
-                      className="button-secondary button-inline"
-                      onClick={() => {
-                        setProfileDraft(createProfileDraft(selectedProfileDetail));
-                        setEditingProfile(true);
-                      }}
-                      type="button"
-                    >
-                      <Edit3 size={14} strokeWidth={2} />
-                      {t("common.edit")}
-                    </button>
-                  ) : null}
-                  {isOwnProfile ? (
-                    <button
-                      className="button-secondary button-inline"
-                      onClick={() => {
-                        setChangingEmail((current) => !current);
-                        setChangingPassword(false);
-                        setChangeEmailStatus(null);
-                      }}
-                      type="button"
-                    >
-                      <Shield size={14} strokeWidth={2} />
-                      Change email
-                    </button>
-                  ) : null}
-                  {isOwnProfile ? (
-                    <button
-                      className="button-secondary button-inline"
-                      onClick={() => {
-                        setChangingPassword((current) => !current);
-                        setChangingEmail(false);
-                        setChangePasswordStatus(null);
-                      }}
-                      type="button"
-                    >
-                      <Shield size={14} strokeWidth={2} />
-                      Change password
-                    </button>
-                  ) : null}
-                  {isOwnProfile ? (
-                    <button className="button-danger button-inline" onClick={onLogOut} type="button">
+                {isOwnProfile ? (
+                  <div className="account-sections-stack">
+                    <div className="subtle-action-row">
+                      <button
+                        className="button-secondary button-inline"
+                        onClick={() => {
+                          setProfileDraft(createProfileDraft(selectedProfileDetail));
+                          setEditingProfile(true);
+                        }}
+                        type="button"
+                      >
+                        <Edit3 size={14} strokeWidth={2} />
+                        {t("common.edit")}
+                      </button>
+                    </div>
+                    <section className={`account-section ${changingEmail ? "is-open" : ""}`.trim()}>
+                      <button
+                        aria-expanded={changingEmail}
+                        className="account-section__trigger"
+                        onClick={() => {
+                          setChangingEmail((current) => !current);
+                          setChangingPassword(false);
+                          setChangeEmailStatus(null);
+                        }}
+                        type="button"
+                      >
+                        <span className="account-section__headline">
+                          <Mail size={16} strokeWidth={2} />
+                          <span>Change email</span>
+                        </span>
+                        <ChevronDown size={16} strokeWidth={2} />
+                      </button>
+                      {changingEmail ? (
+                        <div className="account-section__panel">
+                          <p className="panel-caption">Account email</p>
+                          <ChangeEmailForm
+                            currentEmail={selectedProfileDetail.email}
+                            onSubmit={async (payload) => changeEmailMutation.mutateAsync(payload)}
+                          />
+                          {changeEmailStatus ? (
+                            <p
+                              className="empty-state"
+                              style={changeEmailStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                            >
+                              {changeEmailStatus.message}
+                            </p>
+                          ) : null}
+                          {changeEmailStatus?.devVerificationUrl ? (
+                            <a className="muted-copy" href={changeEmailStatus.devVerificationUrl}>
+                              Open email-change verification link
+                            </a>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </section>
+                    <section className={`account-section ${changingPassword ? "is-open" : ""}`.trim()}>
+                      <button
+                        aria-expanded={changingPassword}
+                        className="account-section__trigger"
+                        onClick={() => {
+                          setChangingPassword((current) => !current);
+                          setChangingEmail(false);
+                          setChangePasswordStatus(null);
+                        }}
+                        type="button"
+                      >
+                        <span className="account-section__headline">
+                          <KeyRound size={16} strokeWidth={2} />
+                          <span>Change password</span>
+                        </span>
+                        <ChevronDown size={16} strokeWidth={2} />
+                      </button>
+                      {changingPassword ? (
+                        <div className="account-section__panel">
+                          <p className="panel-caption">Account security</p>
+                          <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
+                          {changePasswordStatus ? (
+                            <p
+                              className="empty-state"
+                              style={changePasswordStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                            >
+                              {changePasswordStatus.message}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </section>
+                    <button className="button-danger button-inline account-sections-stack__signout" onClick={onLogOut} type="button">
+                      <LogOut size={14} strokeWidth={2} />
                       Sign out
                     </button>
-                  ) : null}
-                </div>
-                {isOwnProfile && changingPassword ? (
-                  <div className="stack-panel">
-                    <p className="panel-caption">Account security</p>
-                    <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
-                    {changePasswordStatus ? (
-                      <p
-                        className="empty-state"
-                        style={changePasswordStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
-                      >
-                        {changePasswordStatus.message}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                {isOwnProfile && changingEmail ? (
-                  <div className="stack-panel">
-                    <p className="panel-caption">Account email</p>
-                    <ChangeEmailForm
-                      currentEmail={selectedProfileDetail.email}
-                      onSubmit={async (payload) => changeEmailMutation.mutateAsync(payload)}
-                    />
-                    {changeEmailStatus ? (
-                      <p
-                        className="empty-state"
-                        style={changeEmailStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
-                      >
-                        {changeEmailStatus.message}
-                      </p>
-                    ) : null}
-                    {changeEmailStatus?.devVerificationUrl ? (
-                      <a className="muted-copy" href={changeEmailStatus.devVerificationUrl}>
-                        Open email-change verification link
-                      </a>
-                    ) : null}
                   </div>
                 ) : null}
                 {isOwnProfile && !changingEmail && changeEmailStatus?.kind === "success" ? (
