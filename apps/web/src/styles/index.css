@@ -2515,19 +2515,23 @@ img {
 }
 
 .workspace-map-center > .map-stage,
-.workspace-discovery-center > .map-stage {
+.workspace-map-center > .map-stage-shell,
+.workspace-discovery-center > .map-stage,
+.workspace-discovery-center > .map-stage-shell {
   grid-row: 1;
   grid-column: 1;
   min-height: 0;
 }
 
-.workspace-discovery-center > .map-stage {
+.workspace-discovery-center > .map-stage,
+.workspace-discovery-center > .map-stage-shell {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-.workspace-discovery-center.is-map > .map-stage {
+.workspace-discovery-center.is-map > .map-stage,
+.workspace-discovery-center.is-map > .map-stage-shell {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -3215,6 +3219,7 @@ img {
   gap: 0.75rem;
 }
 
+.map-stage-shell,
 .map-stage,
 .maplibregl-map {
   width: 100%;
@@ -3222,8 +3227,143 @@ img {
   background: transparent;
 }
 
+.map-stage-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
 .map-stage .maplibregl-canvas {
   opacity: 0.94;
+}
+
+.map-stage .maplibregl-ctrl-bottom-left,
+.map-stage .maplibregl-ctrl-bottom-right {
+  display: none;
+}
+
+.map-attribution-control {
+  position: absolute;
+  bottom: 0.75rem;
+  z-index: 4;
+  display: flex;
+  pointer-events: none;
+}
+
+.map-attribution-control--bottom-left {
+  left: 0.75rem;
+}
+
+.map-attribution-control--bottom-right {
+  right: 0.75rem;
+}
+
+.map-attribution-control__button,
+.map-attribution-control__panel {
+  pointer-events: auto;
+}
+
+.map-attribution-control__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.map-attribution-control__button:hover {
+  background: color-mix(in srgb, var(--accent-soft) 64%, var(--panel));
+}
+
+.map-attribution-control__button svg {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.map-attribution-control__panel {
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  width: min(22rem, calc(100vw - 1.5rem));
+  max-width: 22rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  color: var(--text-muted);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(0, 0, 0) scale(0.96);
+  transform-origin: bottom right;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 220ms;
+}
+
+.map-attribution-control.is-open .map-attribution-control__panel {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear;
+}
+
+.map-attribution-control--bottom-left .map-attribution-control__panel {
+  left: 0;
+}
+
+.map-attribution-control--bottom-right .map-attribution-control__panel {
+  right: 0;
+}
+
+.map-attribution-control--bottom-left .map-attribution-control__panel {
+  transform-origin: bottom left;
+}
+
+.map-attribution-control--bottom-left.is-open .map-attribution-control__panel {
+  transform: translate3d(0.2rem, -0.2rem, 0) scale(1);
+}
+
+.map-attribution-control--bottom-right.is-open .map-attribution-control__panel {
+  transform: translate3d(-0.2rem, -0.2rem, 0) scale(1);
+}
+
+.map-attribution-control__panel a {
+  color: var(--text);
+  text-decoration-color: color-mix(in srgb, var(--text) 44%, transparent);
+  word-break: break-word;
+}
+
+.map-attribution-control__panel a:hover {
+  text-decoration-color: currentColor;
+}
+
+.map-attribution-control__panel > * {
+  margin: 0;
 }
 
 .maplibregl-marker {
@@ -4339,6 +4479,36 @@ img {
     width: auto;
     max-width: none;
   }
+
+  .map-attribution-control {
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+  }
+
+  .map-attribution-control--bottom-left,
+  .map-attribution-control--bottom-right {
+    width: auto;
+  }
+
+  .map-attribution-control__button {
+    margin-left: auto;
+    max-width: 100%;
+  }
+
+  .map-attribution-control__panel {
+    width: auto;
+    max-width: none;
+    left: 0;
+    right: 0;
+    max-height: min(40vh, 16rem);
+    overflow: auto;
+  }
+
+  .map-attribution-control--bottom-left .map-attribution-control__panel,
+  .map-attribution-control--bottom-right .map-attribution-control__panel {
+    transform-origin: bottom center;
+  }
 }
 
 @media (max-width: 680px) {
@@ -4591,7 +4761,9 @@ img {
   .workspace-frame--unified .workspace-discovery-center,
   .workspace-frame--unified .workspace-list-center,
   .workspace-frame--unified .workspace-map-center > .map-stage,
+  .workspace-frame--unified .workspace-map-center > .map-stage-shell,
   .workspace-frame--unified .workspace-discovery-center > .map-stage,
+  .workspace-frame--unified .workspace-discovery-center > .map-stage-shell,
   .workspace-frame--unified .workspace-list-scroll,
   .workspace-frame--unified .mode-overlay-controls,
   .workspace-frame--unified .mode-overlay-controls .workspace-segmented {
@@ -4966,6 +5138,7 @@ img {
   }
 
   .workspace-main-center--covered > .map-stage,
+  .workspace-main-center--covered > .map-stage-shell,
   .workspace-main-center--covered > .map-overlay-controls,
   .workspace-main-center--covered > .mode-overlay-controls,
   .workspace-main-center--covered > .workspace-list-scroll {
@@ -4976,6 +5149,8 @@ img {
 
   .workspace-main-center--covered > .map-stage .maplibregl-map,
   .workspace-main-center--covered > .map-stage .maplibregl-canvas,
+  .workspace-main-center--covered > .map-stage-shell .maplibregl-map,
+  .workspace-main-center--covered > .map-stage-shell .maplibregl-canvas,
   .workspace-main-center--covered .maplibregl-control-container,
   .workspace-main-center--covered .maplibregl-ctrl-bottom-left,
   .workspace-main-center--covered .maplibregl-ctrl-bottom-right,

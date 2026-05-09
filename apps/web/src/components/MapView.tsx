@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import type { GroupSummary, MeetingSummary, VenueSummary } from "../../../../packages/shared/src";
@@ -112,6 +113,9 @@ const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const DEFAULT_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const TRANSIT_OVERLAY_URL = "/transit/berlin-transit.geojson";
 const SELECTED_MARKER_ZOOM = 13.4;
+const MAP_ATTRIBUTION_PLACEMENT = "bottom-right" as const;
+
+type MapAttributionPlacement = "bottom-left" | "bottom-right";
 
 function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
   return `<div class="map-popup">${
@@ -862,6 +866,16 @@ function collapseMapAttribution(map: maplibregl.Map) {
     });
 }
 
+function readMapAttributionMarkup(map: maplibregl.Map) {
+  const container = map.getContainer();
+  const inner = container.querySelector<HTMLElement>(".maplibregl-ctrl-attrib-inner");
+  return inner?.innerHTML?.trim() ?? "";
+}
+
+function attributionPlacementClassName(placement: MapAttributionPlacement) {
+  return `map-attribution-control--${placement}`;
+}
+
 function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: TransitFeatureCollection | null) {
   const palette = currentThemePalette(theme);
   applyTransitBoost(map, theme);
@@ -1142,6 +1156,7 @@ export function MapView({
   visible = true,
 }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRootRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const lookupRef = useRef<Map<string, MarkerLookupEntry>>(new Map());
@@ -1152,6 +1167,8 @@ export function MapView({
   const suppressBackgroundClickRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
+  const [attributionOpen, setAttributionOpen] = useState(false);
+  const [attributionMarkup, setAttributionMarkup] = useState("");
 
   const emitBoundsChange = useEffectEvent(onBoundsChange);
   const emitBackgroundClick = useEffectEvent(onBackgroundClick ?? (() => undefined));
@@ -1368,6 +1385,7 @@ export function MapView({
         themeRef.current,
       );
       addLayers(map, themeRef.current, transitDataRef.current);
+      setAttributionMarkup(readMapAttributionMarkup(map));
       applySelectedKeyToMapSources(map, sourceDataRef.current, optimisticSelectedKeyRef.current);
       moveAppMarkerLayersToTop(map);
       map.triggerRepaint();
@@ -1389,15 +1407,37 @@ export function MapView({
     map.on("load", () => {
       void handleLoad();
     });
+
+    const syncAttributionMarkup = () => {
+      setAttributionMarkup(readMapAttributionMarkup(map));
+    };
+
+    const attributionNode = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+    const attributionObserver =
+      attributionNode instanceof HTMLElement
+        ? new MutationObserver(() => {
+            syncAttributionMarkup();
+          })
+        : null;
+    if (attributionObserver && attributionNode instanceof HTMLElement) {
+      attributionObserver.observe(attributionNode, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+    }
+
     mapRef.current = map;
 
     return () => {
+      attributionObserver?.disconnect();
       popupRef.current?.remove();
       popupRef.current = null;
       map.remove();
       mapRef.current = null;
       interactionsBoundRef.current = false;
       setMapReady(false);
+      setAttributionMarkup("");
     };
   }, [currentStyle, currentStyleKey]);
 
@@ -1437,11 +1477,34 @@ export function MapView({
 
   useLayoutEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedKey) {
+    if (!map) {
       return;
     }
     collapseMapAttribution(map);
-  }, [selectedKey]);
+  }, [attributionMarkup, selectedKey]);
+
+  useEffect(() => {
+    if (!attributionOpen) {
+      return;
+    }
+
+    function handleDocumentPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && mapRootRef.current?.contains(target)) {
+        return;
+      }
+      setAttributionOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    return () => document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  }, [attributionOpen]);
+
+  useEffect(() => {
+    if (!visible) {
+      setAttributionOpen(false);
+    }
+  }, [visible]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1496,5 +1559,32 @@ export function MapView({
     };
   }, [mapReady, selectionRevision, selectedKey, sourceData, theme, transitData]);
 
-  return <div className="map-stage" ref={mapContainerRef} />;
+  return (
+    <div className="map-stage-shell" ref={mapRootRef}>
+      <div className="map-stage" ref={mapContainerRef} />
+      {attributionMarkup ? (
+        <div
+          className={`map-attribution-control ${attributionPlacementClassName(MAP_ATTRIBUTION_PLACEMENT)} ${
+            attributionOpen ? "is-open" : ""
+          }`.trim()}
+        >
+          <button
+            aria-controls="map-attribution-panel"
+            aria-expanded={attributionOpen}
+            aria-label={attributionOpen ? "Hide map attribution" : "Show map attribution"}
+            className="map-attribution-control__button"
+            onClick={() => setAttributionOpen((open) => !open)}
+            type="button"
+          >
+            <Info size={16} strokeWidth={2.1} />
+          </button>
+          <div
+            className="map-attribution-control__panel"
+            id="map-attribution-panel"
+            dangerouslySetInnerHTML={{ __html: attributionMarkup }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
 }
