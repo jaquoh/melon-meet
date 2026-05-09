@@ -13,8 +13,8 @@
   --panel-strong: #fff2eb;
   --panel-muted: #fff8f4;
   --glass-frame: rgba(255, 250, 246, 0.42);
-  --workspace-cell-overlay: rgba(255, 252, 249, 0.5);
-  --workspace-card-overlay: rgba(235, 225, 215, 0.55);
+  --workspace-cell-overlay: rgba(255, 252, 249, 0.7);
+  --workspace-card-overlay: rgba(200, 232, 202, 0.5);
   --glass-brand: var(--workspace-cell-overlay);
   --glass-top: var(--workspace-cell-overlay);
   --glass-panel-header: var(--workspace-cell-overlay);
