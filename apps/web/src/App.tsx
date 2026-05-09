@@ -12,6 +12,7 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { InfoPage } from "./pages/InfoPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifyEmailChangePage } from "./pages/VerifyEmailChangePage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 
 export type ThemeMode = "light" | "dark";
@@ -83,6 +84,7 @@ function AppShell() {
       <Route path="/impressum" element={<InfoPage page="impressum" {...infoPageProps} />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage theme={theme} toggleTheme={toggleTheme} />} />
       <Route path="/reset-password" element={<ResetPasswordPage theme={theme} toggleTheme={toggleTheme} />} />
+      <Route path="/verify-email-change" element={<VerifyEmailChangePage theme={theme} toggleTheme={toggleTheme} />} />
       <Route path="/verify-email" element={<VerifyEmailPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
       <Route
         path="/map"

@@ -20,6 +20,7 @@ import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "
 import type { ThemeMode } from "../App";
 import { CopyTextButton } from "../components/CopyTextButton";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
+import { ChangeEmailForm } from "../components/ChangeEmailForm";
 import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
 import { GroupForm } from "../components/GroupForm";
@@ -32,6 +33,7 @@ import {
   claimMeeting,
   createGroupPost,
   changePassword,
+  requestEmailChange,
   createMeeting,
   createMeetingPost,
   createMembershipRequest,
@@ -233,7 +235,9 @@ export function DiscoveryPage({
   const [selectedGroup, setSelectedGroup] = useState<GroupSummary | null>(null);
   const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [changingEmail, setChangingEmail] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [changeEmailStatus, setChangeEmailStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
@@ -721,7 +725,9 @@ export function DiscoveryPage({
     setSelectedGroup(null);
     setEditingTarget(null);
     setEditingProfile(false);
+    setChangingEmail(false);
     setChangingPassword(false);
+    setChangeEmailStatus(null);
     setChangePasswordStatus(null);
     setProfileDraft(null);
   }, [routeProfileId]);
@@ -847,6 +853,24 @@ export function DiscoveryPage({
     },
     onError: (error: Error) => {
       setChangePasswordStatus({
+        kind: "error",
+        message: error.message,
+      });
+    },
+  });
+
+  const changeEmailMutation = useMutation({
+    mutationFn: (payload: { currentPassword: string; email: string }) => requestEmailChange(payload.currentPassword, payload.email),
+    onSuccess: (response) => {
+      setChangeEmailStatus({
+        devVerificationUrl: response.devVerificationUrl ?? null,
+        kind: "success",
+        message: "A verification link has been prepared for your new email address.",
+      });
+      setChangingEmail(false);
+    },
+    onError: (error: Error) => {
+      setChangeEmailStatus({
         kind: "error",
         message: error.message,
       });
@@ -1391,7 +1415,9 @@ export function DiscoveryPage({
                   className="button-secondary"
                   onClick={() => {
                         setEditingProfile(false);
+                        setChangingEmail(false);
                         setChangingPassword(false);
+                        setChangeEmailStatus(null);
                         setChangePasswordStatus(null);
                         setProfileDraft(null);
                       }}
@@ -1469,7 +1495,22 @@ export function DiscoveryPage({
                     <button
                       className="button-secondary button-inline"
                       onClick={() => {
+                        setChangingEmail((current) => !current);
+                        setChangingPassword(false);
+                        setChangeEmailStatus(null);
+                      }}
+                      type="button"
+                    >
+                      <Shield size={14} strokeWidth={2} />
+                      Change email
+                    </button>
+                  ) : null}
+                  {isOwnProfile ? (
+                    <button
+                      className="button-secondary button-inline"
+                      onClick={() => {
                         setChangingPassword((current) => !current);
+                        setChangingEmail(false);
                         setChangePasswordStatus(null);
                       }}
                       type="button"
@@ -1497,6 +1538,31 @@ export function DiscoveryPage({
                       </p>
                     ) : null}
                   </div>
+                ) : null}
+                {isOwnProfile && changingEmail ? (
+                  <div className="stack-panel">
+                    <p className="panel-caption">Account email</p>
+                    <ChangeEmailForm
+                      currentEmail={selectedProfileDetail.email}
+                      onSubmit={async (payload) => changeEmailMutation.mutateAsync(payload)}
+                    />
+                    {changeEmailStatus ? (
+                      <p
+                        className="empty-state"
+                        style={changeEmailStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                      >
+                        {changeEmailStatus.message}
+                      </p>
+                    ) : null}
+                    {changeEmailStatus?.devVerificationUrl ? (
+                      <a className="muted-copy" href={changeEmailStatus.devVerificationUrl}>
+                        Open email-change verification link
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                {isOwnProfile && !changingEmail && changeEmailStatus?.kind === "success" ? (
+                  <p className="empty-state">{changeEmailStatus.message}</p>
                 ) : null}
                 {isOwnProfile && !changingPassword && changePasswordStatus?.kind === "success" ? (
                   <p className="empty-state">{changePasswordStatus.message}</p>

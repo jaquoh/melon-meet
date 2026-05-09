@@ -161,6 +161,20 @@ export function changePassword(currentPassword: string, password: string) {
   });
 }
 
+export function requestEmailChange(currentPassword: string, email: string) {
+  return request<{ devVerificationUrl?: string | null; ok: true }>("/api/auth/change-email", {
+    body: JSON.stringify({ currentPassword, email }),
+    method: "POST",
+  });
+}
+
+export function verifyEmailChangeToken(token: string) {
+  return request<{ email: string; ok: true }>("/api/auth/verify-email-change", {
+    body: JSON.stringify({ token }),
+    method: "POST",
+  });
+}
+
 export function logOut() {
   return request<{ ok: true }>("/api/auth/logout", { method: "POST" });
 }

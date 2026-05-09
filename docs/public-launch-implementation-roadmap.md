@@ -42,7 +42,7 @@ Checklist:
 - [x] Add email verification.
 - [x] Add forgot-password and reset-password flow.
 - [x] Add change-password flow.
-- [ ] Add change-email flow with verification.
+- [x] Add change-email flow with verification.
 - [ ] Add account deletion flow and final deletion/anonymization rules.
 - [ ] Add session management basics.
 - [ ] Remove production demo-account exposure.

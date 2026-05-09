@@ -54,6 +54,7 @@ type GroupVisibility = "public" | "private";
 const AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
+const EMAIL_CHANGE_TTL_MS = 1000 * 60 * 60 * 24;
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
 
 type ViewerRow = {
@@ -254,6 +255,10 @@ function buildResetPasswordUrl(c: Context<AppEnv>, token: string) {
   return `${appOrigin(c)}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
+function buildVerifyEmailChangeUrl(c: Context<AppEnv>, token: string) {
+  return `${appOrigin(c)}/verify-email-change?token=${encodeURIComponent(token)}`;
+}
+
 async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string) {
   const token = generateOpaqueToken();
   const tokenHash = await hashOpaqueToken(token);
@@ -311,6 +316,37 @@ async function issuePasswordResetToken(c: Context<AppEnv>, userId: string) {
 
   return {
     devResetUrl: isLocalOrigin(c) ? resetUrl : null,
+  };
+}
+
+async function issueEmailChangeToken(c: Context<AppEnv>, userId: string, newEmail: string) {
+  const token = generateOpaqueToken();
+  const tokenHash = await hashOpaqueToken(token);
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + EMAIL_CHANGE_TTL_MS).toISOString();
+
+  await runStatement(
+    c.env.DB,
+    "DELETE FROM email_change_tokens WHERE user_id = ? AND used_at IS NULL",
+    userId,
+  );
+  await runStatement(
+    c.env.DB,
+    `INSERT INTO email_change_tokens (id, user_id, new_email, token_hash, expires_at, created_at, used_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+    crypto.randomUUID(),
+    userId,
+    newEmail,
+    tokenHash,
+    expiresAt,
+    createdAt,
+  );
+
+  const verificationUrl = buildVerifyEmailChangeUrl(c, token);
+  console.info(`Email change link for ${userId}: ${verificationUrl}`);
+
+  return {
+    devVerificationUrl: isLocalOrigin(c) ? verificationUrl : null,
   };
 }
 
@@ -1033,6 +1069,85 @@ export function createApp() {
       return c.json({ ok: true });
     },
   );
+
+  app.post(
+    "/api/auth/change-email",
+    zValidator("json", z.object({ currentPassword: z.string().min(1), email: z.string().email() })),
+    async (c) => {
+      const viewer = await requireViewer(c);
+      const { currentPassword, email } = c.req.valid("json");
+      const normalizedEmail = email.toLowerCase();
+      assertOrThrow(normalizedEmail !== viewer.email.toLowerCase(), 400, "This is already your current email.");
+
+      const row = await firstRow<{ password_hash: string }>(
+        c.env.DB,
+        "SELECT password_hash FROM users WHERE id = ?",
+        viewer.id,
+      );
+      assertOrThrow(row, 404, "User not found.");
+      const validPassword = await verifyPassword(currentPassword, row.password_hash);
+      assertOrThrow(validPassword, 401, "Current password is incorrect.");
+
+      const existingUser = await firstRow<{ id: string }>(
+        c.env.DB,
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        normalizedEmail,
+        viewer.id,
+      );
+      assertOrThrow(!existingUser, 409, "An account with this email already exists.");
+
+      const { devVerificationUrl } = await issueEmailChangeToken(c, viewer.id, normalizedEmail);
+      return c.json({ ok: true, devVerificationUrl });
+    },
+  );
+
+  app.post("/api/auth/verify-email-change", zValidator("json", z.object({ token: z.string().min(1) })), async (c) => {
+    const { token } = c.req.valid("json");
+    const tokenHash = await hashOpaqueToken(token);
+    const changeRow = await firstRow<{ new_email: string; user_id: string }>(
+      c.env.DB,
+      `SELECT user_id, new_email
+       FROM email_change_tokens
+       WHERE token_hash = ?
+         AND used_at IS NULL
+         AND expires_at > ?`,
+      tokenHash,
+      nowIso(),
+    );
+    assertOrThrow(changeRow, 400, "This email change link is invalid or has expired.");
+
+    const existingUser = await firstRow<{ id: string }>(
+      c.env.DB,
+      "SELECT id FROM users WHERE email = ? AND id != ?",
+      changeRow.new_email,
+      changeRow.user_id,
+    );
+    assertOrThrow(!existingUser, 409, "That email is no longer available.");
+
+    const updatedAt = nowIso();
+    await runStatement(
+      c.env.DB,
+      "UPDATE users SET email = ?, email_verified_at = ?, updated_at = ? WHERE id = ?",
+      changeRow.new_email,
+      updatedAt,
+      updatedAt,
+      changeRow.user_id,
+    );
+    await runStatement(
+      c.env.DB,
+      "UPDATE email_change_tokens SET used_at = ? WHERE token_hash = ?",
+      updatedAt,
+      tokenHash,
+    );
+    await runStatement(
+      c.env.DB,
+      "DELETE FROM email_change_tokens WHERE user_id = ? AND used_at IS NULL",
+      changeRow.user_id,
+    );
+    await revokeOtherSessionsForUser(c.env.DB, changeRow.user_id, c.get("sessionId"));
+
+    return c.json({ ok: true, email: changeRow.new_email });
+  });
 
   app.post("/api/auth/logout", async (c) => {
     await revokeSessionByToken(c.env.DB, readSessionCookie(c));
