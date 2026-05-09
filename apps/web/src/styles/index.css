@@ -3250,6 +3250,58 @@ img {
   pointer-events: none;
 }
 
+.map-transit-toggle {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.map-transit-toggle__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.45rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--glass-frame) 94%, transparent);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.map-transit-toggle__button:hover {
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
+}
+
+.map-transit-toggle__button.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 88%, var(--panel-strong));
+}
+
+.map-transit-toggle__button.is-active span {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.map-transit-toggle__button svg {
+  flex: 0 0 auto;
+}
+
 .map-attribution-control--bottom-left {
   left: 0.75rem;
 }

@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, TrainFront } from "lucide-react";
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import type { GroupSummary, MeetingSummary, VenueSummary } from "../../../../packages/shared/src";
@@ -73,13 +73,16 @@ type TransitFeatureCollection = {
     geometry:
       | { coordinates: [number, number]; type: "Point" }
       | { coordinates: Array<[number, number]>; type: "LineString" };
+    id?: number | string;
     properties: {
       color?: string;
       colors?: string[];
+      labelIcon?: string;
       mode?: "s-bahn" | "u-bahn";
       name?: string;
       ref?: string;
       refs?: string[];
+      stopId?: string;
     };
     type: "Feature";
   }>;
@@ -106,9 +109,15 @@ const LAYER_LABEL_ID = "melon-map-label";
 const LAYER_HIT_ID = "melon-map-hit";
 const TRANSIT_SOURCE_ID = "berlin-transit-overlay";
 const TRANSIT_LINE_LAYER_ID = "berlin-transit-lines";
+const TRANSIT_LINE_HIGHLIGHT_LAYER_ID = "berlin-transit-lines-highlight";
+const TRANSIT_LINE_LABEL_LAYER_ID = "berlin-transit-line-labels";
+const TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID = "berlin-transit-line-labels-highlight";
 const TRANSIT_STATION_HALO_LAYER_ID = "berlin-transit-station-halo";
 const TRANSIT_STATION_DOT_LAYER_ID = "berlin-transit-station-dot";
+const TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID = "berlin-transit-station-dot-highlight";
 const TRANSIT_STATION_LABEL_LAYER_ID = "berlin-transit-station-label";
+const TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID = "berlin-transit-station-label-route-highlight";
+const TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID = "berlin-transit-station-label-highlight";
 const DEFAULT_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const DEFAULT_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const TRANSIT_OVERLAY_URL = "/transit/berlin-transit.geojson";
@@ -116,6 +125,157 @@ const SELECTED_MARKER_ZOOM = 13.4;
 const MAP_ATTRIBUTION_PLACEMENT = "bottom-right" as const;
 
 type MapAttributionPlacement = "bottom-left" | "bottom-right";
+type TransitLineRef = string;
+type TransitStationKey = string;
+
+const TRANSIT_LAYER_IDS = [
+  TRANSIT_LINE_LAYER_ID,
+  TRANSIT_LINE_HIGHLIGHT_LAYER_ID,
+  TRANSIT_LINE_LABEL_LAYER_ID,
+  TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
+  TRANSIT_STATION_HALO_LAYER_ID,
+  TRANSIT_STATION_DOT_LAYER_ID,
+  TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID,
+  TRANSIT_STATION_LABEL_LAYER_ID,
+  TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+  TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID,
+] as const;
+
+function transitLineLabelIconId(mode: "s-bahn" | "u-bahn" | undefined, ref: string) {
+  return `transit-line-label-${mode ?? "rail"}-${ref.replace(/[^a-z0-9]/gi, "").toLowerCase()}`;
+}
+
+function transitLineLabelText(ref: string) {
+  if (ref === "S41") {
+    return "S41 >";
+  }
+  if (ref === "S42") {
+    return "< S42";
+  }
+  return ref;
+}
+
+function escapeSvgText(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function transitStationKeyFromName(name: string) {
+  return `name:${name}` as TransitStationKey;
+}
+
+function transitLineLength(coordinates: Array<[number, number]>) {
+  let total = 0;
+  for (let index = 1; index < coordinates.length; index += 1) {
+    const [prevLng, prevLat] = coordinates[index - 1];
+    const [lng, lat] = coordinates[index];
+    total += Math.hypot(lng - prevLng, lat - prevLat);
+  }
+  return total;
+}
+
+function transitLineLabelSvg(mode: "s-bahn" | "u-bahn" | undefined, ref: string) {
+  const label = transitLineLabelText(ref);
+  const safeLabel = escapeSvgText(label);
+  const logoFill = mode === "s-bahn" ? "#0B8F43" : "#0A62C9";
+  const textWidth = Math.max(22, Math.round(label.length * 6.2 + 8));
+  const width = 21 + 4 + textWidth + 5;
+  const pixelWidth = width * 2;
+  const pixelHeight = 40;
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${pixelHeight}" viewBox="0 0 ${width} 20" fill="none">
+      <rect x="0.75" y="0.75" width="${width - 1.5}" height="18.5" rx="9.25" fill="rgba(255,250,245,0.72)" stroke="rgba(113,132,142,0.32)" stroke-width="1.5"/>
+      <rect x="2.25" y="2.25" width="15.5" height="15.5" rx="7.75" fill="${logoFill}"/>
+      <text x="10" y="13" text-anchor="middle" font-family="Noto Sans, Open Sans, sans-serif" font-size="10" font-weight="800" fill="#ffffff">${
+        mode === "s-bahn" ? "S" : "U"
+      }</text>
+      <text x="${21 + 4 + textWidth / 2}" y="13" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.2" font-weight="700" fill="#27414a">${safeLabel}</text>
+    </svg>
+  `;
+}
+
+function normalizeTransitData(data: TransitFeatureCollection) {
+  const pointGroups = new Map<string, Array<TransitFeatureCollection["features"][number]>>();
+  const lineGroups = new Map<string, Array<TransitFeatureCollection["features"][number]>>();
+
+  data.features.forEach((feature) => {
+    if (feature.geometry.type === "Point" && feature.properties.name) {
+      const key = feature.properties.name;
+      const group = pointGroups.get(key) ?? [];
+      group.push(feature);
+      pointGroups.set(key, group);
+      return;
+    }
+    if (feature.geometry.type === "LineString" && feature.properties.ref) {
+      const key = feature.properties.ref;
+      const group = lineGroups.get(key) ?? [];
+      group.push(feature);
+      lineGroups.set(key, group);
+    }
+  });
+
+  const normalizedLines = [...lineGroups.entries()].map(([ref, features], index) => {
+    const bestFeature = features.reduce((best, current) => {
+      const bestLength = transitLineLength((best.geometry as { coordinates: Array<[number, number]> }).coordinates);
+      const currentLength = transitLineLength((current.geometry as { coordinates: Array<[number, number]> }).coordinates);
+      return currentLength > bestLength ? current : best;
+    });
+
+    const colorCounts = new Map<string, number>();
+    features.forEach((feature) => {
+      if (feature.properties.color) {
+        colorCounts.set(feature.properties.color, (colorCounts.get(feature.properties.color) ?? 0) + 1);
+      }
+    });
+    const mostCommonColor =
+      [...colorCounts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? bestFeature.properties.color;
+
+    return {
+      ...bestFeature,
+      id: `line:${ref}:${index}`,
+      properties: {
+        ...bestFeature.properties,
+        color: mostCommonColor,
+        labelIcon: transitLineLabelIconId(bestFeature.properties.mode, ref),
+        ref,
+      },
+    };
+  });
+
+  const normalizedPoints = [...pointGroups.entries()].map(([name, features], index) => {
+    const coords = features.map((feature) => (feature.geometry as { coordinates: [number, number] }).coordinates);
+    const count = coords.length || 1;
+    const center = coords.reduce<[number, number]>(
+      (acc, [lng, lat]) => [acc[0] + lng / count, acc[1] + lat / count],
+      [0, 0],
+    );
+    const refs = [...new Set(features.flatMap((feature) => feature.properties.refs ?? []))].sort();
+    const colors = [...new Set(features.flatMap((feature) => feature.properties.colors ?? []))];
+    const modes = [...new Set(features.map((feature) => feature.properties.mode).filter(Boolean))] as Array<"s-bahn" | "u-bahn">;
+
+    return {
+      geometry: { coordinates: center, type: "Point" as const },
+      id: `station:${index}`,
+      properties: {
+        colors,
+        mode: modes.length === 1 ? modes[0] : (features[0]?.properties.mode ?? "u-bahn"),
+        name,
+        refs,
+        stopId: transitStationKeyFromName(name),
+      },
+      type: "Feature" as const,
+    };
+  });
+
+  return {
+    ...data,
+    features: [...normalizedLines, ...normalizedPoints],
+  } satisfies TransitFeatureCollection;
+}
 
 function popupHtml(title: string, lines: string[], options?: { cancelled?: boolean }) {
   return `<div class="map-popup">${
@@ -244,7 +404,7 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
       id: LAYER_HIT_ID,
       paint: {
         "circle-opacity": 0.01,
-        "circle-radius": 44,
+        "circle-radius": 24,
       },
       source: SOURCE_ID,
       type: "circle",
@@ -267,7 +427,7 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
       id: VENUE_HIT_LAYER_ID,
       paint: {
         "circle-opacity": 0.01,
-        "circle-radius": 44,
+        "circle-radius": 24,
       },
       source: VENUE_SOURCE_ID,
       type: "circle",
@@ -277,6 +437,16 @@ function ensureMarkerSourceAndHitLayer(map: maplibregl.Map) {
 
 function moveAppMarkerLayersToTop(map: maplibregl.Map) {
   [
+    TRANSIT_LINE_LAYER_ID,
+    TRANSIT_LINE_HIGHLIGHT_LAYER_ID,
+    TRANSIT_STATION_HALO_LAYER_ID,
+    TRANSIT_STATION_DOT_LAYER_ID,
+    TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID,
+    TRANSIT_STATION_LABEL_LAYER_ID,
+    TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+    TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID,
+    TRANSIT_LINE_LABEL_LAYER_ID,
+    TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
     CLUSTER_LAYER_ID,
     CLUSTER_COUNT_LAYER_ID,
     VENUE_CLUSTER_LAYER_ID,
@@ -312,6 +482,25 @@ async function ensureBadgeAssets(map: maplibregl.Map, features: SimpleFeature[],
   await Promise.all(
     [...badges.entries()].map(([id, badge]) => ensureMapIcon(map, id, badgeSvg(theme, badge.label, badge.accent))),
   );
+}
+
+async function ensureTransitLineLabelAssets(map: maplibregl.Map, transitData: TransitFeatureCollection | null) {
+  if (!transitData) {
+    return;
+  }
+  const labelEntries = transitData.features
+    .filter(
+      (feature): feature is TransitFeatureCollection["features"][number] & { geometry: { coordinates: Array<[number, number]>; type: "LineString" } } =>
+        feature.geometry.type === "LineString" &&
+        typeof feature.properties.ref === "string" &&
+        typeof feature.properties.labelIcon === "string",
+    )
+    .map((feature) => ({
+      id: feature.properties.labelIcon as string,
+      svg: transitLineLabelSvg(feature.properties.mode, feature.properties.ref as string),
+    }));
+
+  await Promise.all(labelEntries.map(({ id, svg }) => ensureMapIcon(map, id, svg)));
 }
 
 function formatPriceBadge(pricing: "free" | "paid", costPerPerson?: number | null) {
@@ -760,6 +949,65 @@ function addTransitOverlay(
   });
 
   map.addLayer({
+    filter: ["==", ["get", "__never__"], "__never__"],
+    id: TRANSIT_LINE_HIGHLIGHT_LAYER_ID,
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+    },
+    paint: {
+      "line-color": ["coalesce", ["get", "color"], theme === "dark" ? "#b9eeff" : "#0b8fd1"],
+      "line-opacity": theme === "dark" ? 0.96 : 0.92,
+      "line-width": ["interpolate", ["exponential", 1.35], ["zoom"], 8, 1.8, 11, 2.8, 14, 4.3, 17, 6.4],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "line",
+  });
+
+  map.addLayer({
+    filter: ["all", ["==", ["geometry-type"], "LineString"], ["has", "labelIcon"]],
+    id: TRANSIT_LINE_LABEL_LAYER_ID,
+    layout: {
+      "icon-allow-overlap": false,
+      "icon-image": ["get", "labelIcon"],
+      "icon-keep-upright": true,
+      "icon-optional": true,
+      "icon-padding": 12,
+      "icon-rotation-alignment": "viewport",
+      "symbol-placement": "line-center",
+      "symbol-spacing": 320,
+    },
+    minzoom: 10,
+    paint: {
+      "icon-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.24, 12, 0.38, 15, 0.5],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "symbol",
+  });
+
+  map.addLayer({
+    filter: ["==", ["get", "__never__"], "__never__"],
+    id: TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
+    layout: {
+      "icon-allow-overlap": false,
+      "icon-image": ["get", "labelIcon"],
+      "icon-keep-upright": true,
+      "icon-optional": true,
+      "icon-padding": 12,
+      "icon-rotation-alignment": "viewport",
+      "symbol-placement": "line-center",
+      "symbol-spacing": 320,
+    },
+    minzoom: 10,
+    paint: {
+      "icon-opacity": 1,
+      "icon-opacity-transition": { delay: 0, duration: 0 },
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "symbol",
+  });
+
+  map.addLayer({
     filter: ["==", ["geometry-type"], "Point"],
     id: TRANSIT_STATION_HALO_LAYER_ID,
     paint: {
@@ -791,6 +1039,25 @@ function addTransitOverlay(
   });
 
   map.addLayer({
+    filter: ["==", ["get", "__never__"], "__never__"],
+    id: TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID,
+    paint: {
+      "circle-color": [
+        "case",
+        ["==", ["get", "mode"], "s-bahn"],
+        theme === "dark" ? "#bce3c8" : "#6fbb86",
+        theme === "dark" ? "#b7deef" : "#5aa7cb",
+      ],
+      "circle-opacity": 1,
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.15, 11, 3.1, 15, 4.2],
+      "circle-stroke-color": theme === "dark" ? "#d9f2f8" : "#fffdf8",
+      "circle-stroke-width": 2,
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "circle",
+  });
+
+  map.addLayer({
     filter: ["==", ["geometry-type"], "Point"],
     id: TRANSIT_STATION_LABEL_LAYER_ID,
     layout: {
@@ -802,10 +1069,60 @@ function addTransitOverlay(
       "text-optional": true,
     },
     paint: {
-      "text-color": theme === "dark" ? "#6f8588" : "#4f727c",
+      "text-color": theme === "dark" ? "#7a9297" : "#4f727c",
       "text-halo-color": theme === "dark" ? "#10181a" : "#fff7f0",
       "text-halo-width": 1.25,
-      "text-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.32 : 0.6],
+      "text-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.38 : 0.6],
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "symbol",
+  });
+
+  map.addLayer({
+    filter: ["==", ["get", "__never__"], "__never__"],
+    id: TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+    layout: {
+      "text-field": ["get", "name"],
+      "text-font": ["Noto Sans Regular", "Open Sans Regular"],
+      "text-max-width": 9,
+      "text-offset": [0, 0.9],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 9, 9.2, 12, 10.5, 15, 12],
+      "text-optional": true,
+    },
+    paint: {
+      "text-color": theme === "dark" ? "#9cb7bd" : "#3f6672",
+      "text-halo-color": theme === "dark" ? "#10181a" : "#fff7f0",
+      "text-halo-width": 1.35,
+      "text-opacity": theme === "dark" ? 0.72 : 0.68,
+      "text-color-transition": { delay: 0, duration: 0 },
+      "text-opacity-transition": { delay: 0, duration: 0 },
+    },
+    source: TRANSIT_SOURCE_ID,
+    type: "symbol",
+  });
+
+  map.addLayer({
+    filter: ["==", ["get", "__never__"], "__never__"],
+    id: TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID,
+    layout: {
+      "text-allow-overlap": true,
+      "text-field": ["get", "name"],
+      "text-font": ["Noto Sans Bold", "Open Sans Bold", "Noto Sans Regular"],
+      "text-ignore-placement": true,
+      "text-max-width": 9,
+      "text-offset": [0, 0.9],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 9, 9.6, 12, 11.2, 15, 12.8],
+      "text-optional": true,
+    },
+    paint: {
+      "text-color": theme === "dark" ? "#d8edf2" : "#264d59",
+      "text-halo-color": theme === "dark" ? "#10181a" : "#fff7f0",
+      "text-halo-width": 1.55,
+      "text-opacity": 1,
+      "text-color-transition": { delay: 0, duration: 0 },
+      "text-halo-color-transition": { delay: 0, duration: 0 },
+      "text-halo-width-transition": { delay: 0, duration: 0 },
+      "text-opacity-transition": { delay: 0, duration: 0 },
     },
     source: TRANSIT_SOURCE_ID,
     type: "symbol",
@@ -815,6 +1132,45 @@ function addTransitOverlay(
 function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light") {
   if (map.getLayer(TRANSIT_LINE_LAYER_ID)) {
     map.setPaintProperty(TRANSIT_LINE_LAYER_ID, "line-opacity", theme === "dark" ? 0.26 : 0.42);
+  }
+  if (map.getLayer(TRANSIT_LINE_HIGHLIGHT_LAYER_ID)) {
+    map.setPaintProperty(TRANSIT_LINE_HIGHLIGHT_LAYER_ID, "line-color", [
+      "coalesce",
+      ["get", "color"],
+      theme === "dark" ? "#b9eeff" : "#0b8fd1",
+    ]);
+    map.setPaintProperty(TRANSIT_LINE_HIGHLIGHT_LAYER_ID, "line-opacity", theme === "dark" ? 0.96 : 0.92);
+  }
+  if (map.getLayer(TRANSIT_LINE_LABEL_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_LINE_LABEL_LAYER_ID,
+      "icon-opacity",
+      ["interpolate", ["linear"], ["zoom"], 10, 0.24, 12, 0.38, 15, 0.5],
+    );
+  }
+  if (map.getLayer(TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
+      "icon-opacity",
+      1,
+    );
+  }
+  if (map.getLayer(TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+      "text-color",
+      theme === "dark" ? "#9cb7bd" : "#3f6672",
+    );
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+      "text-halo-color",
+      theme === "dark" ? "#10181a" : "#fff7f0",
+    );
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID,
+      "text-opacity",
+      theme === "dark" ? 0.72 : 0.68,
+    );
   }
   if (map.getLayer(TRANSIT_STATION_HALO_LAYER_ID)) {
     map.setPaintProperty(TRANSIT_STATION_HALO_LAYER_ID, "circle-color", theme === "dark" ? "#3c4b4d" : "#fff7ed");
@@ -842,15 +1198,91 @@ function updateTransitOverlayTheme(map: maplibregl.Map, theme: "dark" | "light")
     );
     map.setPaintProperty(TRANSIT_STATION_DOT_LAYER_ID, "circle-stroke-color", theme === "dark" ? "#3c4b4d" : "#fff7ed");
   }
+  if (map.getLayer(TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID,
+      "circle-color",
+      [
+        "case",
+        ["==", ["get", "mode"], "s-bahn"],
+        theme === "dark" ? "#bce3c8" : "#6fbb86",
+        theme === "dark" ? "#b7deef" : "#5aa7cb",
+      ],
+    );
+    map.setPaintProperty(
+      TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID,
+      "circle-stroke-color",
+      theme === "dark" ? "#d9f2f8" : "#fffdf8",
+    );
+  }
   if (map.getLayer(TRANSIT_STATION_LABEL_LAYER_ID)) {
-    map.setPaintProperty(TRANSIT_STATION_LABEL_LAYER_ID, "text-color", theme === "dark" ? "#6f8588" : "#4f727c");
+    map.setPaintProperty(TRANSIT_STATION_LABEL_LAYER_ID, "text-color", theme === "dark" ? "#7a9297" : "#4f727c");
     map.setPaintProperty(TRANSIT_STATION_LABEL_LAYER_ID, "text-halo-color", theme === "dark" ? "#10181a" : "#fff7f0");
     map.setPaintProperty(
       TRANSIT_STATION_LABEL_LAYER_ID,
       "text-opacity",
-      ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.32 : 0.6],
+      ["interpolate", ["linear"], ["zoom"], 9, 0, 10, theme === "dark" ? 0.38 : 0.6],
     );
   }
+  if (map.getLayer(TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID)) {
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID,
+      "text-color",
+      theme === "dark" ? "#d8edf2" : "#264d59",
+    );
+    map.setPaintProperty(
+      TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID,
+      "text-halo-color",
+      theme === "dark" ? "#10181a" : "#fff7f0",
+    );
+  }
+}
+
+function interpolateTransitStationLabelSize(zoom: number) {
+  if (zoom <= 9) {
+    return 9.2;
+  }
+  if (zoom <= 12) {
+    return 9.2 + ((zoom - 9) / 3) * (10.5 - 9.2);
+  }
+  if (zoom <= 15) {
+    return 10.5 + ((zoom - 12) / 3) * (12 - 10.5);
+  }
+  return 12;
+}
+
+function findTransitStationLabelAtPoint(map: maplibregl.Map, point: maplibregl.Point) {
+  const candidates = map.queryRenderedFeatures(
+    [
+      [point.x - 96, point.y - 18],
+      [point.x + 96, point.y + 40],
+    ],
+    { layers: [TRANSIT_STATION_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)) },
+  );
+
+  const zoom = map.getZoom();
+  const textSize = interpolateTransitStationLabelSize(zoom);
+  const textHeight = textSize * 1.35;
+  const labelTopOffset = textSize * 0.9;
+
+  for (const feature of candidates) {
+    const name = typeof feature.properties?.name === "string" ? feature.properties.name : "";
+    const coordinates = (feature.geometry as { coordinates?: [number, number] }).coordinates;
+    if (!name || !coordinates) {
+      continue;
+    }
+    const anchor = map.project(coordinates);
+    const estimatedWidth = Math.max(textSize * 2.6, name.length * textSize * 0.34);
+    const left = anchor.x - estimatedWidth / 2 - 3;
+    const right = anchor.x + estimatedWidth / 2 + 3;
+    const top = anchor.y + labelTopOffset - 2;
+    const bottom = top + textHeight + 4;
+    if (point.x >= left && point.x <= right && point.y >= top && point.y <= bottom) {
+      return feature;
+    }
+  }
+
+  return null;
 }
 
 function collapseMapAttribution(map: maplibregl.Map) {
@@ -874,6 +1306,126 @@ function readMapAttributionMarkup(map: maplibregl.Map) {
 
 function attributionPlacementClassName(placement: MapAttributionPlacement) {
   return `map-attribution-control--${placement}`;
+}
+
+function transitLineRefsForFeature(
+  feature:
+    | maplibregl.MapGeoJSONFeature
+    | TransitFeatureCollection["features"][number]
+    | undefined,
+) {
+  if (!feature?.properties) {
+    return [];
+  }
+  const { ref, refs } = feature.properties as { ref?: unknown; refs?: unknown };
+  const values = Array.isArray(refs) ? refs : typeof ref === "string" && ref ? [ref] : [];
+  return values.filter((value): value is TransitLineRef => typeof value === "string" && value.length > 0);
+}
+
+function transitStationKeyForFeature(feature: maplibregl.MapGeoJSONFeature | undefined) {
+  if (!feature?.properties) {
+    return null;
+  }
+  const { stopId, name } = feature.properties as { name?: unknown; stopId?: unknown };
+  if (typeof name === "string" && name.length > 0) {
+    return transitStationKeyFromName(name);
+  }
+  if (typeof stopId === "string" && stopId.length > 0) {
+    return stopId as TransitStationKey;
+  }
+  return null;
+}
+
+function transitFeatureFilterForRefs(refs: TransitLineRef[]): maplibregl.FilterSpecification {
+  if (!refs.length) {
+    return ["==", ["get", "__never__"], "__never__"];
+  }
+  return [
+    "any",
+    ["in", ["get", "ref"], ["literal", refs]],
+    ...refs.map((ref) => ["in", ref, ["coalesce", ["get", "refs"], ["literal", []]]]),
+  ] as unknown as maplibregl.FilterSpecification;
+}
+
+function transitStationFilterForKey(stationKey: TransitStationKey | null): maplibregl.FilterSpecification {
+  if (!stationKey) {
+    return ["==", ["get", "__never__"], "__never__"];
+  }
+  return ["==", ["get", "stopId"], stationKey];
+}
+
+function transitStationKeyForTransitFeature(feature: TransitFeatureCollection["features"][number]) {
+  const { stopId, name } = feature.properties;
+  if (typeof stopId === "string" && stopId.length > 0) {
+    return stopId as TransitStationKey;
+  }
+  if (typeof name === "string" && name.length > 0) {
+    return `name:${name}` as TransitStationKey;
+  }
+  return null;
+}
+
+function transitRefsForStationKey(
+  transitData: TransitFeatureCollection | null,
+  stationKey: TransitStationKey | null,
+) {
+  if (!transitData || !stationKey) {
+    return [];
+  }
+  const stationFeature = transitData.features.find(
+    (feature) =>
+      feature.geometry.type === "Point" &&
+      transitStationKeyForTransitFeature(feature) === stationKey,
+  );
+  return transitLineRefsForFeature(stationFeature);
+}
+
+function transitRefsForPillFeature(feature: maplibregl.MapGeoJSONFeature | undefined) {
+  const refs = transitLineRefsForFeature(feature);
+  return refs.length ? refs : [];
+}
+
+function stationHasMultipleLines(
+  transitData: TransitFeatureCollection | null,
+  stationKey: TransitStationKey | null,
+) {
+  return transitRefsForStationKey(transitData, stationKey).length > 1;
+}
+
+function updateTransitHighlightLayers(
+  map: maplibregl.Map,
+  selectedRefs: TransitLineRef[],
+  highlightedStationKey: TransitStationKey | null,
+  hoveredPillRefs: TransitLineRef[],
+) {
+  const selectedLineFilter = transitFeatureFilterForRefs(selectedRefs);
+  const hoveredPillFilter = transitFeatureFilterForRefs(hoveredPillRefs);
+  if (map.getLayer(TRANSIT_LINE_HIGHLIGHT_LAYER_ID)) {
+    map.setFilter(TRANSIT_LINE_HIGHLIGHT_LAYER_ID, selectedLineFilter);
+  }
+  if (map.getLayer(TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID)) {
+    map.setFilter(
+      TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID,
+      selectedRefs.length ? selectedLineFilter : hoveredPillFilter,
+    );
+  }
+  if (map.getLayer(TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID)) {
+    map.setFilter(TRANSIT_STATION_LABEL_ROUTE_HIGHLIGHT_LAYER_ID, selectedLineFilter);
+  }
+  if (map.getLayer(TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID)) {
+    map.setFilter(TRANSIT_STATION_DOT_HIGHLIGHT_LAYER_ID, transitStationFilterForKey(highlightedStationKey));
+  }
+  if (map.getLayer(TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID)) {
+    map.setFilter(TRANSIT_STATION_LABEL_HIGHLIGHT_LAYER_ID, transitStationFilterForKey(highlightedStationKey));
+  }
+}
+
+function setTransitVisibility(map: maplibregl.Map, visible: boolean) {
+  TRANSIT_LAYER_IDS.forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+    }
+  });
 }
 
 function addLayers(map: maplibregl.Map, theme: "dark" | "light", transitData: TransitFeatureCollection | null) {
@@ -1165,8 +1717,13 @@ export function MapView({
   const optimisticSelectedKeyRef = useRef<SelectedMarkerKey>(null);
   const centeredSelectionRef = useRef<string | null>(null);
   const suppressBackgroundClickRef = useRef(false);
+  const hoveredTransitStationKeyRef = useRef<TransitStationKey | null>(null);
+  const hoveredTransitPillRefsRef = useRef<TransitLineRef[]>([]);
+  const selectedTransitStationKeyRef = useRef<TransitStationKey | null>(null);
+  const selectedTransitRefsRef = useRef<TransitLineRef[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
+  const [showTransit, setShowTransit] = useState(true);
   const [attributionOpen, setAttributionOpen] = useState(false);
   const [attributionMarkup, setAttributionMarkup] = useState("");
 
@@ -1211,7 +1768,7 @@ export function MapView({
           "type" in data &&
           data.type === "FeatureCollection"
         ) {
-          setTransitData(data as TransitFeatureCollection);
+          setTransitData(normalizeTransitData(data as TransitFeatureCollection));
         }
       })
       .catch(() => {
@@ -1256,19 +1813,32 @@ export function MapView({
       applySelectedKeyToMapSources(map, sourceDataRef.current, nextSelectedKey);
     };
 
-    const markerLayerIds = [
-      VENUE_HIT_LAYER_ID,
-      VENUE_BASE_LAYER_ID,
-      VENUE_ICON_LAYER_ID,
-      VENUE_LABEL_LAYER_ID,
-      VENUE_BADGE_LAYER_ID,
-      LAYER_HIT_ID,
-      LAYER_BASE_ID,
-      LAYER_ICON_ID,
-      LAYER_LABEL_ID,
-      LAYER_BADGE_ID,
-      LAYER_CORNER_ID,
-    ];
+    const syncTransitHighlight = () => {
+      updateTransitHighlightLayers(
+        map,
+        selectedTransitRefsRef.current,
+        selectedTransitStationKeyRef.current ?? hoveredTransitStationKeyRef.current,
+        hoveredTransitPillRefsRef.current,
+      );
+    };
+
+    const setHoveredTransitStationKey = (stationKey: TransitStationKey | null) => {
+      hoveredTransitStationKeyRef.current = stationKey;
+      syncTransitHighlight();
+    };
+
+    const setHoveredTransitPillRefs = (refs: TransitLineRef[]) => {
+      hoveredTransitPillRefsRef.current = refs;
+      syncTransitHighlight();
+    };
+
+    const setSelectedTransitSelection = (stationKey: TransitStationKey | null, refs: TransitLineRef[]) => {
+      selectedTransitStationKeyRef.current = stationKey;
+      selectedTransitRefsRef.current = refs;
+      syncTransitHighlight();
+    };
+
+    const markerInteractiveLayerIds = [VENUE_HIT_LAYER_ID, LAYER_HIT_ID];
 
     const expandClusterAtPoint = async (event: maplibregl.MapMouseEvent, layerId: string, sourceId: string) => {
       if (!map.getLayer(layerId)) {
@@ -1295,7 +1865,6 @@ export function MapView({
     };
 
     const handleMapClick = async (event: maplibregl.MapMouseEvent) => {
-      const hitBox = 32;
       if (
         (await expandClusterAtPoint(event, CLUSTER_LAYER_ID, SOURCE_ID)) ||
         (await expandClusterAtPoint(event, VENUE_CLUSTER_LAYER_ID, VENUE_SOURCE_ID))
@@ -1303,17 +1872,15 @@ export function MapView({
         return;
       }
 
-      const features = map.queryRenderedFeatures(
-        [
-          [event.point.x - hitBox, event.point.y - hitBox],
-          [event.point.x + hitBox, event.point.y + hitBox],
-        ],
-        { layers: markerLayerIds.filter((layerId) => map.getLayer(layerId)) },
-      );
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: markerInteractiveLayerIds.filter((layerId) => map.getLayer(layerId)),
+      });
       const feature = features.find((item) => item.properties?.lookupKey);
       const lookupKey = feature?.properties?.lookupKey;
 
       if (lookupKey) {
+        setSelectedTransitSelection(null, []);
+        setHoveredTransitPillRefs([]);
         const lookup = lookupRef.current.get(String(lookupKey));
         if (!lookup) {
           return;
@@ -1335,10 +1902,34 @@ export function MapView({
         return;
       }
 
+      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point);
+      const transitStationKey = transitStationKeyForFeature(hoveredTransitStation ?? undefined);
+      const transitRefs = transitRefsForStationKey(transitDataRef.current, transitStationKey);
+      if (transitRefs.length) {
+        setHoveredTransitPillRefs([]);
+        setSelectedTransitSelection(
+          transitStationKey,
+          stationHasMultipleLines(transitDataRef.current, transitStationKey) ? transitRefs : transitRefs.slice(0, 1),
+        );
+        return;
+      }
+
+      const pillFeature = map.queryRenderedFeatures(event.point, {
+        layers: [TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, TRANSIT_LINE_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)),
+      })[0];
+      const pillRefs = transitRefsForPillFeature(pillFeature);
+      if (pillRefs.length) {
+        setHoveredTransitPillRefs([]);
+        setSelectedTransitSelection(null, pillRefs.slice(0, 1));
+        return;
+      }
+
       if (suppressBackgroundClickRef.current) {
         suppressBackgroundClickRef.current = false;
         return;
       }
+      setHoveredTransitPillRefs([]);
+      setSelectedTransitSelection(null, []);
       applyOptimisticSelection(null);
       emitBackgroundClick();
     };
@@ -1374,6 +1965,30 @@ export function MapView({
       popupRef.current?.remove();
     };
 
+    const handleTransitHover = (event: maplibregl.MapMouseEvent) => {
+      const pillFeature = map.queryRenderedFeatures(event.point, {
+        layers: [TRANSIT_LINE_LABEL_HIGHLIGHT_LAYER_ID, TRANSIT_LINE_LABEL_LAYER_ID].filter((layerId) => map.getLayer(layerId)),
+      })[0];
+      const pillRefs = transitRefsForPillFeature(pillFeature);
+      if (pillRefs.length) {
+        map.getCanvas().style.cursor = "pointer";
+        setHoveredTransitStationKey(null);
+        setHoveredTransitPillRefs(pillRefs.slice(0, 1));
+        return;
+      }
+
+      const hoveredTransitStation = findTransitStationLabelAtPoint(map, event.point);
+      map.getCanvas().style.cursor = hoveredTransitStation ? "pointer" : "";
+      setHoveredTransitPillRefs([]);
+      setHoveredTransitStationKey(transitStationKeyForFeature(hoveredTransitStation ?? undefined));
+    };
+
+    const clearTransitHover = () => {
+      map.getCanvas().style.cursor = "";
+      setHoveredTransitPillRefs([]);
+      setHoveredTransitStationKey(null);
+    };
+
     const handleLoad = async () => {
       ensureMarkerSourceAndHitLayer(map);
       lookupRef.current = sourceDataRef.current.lookup;
@@ -1384,7 +1999,10 @@ export function MapView({
         [...sourceDataRef.current.featureCollection.features, ...sourceDataRef.current.venueFeatureCollection.features],
         themeRef.current,
       );
+      await ensureTransitLineLabelAssets(map, transitDataRef.current);
       addLayers(map, themeRef.current, transitDataRef.current);
+      setTransitVisibility(map, showTransit);
+      syncTransitHighlight();
       setAttributionMarkup(readMapAttributionMarkup(map));
       applySelectedKeyToMapSources(map, sourceDataRef.current, optimisticSelectedKeyRef.current);
       moveAppMarkerLayersToTop(map);
@@ -1392,10 +2010,12 @@ export function MapView({
       popupRef.current ??= new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18 });
       if (!interactionsBoundRef.current) {
         map.on("click", handleMapClick);
-        [CLUSTER_LAYER_ID, VENUE_CLUSTER_LAYER_ID, ...markerLayerIds].forEach((layerId) => {
+        [CLUSTER_LAYER_ID, VENUE_CLUSTER_LAYER_ID, ...markerInteractiveLayerIds].forEach((layerId) => {
           map.on("mousemove", layerId, handleHover);
           map.on("mouseleave", layerId, clearHover);
         });
+        map.on("mousemove", handleTransitHover);
+        map.on("mouseout", clearTransitHover);
         map.on("movestart", clearHover);
         map.on("moveend", syncBounds);
         interactionsBoundRef.current = true;
@@ -1508,6 +2128,14 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !mapReady || !map.isStyleLoaded()) {
+      return;
+    }
+    setTransitVisibility(map, showTransit);
+  }, [mapReady, showTransit]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || appliedStyleRef.current === currentStyleKey) {
       return;
     }
@@ -1543,12 +2171,20 @@ export function MapView({
         [...sourceData.featureCollection.features, ...sourceData.venueFeatureCollection.features],
         theme,
       );
+      await ensureTransitLineLabelAssets(map, transitData);
       if (!active) {
         return;
       }
       ensureMarkerSourceAndHitLayer(map);
       addLayers(map, theme, transitData);
       updateLayerTheme(map, theme);
+      setTransitVisibility(map, showTransit);
+      updateTransitHighlightLayers(
+        map,
+        selectedTransitRefsRef.current,
+        selectedTransitStationKeyRef.current ?? hoveredTransitStationKeyRef.current,
+        hoveredTransitPillRefsRef.current,
+      );
       applySelectedKeyToMapSources(map, sourceData, optimisticSelectedKeyRef.current);
       moveAppMarkerLayersToTop(map);
       map.triggerRepaint();
@@ -1562,6 +2198,17 @@ export function MapView({
   return (
     <div className="map-stage-shell" ref={mapRootRef}>
       <div className="map-stage" ref={mapContainerRef} />
+      <div className="map-transit-toggle">
+        <button
+          aria-pressed={showTransit}
+          className={`map-transit-toggle__button ${showTransit ? "is-active" : ""}`.trim()}
+          onClick={() => setShowTransit((current) => !current)}
+          type="button"
+        >
+          <TrainFront size={16} strokeWidth={2} />
+          <span>Transit</span>
+        </button>
+      </div>
       {attributionMarkup ? (
         <div
           className={`map-attribution-control ${attributionPlacementClassName(MAP_ATTRIBUTION_PLACEMENT)} ${
