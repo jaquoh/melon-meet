@@ -3298,17 +3298,26 @@ img {
     background 160ms ease,
     border-color 160ms ease,
     color 160ms ease;
+  background: color-mix(in srgb, #d86b6b 15%, var(--glass-frame) 85%);
+  border-color: color-mix(in srgb, #c85c5c 28%, var(--line));
 }
 
 .map-transit-toggle__button:hover {
-  background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
+  background: color-mix(in srgb, #67b77a 19%, var(--glass-frame) 81%);
+  border-color: color-mix(in srgb, #53a866 34%, var(--line));
 }
 
 .map-transit-toggle__button.is-active {
-  background: color-mix(in srgb, var(--accent-soft) 88%, var(--panel-strong));
+  background: color-mix(in srgb, #67b77a 19%, var(--glass-frame) 81%);
+  border-color: color-mix(in srgb, #53a866 34%, var(--line));
 }
 
-.map-transit-toggle__button.is-active span {
+.map-transit-toggle__button.is-active:hover {
+  background: color-mix(in srgb, #d86b6b 15%, var(--glass-frame) 85%);
+  border-color: color-mix(in srgb, #c85c5c 28%, var(--line));
+}
+
+.map-transit-toggle__button.is-inactive span {
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
 }

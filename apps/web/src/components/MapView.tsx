@@ -2203,8 +2203,9 @@ export function MapView({
       <div className="map-stage" ref={mapContainerRef} />
       <div className="map-transit-toggle">
         <button
+          aria-label={showTransit ? "Hide transit overlay" : "Show transit overlay"}
           aria-pressed={showTransit}
-          className={`map-transit-toggle__button ${showTransit ? "is-active" : ""}`.trim()}
+          className={`map-transit-toggle__button ${showTransit ? "is-active" : "is-inactive"}`.trim()}
           onClick={() => setShowTransit((current) => !current)}
           type="button"
         >

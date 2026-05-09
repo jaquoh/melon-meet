@@ -7,16 +7,9 @@ export default defineConfig({
   root: resolve(__dirname),
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: [
-      {
-        find: /^maplibre-gl$/,
-        replacement: resolve(__dirname, "../../node_modules/maplibre-gl/src/index.ts"),
-      },
-      {
-        find: "@",
-        replacement: resolve(__dirname, "src"),
-      },
-    ],
+    alias: {
+      "@": resolve(__dirname, "src"),
+    },
   },
   server: {
     port: 5173,
