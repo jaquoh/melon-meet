@@ -1,7 +1,10 @@
 import { Info, TrainFront } from "lucide-react";
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-csp-worker.js?url";
 import type { GroupSummary, MeetingSummary, VenueSummary } from "../../../../packages/shared/src";
+
+maplibregl.setWorkerUrl(workerUrl);
 
 interface BoundsValue {
   east: number;

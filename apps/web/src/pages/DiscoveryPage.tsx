@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarRange,
@@ -22,7 +22,6 @@ import { CopyTextButton } from "../components/CopyTextButton";
 import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
 import { GroupForm } from "../components/GroupForm";
-import { MapView } from "../components/MapView";
 import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
 import { ProfileForm } from "../components/ProfileForm";
@@ -59,6 +58,11 @@ type FullscreenImageTarget = null | {
   quote: string;
   title: string;
 };
+
+const LazyMapView = lazy(async () => {
+  const module = await import("../components/MapView");
+  return { default: module.MapView };
+});
 
 interface DiscoveryWorkspaceState {
   bounds: DiscoveryBounds;
@@ -2067,24 +2071,26 @@ export function DiscoveryPage({
             </div>
             <div className="mode-overlay-controls">{renderModeSwitch()}</div>
             {displayMode === "map" ? (
-              <MapView
-                groupPins={groupPins}
-                meetings={meetings}
-                mode={itemMode}
-                onBackgroundClick={handleMapBackgroundClick}
-                onBoundsChange={() => undefined}
-                onGroupSelect={selectGroupFromMap}
-                onMeetingClusterSelect={selectMeetingClusterFromMap}
-                onMeetingSelect={selectMeetingFromMap}
-                onVenueSelect={selectVenueFromMap}
-                selectionRevision={mapSelectionRevision}
-                selectedKey={selectedMapKey}
-                selectedLocation={selectedMapLocation}
-                theme={theme}
-                venueMeetingsById={venueMeetingsById}
-                venues={venues}
-                visible
-              />
+              <Suspense fallback={<div className="map-stage-shell map-stage-shell--loading" aria-hidden="true" />}>
+                <LazyMapView
+                  groupPins={groupPins}
+                  meetings={meetings}
+                  mode={itemMode}
+                  onBackgroundClick={handleMapBackgroundClick}
+                  onBoundsChange={() => undefined}
+                  onGroupSelect={selectGroupFromMap}
+                  onMeetingClusterSelect={selectMeetingClusterFromMap}
+                  onMeetingSelect={selectMeetingFromMap}
+                  onVenueSelect={selectVenueFromMap}
+                  selectionRevision={mapSelectionRevision}
+                  selectedKey={selectedMapKey}
+                  selectedLocation={selectedMapLocation}
+                  theme={theme}
+                  venueMeetingsById={venueMeetingsById}
+                  venues={venues}
+                  visible
+                />
+              </Suspense>
             ) : null}
             <div aria-hidden={displayMode !== "list"} className="workspace-list-scroll" ref={listScrollRef}>
               <div className="workspace-list-heading">
