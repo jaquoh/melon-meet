@@ -5,7 +5,7 @@ import { firstRow, runStatement } from "./db";
 import type { AppEnv } from "../types/env";
 
 const SESSION_COOKIE_NAME = "melon_meet_session";
-const PBKDF2_ITERATIONS = 210_000;
+const PBKDF2_ITERATIONS = 100_000;
 
 function bytesToBase64Url(bytes: Uint8Array) {
   let value = "";

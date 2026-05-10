@@ -1643,7 +1643,7 @@ INSERT OR REPLACE INTO users (
 ) VALUES (
   '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
   'demo@melonmeet.local',
-  'pbkdf2$210000$Q3-MvetF2mKTwrmSDqSQRg$xwqyjaDE65Ko4B3SySaWG4W7Vi8HH2RSVmFFAfXgoLQ',
+  'pbkdf2$100000$7bfkGNMX2tf3AhRLeoHHSA$wBAARosJVbpfNe0xjueOALTPHdCDPYX2_7bhqY_wsG8',
   '2026-04-03T00:00:00.000Z',
   'Melon Demo',
   'Weekend organiser for beach volleyball and mixed outdoor game sessions.',
