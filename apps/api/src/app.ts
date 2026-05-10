@@ -35,6 +35,7 @@ import {
   writeSessionCookie,
 } from "./lib/auth";
 import { allRows, firstRow, runStatement } from "./lib/db";
+import { sendResendEmail } from "./lib/email";
 import { assertOrThrow } from "./lib/http";
 import { consumeRateLimit } from "./lib/rate-limit";
 import {
@@ -268,7 +269,38 @@ function buildVerifyEmailChangeUrl(c: Context<AppEnv>, token: string) {
   return `${appOrigin(c)}/verify-email-change?token=${encodeURIComponent(token)}`;
 }
 
-async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string) {
+function localDevLink(c: Context<AppEnv>, url: string) {
+  return isLocalOrigin(c) ? url : null;
+}
+
+async function sendAccountEmail(
+  c: Context<AppEnv>,
+  {
+    html,
+    subject,
+    text,
+    to,
+  }: {
+    html: string;
+    subject: string;
+    text: string;
+    to: string;
+  },
+) {
+  if (!c.env.RESEND_API_KEY) {
+    assertOrThrow(isLocalOrigin(c), 500, "Email service is not configured.");
+    return;
+  }
+
+  await sendResendEmail(c.env, {
+    html,
+    subject,
+    text,
+    to,
+  });
+}
+
+async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string, email: string) {
   const token = generateOpaqueToken();
   const tokenHash = await hashOpaqueToken(token);
   const createdAt = nowIso();
@@ -292,13 +324,19 @@ async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string) {
 
   const verificationUrl = buildVerifyEmailUrl(c, token);
   console.info(`Email verification link for ${userId}: ${verificationUrl}`);
+  await sendAccountEmail(c, {
+    html: `<p>Verify your email for Melon Meet.</p><p><a href="${verificationUrl}">Verify email</a></p><p>This link expires in 24 hours.</p>`,
+    subject: "Verify your Melon Meet email",
+    text: `Verify your email for Melon Meet.\n\nOpen this link: ${verificationUrl}\n\nThis link expires in 24 hours.`,
+    to: email,
+  });
 
   return {
-    devVerificationUrl: isLocalOrigin(c) ? verificationUrl : null,
+    devVerificationUrl: localDevLink(c, verificationUrl),
   };
 }
 
-async function issuePasswordResetToken(c: Context<AppEnv>, userId: string) {
+async function issuePasswordResetToken(c: Context<AppEnv>, userId: string, email: string) {
   const token = generateOpaqueToken();
   const tokenHash = await hashOpaqueToken(token);
   const createdAt = nowIso();
@@ -322,9 +360,15 @@ async function issuePasswordResetToken(c: Context<AppEnv>, userId: string) {
 
   const resetUrl = buildResetPasswordUrl(c, token);
   console.info(`Password reset link for ${userId}: ${resetUrl}`);
+  await sendAccountEmail(c, {
+    html: `<p>You requested a password reset for Melon Meet.</p><p><a href="${resetUrl}">Reset password</a></p><p>This link expires in 1 hour.</p>`,
+    subject: "Reset your Melon Meet password",
+    text: `You requested a password reset for Melon Meet.\n\nOpen this link: ${resetUrl}\n\nThis link expires in 1 hour.`,
+    to: email,
+  });
 
   return {
-    devResetUrl: isLocalOrigin(c) ? resetUrl : null,
+    devResetUrl: localDevLink(c, resetUrl),
   };
 }
 
@@ -353,9 +397,15 @@ async function issueEmailChangeToken(c: Context<AppEnv>, userId: string, newEmai
 
   const verificationUrl = buildVerifyEmailChangeUrl(c, token);
   console.info(`Email change link for ${userId}: ${verificationUrl}`);
+  await sendAccountEmail(c, {
+    html: `<p>Confirm your new email address for Melon Meet.</p><p><a href="${verificationUrl}">Confirm new email</a></p><p>This link expires in 24 hours.</p>`,
+    subject: "Confirm your new Melon Meet email",
+    text: `Confirm your new email address for Melon Meet.\n\nOpen this link: ${verificationUrl}\n\nThis link expires in 24 hours.`,
+    to: newEmail,
+  });
 
   return {
-    devVerificationUrl: isLocalOrigin(c) ? verificationUrl : null,
+    devVerificationUrl: localDevLink(c, verificationUrl),
   };
 }
 
@@ -950,7 +1000,7 @@ export function createApp() {
 
     const session = await createSession(c.env.DB, userId);
     writeSessionCookie(c, session.token, session.expiresAt);
-    const { devVerificationUrl } = await issueEmailVerificationToken(c, userId);
+    const { devVerificationUrl } = await issueEmailVerificationToken(c, userId, email.toLowerCase());
 
     return c.json({
       user: {
@@ -1016,7 +1066,7 @@ export function createApp() {
       return c.json({ ok: true, devVerificationUrl: null });
     }
 
-    const { devVerificationUrl } = await issueEmailVerificationToken(c, viewer.id);
+    const { devVerificationUrl } = await issueEmailVerificationToken(c, viewer.id, viewer.email);
     return c.json({ ok: true, devVerificationUrl });
   });
 
@@ -1064,16 +1114,16 @@ export function createApp() {
     const { email } = c.req.valid("json");
     const normalizedEmail = email.toLowerCase();
 
-    const row = await firstRow<{ id: string }>(
+    const row = await firstRow<{ email: string; id: string }>(
       c.env.DB,
-      "SELECT id FROM users WHERE email = ? AND account_status = ?",
+      "SELECT id, email FROM users WHERE email = ? AND account_status = ?",
       normalizedEmail,
       ACTIVE_ACCOUNT_STATUS,
     );
 
     let devResetUrl: string | null = null;
     if (row) {
-      const issued = await issuePasswordResetToken(c, row.id);
+      const issued = await issuePasswordResetToken(c, row.id, row.email);
       devResetUrl = issued.devResetUrl;
     }
 

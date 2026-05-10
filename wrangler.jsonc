@@ -18,7 +18,9 @@
   ],
   "vars": {
     "APP_NAME": "Melon Meet",
-    "DEFAULT_TIMEZONE": "Europe/Berlin"
+    "DEFAULT_TIMEZONE": "Europe/Berlin",
+    "EMAIL_FROM_ADDRESS": "Melon Meet <noreply@mail.melonmeet.com>",
+    "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com"
   },
   "triggers": {
     "crons": ["17 3 * * *"]

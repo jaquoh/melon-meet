@@ -67,6 +67,30 @@ npm run transit:generate
 npm run deploy
 ```
 
+## Transactional email
+
+Melon Meet sends account emails through Resend for:
+
+- email verification
+- password reset
+- email change confirmation
+
+Configured sender values live in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:19):
+
+- `EMAIL_FROM_ADDRESS`: `Melon Meet <noreply@mail.melonmeet.com>`
+- `EMAIL_REPLY_TO_ADDRESS`: `hello@melonmeet.com`
+
+Add the Resend API key as a Wrangler secret:
+
+```bash
+npx wrangler secret put RESEND_API_KEY --config wrangler.jsonc
+```
+
+Local behavior:
+
+- on `localhost`, if `RESEND_API_KEY` is missing, the API keeps returning the local dev verification/reset URLs instead of sending email
+- on deployed environments, missing `RESEND_API_KEY` causes account-email actions to fail until the secret is configured
+
 ## Deployment notes
 
 - Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.

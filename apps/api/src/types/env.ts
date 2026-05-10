@@ -5,6 +5,9 @@ export interface AppBindings {
   APP_NAME: string;
   DB: D1Database;
   DEFAULT_TIMEZONE: string;
+  EMAIL_FROM_ADDRESS: string;
+  EMAIL_REPLY_TO_ADDRESS: string;
+  RESEND_API_KEY?: string;
 }
 
 export interface AppVariables {
