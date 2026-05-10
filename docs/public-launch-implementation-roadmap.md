@@ -43,8 +43,8 @@ Checklist:
 - [x] Add forgot-password and reset-password flow.
 - [x] Add change-password flow.
 - [x] Add change-email flow with verification.
-- [ ] Add account deletion flow and final deletion/anonymization rules.
-- [ ] Add session management basics.
+- [x] Add account deletion flow and final deletion/anonymization rules.
+- [x] Add session management basics.
 - [x] Remove production demo-account exposure.
 
 ## Phase 2: Abuse and Request Protection

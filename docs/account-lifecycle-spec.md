@@ -280,6 +280,7 @@ Recommended launch rule:
 - delete authentication and profile identifiers
 - anonymize authored posts where keeping thread continuity matters
 - remove private memberships and claims tied to the user
+- delete groups, sessions, and invite links still owned by the account when the retention window completes
 
 ## Token Types Needed
 

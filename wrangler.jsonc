@@ -19,5 +19,8 @@
   "vars": {
     "APP_NAME": "Melon Meet",
     "DEFAULT_TIMEZONE": "Europe/Berlin"
+  },
+  "triggers": {
+    "crons": ["17 3 * * *"]
   }
 }

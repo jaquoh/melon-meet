@@ -1,4 +1,4 @@
-import { createApp } from "./app";
+import { createApp, finalizePendingAccountDeletions } from "./app";
 
 const app = createApp();
 
@@ -10,5 +10,14 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+  scheduled(_controller: ScheduledController, env: { DB: D1Database }, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      finalizePendingAccountDeletions(env.DB).then((count) => {
+        if (count > 0) {
+          console.info(`Finalized ${count} pending account deletion(s).`);
+        }
+      }),
+    );
   },
 };

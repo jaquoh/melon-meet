@@ -57,6 +57,7 @@ const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
 const EMAIL_CHANGE_TTL_MS = 1000 * 60 * 60 * 24;
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
+const ACCOUNT_DELETION_RETENTION_MS = 1000 * 60 * 60 * 24 * 30;
 const ACTIVE_ACCOUNT_STATUS: AccountStatus = "active";
 const DELETION_PENDING_ACCOUNT_STATUS: AccountStatus = "deletion-pending";
 const DELETED_USER_DISPLAY_NAME = "Deleted user";
@@ -832,6 +833,41 @@ async function requestAccountDeletion(db: D1Database, userId: string) {
   await runStatement(db, "DELETE FROM meeting_claims WHERE user_id = ?", userId);
   await runStatement(db, "DELETE FROM group_membership_requests WHERE requester_user_id = ?", userId);
   await runStatement(db, "DELETE FROM app_group_members WHERE user_id = ? AND role != 'owner'", userId);
+}
+
+export async function finalizePendingAccountDeletions(db: D1Database, referenceTime = new Date()) {
+  const deletedAt = referenceTime.toISOString();
+  const cutoff = new Date(referenceTime.getTime() - ACCOUNT_DELETION_RETENTION_MS).toISOString();
+  const pendingUsers = await allRows<{ id: string }>(
+    db,
+    `SELECT id
+     FROM users
+     WHERE account_status = ?
+       AND deletion_requested_at IS NOT NULL
+       AND deletion_requested_at <= ?
+       AND deleted_at IS NULL`,
+    DELETION_PENDING_ACCOUNT_STATUS,
+    cutoff,
+  );
+
+  for (const user of pendingUsers) {
+    await runStatement(db, "DELETE FROM group_invite_links WHERE created_by_user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM meetings WHERE owner_user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM meeting_series WHERE owner_user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM app_groups WHERE owner_user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM meeting_claims WHERE user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM group_membership_requests WHERE requester_user_id = ?", user.id);
+    await runStatement(db, "DELETE FROM app_group_members WHERE user_id = ?", user.id);
+    await runStatement(
+      db,
+      "UPDATE users SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+      deletedAt,
+      deletedAt,
+      user.id,
+    );
+  }
+
+  return pendingUsers.length;
 }
 
 async function getMeetingDetail(
