@@ -130,10 +130,7 @@ const MAP_ATTRIBUTION_PLACEMENT = "bottom-right" as const;
 type MapAttributionPlacement = "bottom-left" | "bottom-right";
 type TransitLineRef = string;
 type TransitStationKey = string;
-type MapInteractionEvent =
-  | maplibregl.MapMouseEvent
-  | maplibregl.MapTouchEvent
-  | (maplibregl.MapMouseEvent & { originalEvent?: Event });
+type MapInteractionEvent = maplibregl.MapMouseEvent & { originalEvent?: Event };
 
 const TRANSIT_LAYER_IDS = [
   TRANSIT_LINE_LAYER_ID,

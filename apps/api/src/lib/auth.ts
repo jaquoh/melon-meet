@@ -178,6 +178,7 @@ export async function resolveSessionViewer(
 
   const tokenHash = await hashOpaqueToken(rawToken);
   const row = await firstRow<{
+    account_status: string;
     session_id: string;
     id: string;
     email: string;
@@ -193,6 +194,7 @@ export async function resolveSessionViewer(
     db,
     `SELECT
        sessions.id AS session_id,
+       users.account_status,
        users.id,
        users.email,
        users.email_verified_at,
@@ -206,6 +208,7 @@ export async function resolveSessionViewer(
      FROM sessions
      JOIN users ON users.id = sessions.user_id
      WHERE sessions.token_hash = ?
+       AND users.account_status = 'active'
        AND sessions.expires_at > ?`,
     tokenHash,
     new Date().toISOString(),

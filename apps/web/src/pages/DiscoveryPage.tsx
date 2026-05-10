@@ -14,8 +14,10 @@ import {
   Map as MapIcon,
   MapPin,
   MessageSquare,
+  Shield,
   User,
   Users,
+  Trash2,
   X,
 } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -46,6 +48,7 @@ import {
   getMeeting,
   getProfile,
   getVenue,
+  deleteProfile,
   updateProfile,
   updateGroup,
   updateMeeting,
@@ -242,6 +245,7 @@ export function DiscoveryPage({
   const [changingPassword, setChangingPassword] = useState(false);
   const [changeEmailStatus, setChangeEmailStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
+  const [deleteAccountStatus, setDeleteAccountStatus] = useState<{ kind: "error"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const [isClearingSelection, setIsClearingSelection] = useState(false);
@@ -732,6 +736,7 @@ export function DiscoveryPage({
     setChangingPassword(false);
     setChangeEmailStatus(null);
     setChangePasswordStatus(null);
+    setDeleteAccountStatus(null);
     setProfileDraft(null);
   }, [routeProfileId]);
 
@@ -874,6 +879,29 @@ export function DiscoveryPage({
     },
     onError: (error: Error) => {
       setChangeEmailStatus({
+        kind: "error",
+        message: error.message,
+      });
+    },
+  });
+
+  const deleteProfileMutation = useMutation({
+    mutationFn: () => deleteProfile(selectedProfileId as string),
+    onSuccess: async () => {
+      await queryClient.cancelQueries();
+      queryClient.setQueryData(["me"], {
+        friends: [],
+        groups: [],
+        viewer: null,
+      });
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== "me",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      navigate("/", { replace: true, state: null });
+    },
+    onError: (error: Error) => {
+      setDeleteAccountStatus({
         kind: "error",
         message: error.message,
       });
@@ -1566,6 +1594,41 @@ export function DiscoveryPage({
                           ) : null}
                         </div>
                       ) : null}
+                    </section>
+                    <section className="account-section account-section--danger is-open">
+                      <div className="account-section__panel">
+                        <p className="panel-caption">Delete account</p>
+                        <p className="muted-copy">
+                          This removes access immediately, signs out all devices, and scrubs your profile and login identity now. Remaining cleanup finishes within 30 days.
+                        </p>
+                        <div className="form-actions">
+                          <button
+                            className="button-danger"
+                            disabled={deleteProfileMutation.isPending}
+                            onClick={async () => {
+                              if (
+                                typeof window !== "undefined" &&
+                                !window.confirm(
+                                  "Delete your account now? You will be signed out immediately and this cannot be undone from the app.",
+                                )
+                              ) {
+                                return;
+                              }
+                              setDeleteAccountStatus(null);
+                              await deleteProfileMutation.mutateAsync();
+                            }}
+                            type="button"
+                          >
+                            <Trash2 size={14} strokeWidth={2} />
+                            {deleteProfileMutation.isPending ? "Deleting" : "Delete account"}
+                          </button>
+                        </div>
+                        {deleteAccountStatus ? (
+                          <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
+                            {deleteAccountStatus.message}
+                          </p>
+                        ) : null}
+                      </div>
                     </section>
                     <button className="button-danger button-inline account-sections-stack__signout" onClick={onLogOut} type="button">
                       <LogOut size={14} strokeWidth={2} />

@@ -4226,6 +4226,11 @@ img {
   border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
 
+.account-section--danger .account-section__panel {
+  padding-top: 1rem;
+  border-top: 0;
+}
+
 .account-section__panel .panel-caption,
 .account-section__panel .muted-copy {
   margin-top: 0.95rem;

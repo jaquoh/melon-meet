@@ -50,12 +50,16 @@ import type { AppEnv } from "./types/env";
 
 type GroupRole = "owner" | "admin" | "member";
 type GroupVisibility = "public" | "private";
+type AccountStatus = "active" | "deletion-pending" | "suspended";
 
 const AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
 const EMAIL_CHANGE_TTL_MS = 1000 * 60 * 60 * 24;
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
+const ACTIVE_ACCOUNT_STATUS: AccountStatus = "active";
+const DELETION_PENDING_ACCOUNT_STATUS: AccountStatus = "deletion-pending";
+const DELETED_USER_DISPLAY_NAME = "Deleted user";
 
 type ViewerRow = {
   avatar_url: string | null;
@@ -195,6 +199,10 @@ function normalizeOptionalText(value: string | null | undefined) {
 
 function makeInviteCode() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+function deletedUserEmail(userId: string) {
+  return `deleted+${userId}@deleted.invalid`;
 }
 
 function mapViewerSummary(row: ViewerRow) {
@@ -786,6 +794,46 @@ async function requireVerifiedViewer(c: Context<AppEnv>) {
   return viewer;
 }
 
+async function requestAccountDeletion(db: D1Database, userId: string) {
+  const deletionRequestedAt = nowIso();
+  const scrubbedPasswordHash = await hashPassword(generateOpaqueToken());
+
+  await revokeAllSessionsForUser(db, userId);
+  await runStatement(
+    db,
+    `UPDATE users
+     SET account_status = ?,
+         deletion_requested_at = ?,
+         deleted_at = NULL,
+         email = ?,
+         password_hash = ?,
+         display_name = ?,
+         bio = '',
+         home_area = '',
+         avatar_url = NULL,
+         is_profile_public = 0,
+         show_email_publicly = 0,
+         playing_level = '',
+         email_verified_at = NULL,
+         updated_at = ?
+     WHERE id = ?`,
+    DELETION_PENDING_ACCOUNT_STATUS,
+    deletionRequestedAt,
+    deletedUserEmail(userId),
+    scrubbedPasswordHash,
+    DELETED_USER_DISPLAY_NAME,
+    deletionRequestedAt,
+    userId,
+  );
+  await runStatement(db, "DELETE FROM email_verification_tokens WHERE user_id = ?", userId);
+  await runStatement(db, "DELETE FROM password_reset_tokens WHERE user_id = ?", userId);
+  await runStatement(db, "DELETE FROM email_change_tokens WHERE user_id = ?", userId);
+  await runStatement(db, "DELETE FROM friend_connections WHERE requester_user_id = ? OR addressee_user_id = ?", userId, userId);
+  await runStatement(db, "DELETE FROM meeting_claims WHERE user_id = ?", userId);
+  await runStatement(db, "DELETE FROM group_membership_requests WHERE requester_user_id = ?", userId);
+  await runStatement(db, "DELETE FROM app_group_members WHERE user_id = ? AND role != 'owner'", userId);
+}
+
 async function getMeetingDetail(
   db: D1Database,
   meetingId: string,
@@ -893,6 +941,7 @@ export function createApp() {
       return limitedResponse;
     }
     const row = await firstRow<{
+      account_status: AccountStatus;
       avatar_url: string | null;
       bio: string;
       display_name: string;
@@ -906,7 +955,7 @@ export function createApp() {
       show_email_publicly: number;
     }>(
       c.env.DB,
-      `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly
+      `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly, account_status
        FROM users
        WHERE email = ?`,
       email.toLowerCase(),
@@ -914,6 +963,7 @@ export function createApp() {
     assertOrThrow(row, 401, "Invalid email or password.");
     const validPassword = await verifyPassword(password, row.password_hash);
     assertOrThrow(validPassword, 401, "Invalid email or password.");
+    assertOrThrow(row.account_status === ACTIVE_ACCOUNT_STATUS, 403, "This account is no longer available.");
 
     const session = await createSession(c.env.DB, row.id);
     writeSessionCookie(c, session.token, session.expiresAt);
@@ -939,13 +989,16 @@ export function createApp() {
     const tokenHash = await hashOpaqueToken(token);
     const verification = await firstRow<{ user_id: string }>(
       c.env.DB,
-      `SELECT user_id
-       FROM email_verification_tokens
+      `SELECT t.user_id
+       FROM email_verification_tokens t
+       JOIN users u ON u.id = t.user_id
        WHERE token_hash = ?
-         AND used_at IS NULL
-         AND expires_at > ?`,
+         AND t.used_at IS NULL
+         AND t.expires_at > ?
+         AND u.account_status = ?`,
       tokenHash,
       nowIso(),
+      ACTIVE_ACCOUNT_STATUS,
     );
     assertOrThrow(verification, 400, "This verification link is invalid or has expired.");
 
@@ -977,8 +1030,9 @@ export function createApp() {
 
     const row = await firstRow<{ id: string }>(
       c.env.DB,
-      "SELECT id FROM users WHERE email = ?",
+      "SELECT id FROM users WHERE email = ? AND account_status = ?",
       normalizedEmail,
+      ACTIVE_ACCOUNT_STATUS,
     );
 
     let devResetUrl: string | null = null;
@@ -1002,13 +1056,16 @@ export function createApp() {
       const tokenHash = await hashOpaqueToken(token);
       const resetRow = await firstRow<{ user_id: string }>(
         c.env.DB,
-        `SELECT user_id
-         FROM password_reset_tokens
+        `SELECT t.user_id
+         FROM password_reset_tokens t
+         JOIN users u ON u.id = t.user_id
          WHERE token_hash = ?
-           AND used_at IS NULL
-           AND expires_at > ?`,
+           AND t.used_at IS NULL
+           AND t.expires_at > ?
+           AND u.account_status = ?`,
         tokenHash,
         nowIso(),
+        ACTIVE_ACCOUNT_STATUS,
       );
       assertOrThrow(resetRow, 400, "This password reset link is invalid or has expired.");
 
@@ -1106,13 +1163,16 @@ export function createApp() {
     const tokenHash = await hashOpaqueToken(token);
     const changeRow = await firstRow<{ new_email: string; user_id: string }>(
       c.env.DB,
-      `SELECT user_id, new_email
-       FROM email_change_tokens
+      `SELECT t.user_id, t.new_email
+       FROM email_change_tokens t
+       JOIN users u ON u.id = t.user_id
        WHERE token_hash = ?
-         AND used_at IS NULL
-         AND expires_at > ?`,
+         AND t.used_at IS NULL
+         AND t.expires_at > ?
+         AND u.account_status = ?`,
       tokenHash,
       nowIso(),
+      ACTIVE_ACCOUNT_STATUS,
     );
     assertOrThrow(changeRow, 400, "This email change link is invalid or has expired.");
 
@@ -1392,8 +1452,7 @@ export function createApp() {
   app.delete("/api/profiles/:id", async (c) => {
     const viewer = await requireViewer(c);
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
-    await revokeAllSessionsForUser(c.env.DB, viewer.id);
-    await runStatement(c.env.DB, "DELETE FROM users WHERE id = ?", viewer.id);
+    await requestAccountDeletion(c.env.DB, viewer.id);
     clearSessionCookie(c);
     return c.json({ ok: true });
   });
