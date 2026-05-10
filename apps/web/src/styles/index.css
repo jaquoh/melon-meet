@@ -2042,16 +2042,6 @@ img {
   font-family: "IBM Plex Mono", monospace;
 }
 
-.auth-demo-box {
-  display: inline-grid;
-  gap: 0.15rem;
-  width: fit-content;
-  padding: 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  background: var(--panel);
-}
-
 .mode-switch {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

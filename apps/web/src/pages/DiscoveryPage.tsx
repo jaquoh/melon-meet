@@ -14,6 +14,7 @@ import {
   Map as MapIcon,
   MapPin,
   MessageSquare,
+  MonitorOff,
   Shield,
   User,
   Users,
@@ -49,6 +50,7 @@ import {
   getProfile,
   getVenue,
   deleteProfile,
+  logOutOtherSessions,
   updateProfile,
   updateGroup,
   updateMeeting,
@@ -246,6 +248,7 @@ export function DiscoveryPage({
   const [changeEmailStatus, setChangeEmailStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [deleteAccountStatus, setDeleteAccountStatus] = useState<{ kind: "error"; message: string } | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const [isClearingSelection, setIsClearingSelection] = useState(false);
@@ -737,6 +740,7 @@ export function DiscoveryPage({
     setChangeEmailStatus(null);
     setChangePasswordStatus(null);
     setDeleteAccountStatus(null);
+    setSessionStatus(null);
     setProfileDraft(null);
   }, [routeProfileId]);
 
@@ -902,6 +906,22 @@ export function DiscoveryPage({
     },
     onError: (error: Error) => {
       setDeleteAccountStatus({
+        kind: "error",
+        message: error.message,
+      });
+    },
+  });
+
+  const logoutOtherSessionsMutation = useMutation({
+    mutationFn: logOutOtherSessions,
+    onSuccess: () => {
+      setSessionStatus({
+        kind: "success",
+        message: "Other devices have been signed out. Your current session stays active.",
+      });
+    },
+    onError: (error: Error) => {
+      setSessionStatus({
         kind: "error",
         message: error.message,
       });
@@ -1584,6 +1604,28 @@ export function DiscoveryPage({
                         <div className="account-section__panel">
                           <p className="panel-caption">Account security</p>
                           <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
+                          <div className="form-actions">
+                            <button
+                              className="button-secondary"
+                              disabled={logoutOtherSessionsMutation.isPending}
+                              onClick={async () => {
+                                setSessionStatus(null);
+                                await logoutOtherSessionsMutation.mutateAsync();
+                              }}
+                              type="button"
+                            >
+                              <MonitorOff size={14} strokeWidth={2} />
+                              {logoutOtherSessionsMutation.isPending ? "Signing out devices" : "Log out other devices"}
+                            </button>
+                          </div>
+                          {sessionStatus ? (
+                            <p
+                              className="empty-state"
+                              style={sessionStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                            >
+                              {sessionStatus.message}
+                            </p>
+                          ) : null}
                           {changePasswordStatus ? (
                             <p
                               className="empty-state"

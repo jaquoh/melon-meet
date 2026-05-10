@@ -1748,7 +1748,7 @@ INSERT OR REPLACE INTO group_posts (
     'b95b0558-7e8f-48f1-95e7-8773f1b6335a',
     'f4c53ec1-3794-45f7-b6af-9a4f226e3bfd',
     '1fd5f6bf-6276-41d2-95da-56e255a5f4de',
-    'Demo group is ready. Feel free to sign in with demo@melonmeet.local / demo12345 and explore the flows.',
+    'Demo group is ready. Explore the flows locally with seeded content if you want a fuller test board.',
     '2026-04-03T00:00:00.000Z'
   ),
   (

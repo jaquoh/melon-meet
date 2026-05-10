@@ -179,6 +179,10 @@ export function logOut() {
   return request<{ ok: true }>("/api/auth/logout", { method: "POST" });
 }
 
+export function logOutOtherSessions() {
+  return request<{ ok: true }>("/api/auth/logout-other-sessions", { method: "POST" });
+}
+
 export function getGroups() {
   return request<{ groups: GroupSummary[] }>("/api/groups");
 }

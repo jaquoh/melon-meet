@@ -67,11 +67,6 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
               </div>
             </div>
 
-            <div className="auth-demo-box">
-              <p className="eyebrow">Demo account</p>
-              <p>demo@melonmeet.local</p>
-              <p>demo12345</p>
-            </div>
           </div>
         </div>
 

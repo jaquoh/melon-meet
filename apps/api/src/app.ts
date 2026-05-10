@@ -1158,6 +1158,12 @@ export function createApp() {
     },
   );
 
+  app.post("/api/auth/logout-other-sessions", async (c) => {
+    const viewer = await requireViewer(c);
+    await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
+    return c.json({ ok: true });
+  });
+
   app.post("/api/auth/verify-email-change", zValidator("json", z.object({ token: z.string().min(1) })), async (c) => {
     const { token } = c.req.valid("json");
     const tokenHash = await hashOpaqueToken(token);
