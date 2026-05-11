@@ -84,7 +84,7 @@ Checklist:
 - [x] Define backup and restore process for D1.
 - [x] Test restore once and document the result.
 - [x] Separate local, staging, and production environments clearly.
-- [ ] Create a production deploy and rollback runbook.
+- [x] Create a production deploy and rollback runbook.
 - [ ] Add pre-deploy quality gates.
 - [ ] Add production smoke tests for critical flows.
 
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Separate local, staging, and production environments clearly.
+- [x] Create a production deploy and rollback runbook.
 
 Blocked by:
 

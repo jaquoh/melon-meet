@@ -8,6 +8,7 @@ This checklist is meant for the first public beta launch on Cloudflare.
 - Create the production Cloudflare D1 database.
 - Replace the staging and production database placeholders in `/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc`.
 - Review `/Users/jbot/IdeaProjects/melon-meet/docs/environment-separation.md`.
+- Review `/Users/jbot/IdeaProjects/melon-meet/docs/production-deploy-runbook.md`.
 - Apply staging migrations with `npm run db:migrate:staging`.
 - Seed staging with `npm run db:seed:staging`.
 - Deploy staging with `npm run deploy:staging`.

@@ -287,7 +287,7 @@ What is clearly not public-launch ready yet:
 
 ## Priority 4: Deployment and Operations
 
-- [ ] Create a production runbook.
+- [x] Create a production runbook.
   Include:
   - deploy steps
   - migration steps
