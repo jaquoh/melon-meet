@@ -8,9 +8,11 @@ import { createApp } from "./app";
 import { createSession, hashOpaqueToken } from "./lib/auth";
 import { firstRow } from "./lib/db";
 import type { AppBindings } from "./types/env";
+import { CURRENT_POLICY_VERSIONS } from "../../../packages/shared/src";
 
 const FIXED_NOW = "2026-05-11T10:00:00.000Z";
 const APP_BASE_URL = "https://www.melonmeet.com";
+const LOCAL_BASE_URL = "http://localhost:8787";
 const SESSION_COOKIE_NAME = "melon_meet_session";
 
 const migrationsDir = fileURLToPath(new URL("../migrations", import.meta.url));
@@ -149,11 +151,13 @@ async function makeSessionCookie(db: D1Database, userId: string) {
 async function requestJson(
   path: string,
   {
+    baseUrl = APP_BASE_URL,
     body,
     cookie,
     env,
     method = "GET",
   }: {
+    baseUrl?: string;
     body?: Record<string, unknown>;
     cookie?: string;
     env: AppBindings;
@@ -167,11 +171,11 @@ async function requestJson(
   }
   if (body) {
     headers.set("Content-Type", "application/json");
-    headers.set("Origin", APP_BASE_URL);
+    headers.set("Origin", baseUrl);
   }
 
   const response = await app.fetch(
-    new Request(`${APP_BASE_URL}${path}`, {
+    new Request(`${baseUrl}${path}`, {
       body: body ? JSON.stringify(body) : undefined,
       headers,
       method,
@@ -380,5 +384,50 @@ describe("moderation authorization", () => {
       action: "moderation_admin_action_taken",
       target_id: "user-target",
     });
+  });
+});
+
+describe("signup policy acceptance tracking", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("stores the accepted privacy and terms versions on signup", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    const response = await requestJson("/api/auth/signup", {
+      baseUrl: LOCAL_BASE_URL,
+      body: {
+        acceptedPolicyVersions: CURRENT_POLICY_VERSIONS,
+        email: "fresh@example.com",
+        password: "melonmelon",
+        turnstileToken: null,
+      },
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+
+    const acceptedPolicies = await env.DB.prepare(
+      `SELECT policy_name, policy_version
+       FROM policy_acceptances
+       ORDER BY policy_name ASC`,
+    ).all<{ policy_name: string; policy_version: string }>();
+
+    expect(acceptedPolicies.results).toEqual([
+      {
+        policy_name: "privacy",
+        policy_version: CURRENT_POLICY_VERSIONS.privacy,
+      },
+      {
+        policy_name: "terms",
+        policy_version: CURRENT_POLICY_VERSIONS.terms,
+      },
+    ]);
   });
 });

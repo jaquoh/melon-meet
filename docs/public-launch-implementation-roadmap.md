@@ -124,7 +124,7 @@ Checklist:
 - [x] Replace placeholder support and legal details.
 - [x] Align privacy policy with actual data handling.
 - [x] Align terms with real product behavior and safety positioning.
-- [ ] Add versioned acceptance tracking for terms and privacy.
+- [x] Add versioned acceptance tracking for terms and privacy.
 - [ ] Define the retention and deletion schedule.
 - [ ] Define the user data request process.
 - [ ] Document processors/subprocessors.

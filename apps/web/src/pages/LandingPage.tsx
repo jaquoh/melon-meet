@@ -40,6 +40,7 @@ export function LandingPage({
     queryKey: ["public-config"],
   });
   const turnstileSiteKey = publicConfigQuery.data?.turnstileSiteKey ?? null;
+  const policyVersions = publicConfigQuery.data?.policyVersions ?? null;
   const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
@@ -74,7 +75,10 @@ export function LandingPage({
   );
 
   const authMutation = useMutation({
-    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password, signupTurnstileToken)),
+    mutationFn: async () =>
+      mode === "login"
+        ? logIn(email, password)
+        : signUp(email, password, policyVersions as NonNullable<typeof policyVersions>, signupTurnstileToken),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setSignupGuardMessage("");
@@ -179,6 +183,10 @@ export function LandingPage({
                     if (mode === "signup" && !acceptedSignupTerms) {
                       return;
                     }
+                    if (mode === "signup" && !policyVersions) {
+                      setSignupGuardMessage("Could not load the current privacy and terms versions. Please reload and try again.");
+                      return;
+                    }
                     if (mode === "signup" && turnstileSiteKey && !signupTurnstileToken) {
                       setSignupGuardMessage("Complete the signup verification challenge before creating your account.");
                       return;
@@ -252,7 +260,10 @@ export function LandingPage({
                   ) : null}
 
                   <div className="form-actions form-actions--start">
-                    <button className="button-primary" disabled={authMutation.isPending || (mode === "signup" && !acceptedSignupTerms)}>
+                    <button
+                      className="button-primary"
+                      disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !policyVersions))}
+                    >
                       {authMutation.isPending ? t("common.working") : mode === "login" ? t("common.signIn") : t("landing.createAccount")}
                     </button>
                   </div>

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CURRENT_POLICY_VERSIONS,
   groupCreateSchema,
   meetingCreateSchema,
   profileUpdateSchema,
   publicHttpsUrlSchema,
+  signupSchema,
 } from "./index";
 
 describe("public URL validation", () => {
@@ -65,5 +67,31 @@ describe("public URL validation", () => {
         venueId: null,
       }).success,
     ).toBe(true);
+  });
+
+  it("requires the current policy versions on signup", () => {
+    expect(
+      signupSchema.safeParse({
+        acceptedPolicyVersions: {
+          privacy: CURRENT_POLICY_VERSIONS.privacy,
+          terms: CURRENT_POLICY_VERSIONS.terms,
+        },
+        email: "hello@example.com",
+        password: "melonmelon",
+        turnstileToken: null,
+      }).success,
+    ).toBe(true);
+
+    expect(
+      signupSchema.safeParse({
+        acceptedPolicyVersions: {
+          privacy: "2026-04-25",
+          terms: CURRENT_POLICY_VERSIONS.terms,
+        },
+        email: "hello@example.com",
+        password: "melonmelon",
+        turnstileToken: null,
+      }).success,
+    ).toBe(false);
   });
 });

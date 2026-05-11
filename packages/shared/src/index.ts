@@ -25,6 +25,10 @@ export const reportTargetTypeSchema = z.enum([
   "meeting_post",
   "invite_abuse",
 ]);
+export const CURRENT_POLICY_VERSIONS = {
+  privacy: "2026-05-11",
+  terms: "2026-05-11",
+} as const;
 export const moderationReportStatusSchema = z.enum(["open", "triaged", "action_taken", "closed_no_action"]);
 export const moderationActionTypeSchema = z.enum([
   "suspend_user",
@@ -100,7 +104,16 @@ const optionalPublicHttpsUrlSchema = publicHttpsUrlSchema.optional().or(z.litera
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+});
+
+export const policyAcceptanceVersionsSchema = z.object({
+  privacy: z.literal(CURRENT_POLICY_VERSIONS.privacy),
+  terms: z.literal(CURRENT_POLICY_VERSIONS.terms),
+});
+
+export const signupSchema = authSchema.extend({
   turnstileToken: z.string().trim().min(1).optional().nullable(),
+  acceptedPolicyVersions: policyAcceptanceVersionsSchema,
 });
 
 export const playingLevelPattern = /^(?:\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?)?$/;
@@ -268,6 +281,8 @@ export const moderationActionSchema = z.object({
 });
 
 export type AuthInput = z.infer<typeof authSchema>;
+export type PolicyAcceptanceVersions = z.infer<typeof policyAcceptanceVersionsSchema>;
+export type SignupInput = z.infer<typeof signupSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type GroupCreateInput = z.infer<typeof groupCreateSchema>;
 export type GroupUpdateInput = z.infer<typeof groupUpdateSchema>;

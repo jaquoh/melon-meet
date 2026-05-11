@@ -14,6 +14,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedSignupTerms, setAcceptedSignupTerms] = useState(false);
   const [signupTurnstileToken, setSignupTurnstileToken] = useState<string | null>(null);
   const [signupGuardMessage, setSignupGuardMessage] = useState("");
   const [signupTurnstileRenderNonce, setSignupTurnstileRenderNonce] = useState(0);
@@ -23,9 +24,13 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
     queryKey: ["public-config"],
   });
   const turnstileSiteKey = publicConfigQuery.data?.turnstileSiteKey ?? null;
+  const policyVersions = publicConfigQuery.data?.policyVersions ?? null;
 
   const authMutation = useMutation({
-    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password, signupTurnstileToken)),
+    mutationFn: async () =>
+      mode === "login"
+        ? logIn(email, password)
+        : signUp(email, password, policyVersions as NonNullable<typeof policyVersions>, signupTurnstileToken),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setSignupGuardMessage("");
@@ -116,6 +121,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
               onClick={() => {
                 setMode("login");
+                setAcceptedSignupTerms(false);
                 setSignupGuardMessage("");
                 setSignupTurnstileToken(null);
               }}
@@ -141,6 +147,13 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             className="form-grid"
             onSubmit={(event) => {
               event.preventDefault();
+              if (mode === "signup" && !acceptedSignupTerms) {
+                return;
+              }
+              if (mode === "signup" && !policyVersions) {
+                setSignupGuardMessage("Could not load the current privacy and terms versions. Please reload and try again.");
+                return;
+              }
               if (mode === "signup" && turnstileSiteKey && !signupTurnstileToken) {
                 setSignupGuardMessage("Complete the signup verification challenge before creating your account.");
                 return;
@@ -163,6 +176,20 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
               <Link className="muted-copy" to="/forgot-password">
                 Forgot your password?
               </Link>
+            ) : null}
+
+            {mode === "signup" ? (
+              <div className="auth-consent-row">
+                <input
+                  checked={acceptedSignupTerms}
+                  id="signup-legal-consent-auth"
+                  onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
+                  type="checkbox"
+                />
+                <label htmlFor="signup-legal-consent-auth">
+                  I agree to the <Link to="/privacy">Privacy Policy</Link> and <Link to="/terms">Terms of Service</Link>.
+                </label>
+              </div>
             ) : null}
 
             {mode === "signup" && turnstileSiteKey ? (
@@ -191,7 +218,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             </p>
 
             <div className="form-actions form-actions--start">
-              <button className="button-primary" disabled={authMutation.isPending}>
+              <button className="button-primary" disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !policyVersions))}>
                 {authMutation.isPending ? "Working" : mode === "login" ? "Log in" : "Create account"}
               </button>
             </div>

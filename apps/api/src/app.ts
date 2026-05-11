@@ -7,6 +7,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import {
   authSchema,
+  CURRENT_POLICY_VERSIONS,
   friendRequestSchema,
   groupCreateSchema,
   groupPostSchema,
@@ -20,6 +21,7 @@ import {
   profileUpdateSchema,
   reportCreateSchema,
   roleUpdateSchema,
+  signupSchema,
   type MeetingSummary,
   type ModerationRole,
   type ModerationActionType,
@@ -736,6 +738,50 @@ function reportTargetPath(targetType: ReportTargetType, targetId: string) {
     return `/sessions/${targetId}`;
   }
   return null;
+}
+
+async function recordPolicyAcceptances(
+  db: D1Database,
+  userId: string,
+  acceptedPolicyVersions: {
+    privacy: string;
+    terms: string;
+  },
+  acceptedAt: string,
+) {
+  await runStatement(
+    db,
+    `INSERT INTO policy_acceptances (
+       id, user_id, policy_name, policy_version, accepted_at, created_at, updated_at
+     ) VALUES (?, ?, 'privacy', ?, ?, ?, ?)
+     ON CONFLICT(user_id, policy_name) DO UPDATE SET
+       policy_version = excluded.policy_version,
+       accepted_at = excluded.accepted_at,
+       updated_at = excluded.updated_at`,
+    crypto.randomUUID(),
+    userId,
+    acceptedPolicyVersions.privacy,
+    acceptedAt,
+    acceptedAt,
+    acceptedAt,
+  );
+
+  await runStatement(
+    db,
+    `INSERT INTO policy_acceptances (
+       id, user_id, policy_name, policy_version, accepted_at, created_at, updated_at
+     ) VALUES (?, ?, 'terms', ?, ?, ?, ?)
+     ON CONFLICT(user_id, policy_name) DO UPDATE SET
+       policy_version = excluded.policy_version,
+       accepted_at = excluded.accepted_at,
+       updated_at = excluded.updated_at`,
+    crypto.randomUUID(),
+    userId,
+    acceptedPolicyVersions.terms,
+    acceptedAt,
+    acceptedAt,
+    acceptedAt,
+  );
 }
 
 async function sendAccountEmail(
@@ -1541,12 +1587,13 @@ export function createApp() {
 
   app.get("/api/public-config", (c) =>
     c.json({
+      policyVersions: CURRENT_POLICY_VERSIONS,
       turnstileSiteKey: c.env.TURNSTILE_SITE_KEY ?? null,
     }),
   );
 
-  app.post("/api/auth/signup", zValidator("json", authSchema), async (c) => {
-    const { email, password, turnstileToken } = c.req.valid("json");
+  app.post("/api/auth/signup", zValidator("json", signupSchema), async (c) => {
+    const { acceptedPolicyVersions, email, password, turnstileToken } = c.req.valid("json");
     const normalizedEmail = email.toLowerCase();
     const limitedResponse = await enforceAuthRateLimit(c, "auth:signup", email);
     if (limitedResponse) {
@@ -1582,11 +1629,13 @@ export function createApp() {
       createdAt,
       createdAt,
     );
+    await recordPolicyAcceptances(c.env.DB, userId, acceptedPolicyVersions, createdAt);
 
     const session = await createSession(c.env.DB, userId);
     writeSessionCookie(c, session.token, session.expiresAt);
     const { devVerificationUrl } = await issueEmailVerificationToken(c, userId, normalizedEmail);
     logSecurityEvent(c, "signup_succeeded", "info", {
+      acceptedPolicyVersions,
       email: maskEmailAddress(normalizedEmail),
       newUserId: userId,
       verificationRequired: true,

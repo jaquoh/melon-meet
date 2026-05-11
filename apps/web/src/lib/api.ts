@@ -1,4 +1,5 @@
 import type {
+  PolicyAcceptanceVersions,
   FriendSummary,
   GroupPost,
   GroupSummary,
@@ -28,6 +29,7 @@ export interface AuthResponse {
 }
 
 export interface PublicConfigResponse {
+  policyVersions: PolicyAcceptanceVersions;
   turnstileSiteKey: string | null;
 }
 
@@ -132,9 +134,19 @@ export function getPublicConfig() {
   return request<PublicConfigResponse>("/api/public-config");
 }
 
-export function signUp(email: string, password: string, turnstileToken?: string | null) {
+export function signUp(
+  email: string,
+  password: string,
+  acceptedPolicyVersions: PolicyAcceptanceVersions,
+  turnstileToken?: string | null,
+) {
   return request<AuthResponse>("/api/auth/signup", {
-    body: JSON.stringify({ email, password, turnstileToken: turnstileToken ?? null }),
+    body: JSON.stringify({
+      acceptedPolicyVersions,
+      email,
+      password,
+      turnstileToken: turnstileToken ?? null,
+    }),
     method: "POST",
   });
 }
