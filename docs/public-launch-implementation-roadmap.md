@@ -102,7 +102,7 @@ Done means:
 Checklist:
 
 - [x] Define the minimum moderation model.
-- [ ] Add report actions in the UI.
+- [x] Add report actions in the UI.
 - [ ] Add a report review queue for operators.
 - [ ] Add admin actions for users, groups, sessions, posts, and invite links.
 - [ ] Add audit logging for sensitive actions.
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Define the minimum moderation model.
+- [x] Add report actions in the UI.
 
 Blocked by:
 

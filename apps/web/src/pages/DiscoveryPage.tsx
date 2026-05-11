@@ -35,6 +35,7 @@ import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
 import { ProfileForm } from "../components/ProfileForm";
 import type { ProfileFormValues } from "../components/ProfileForm";
+import { ReportAction } from "../components/ReportAction";
 import { WorkspaceShell } from "../components/WorkspaceShell";
 import {
   claimMeeting,
@@ -1689,6 +1690,9 @@ export function DiscoveryPage({
                     </div>
                   ) : null}
                 </section>
+                {!isOwnProfile && viewer ? (
+                  <ReportAction targetId={selectedProfileDetail.id} targetLabel="profile" targetType="profile" />
+                ) : null}
                 {selectedProfileMemberships.length > 0 ? (
                   <div className="stack-panel">
                     <p className="panel-caption">{t("profile.groups")}</p>
@@ -1932,6 +1936,7 @@ export function DiscoveryPage({
           </>
         ) : null}
       </div>
+      {viewer ? <ReportAction targetId={selectedMeetingDetail.id} targetLabel="session" targetType="meeting" /> : null}
       {selectedMeetingDetailQuery.data ? (
         <PostBoard
           buttonLabel={t("discovery.postUpdate")}
@@ -1940,6 +1945,7 @@ export function DiscoveryPage({
           emptyLabel={t("discovery.noUpdatesYet")}
           onSubmit={async (content) => meetingPostMutation.mutateAsync(content)}
           posts={selectedMeetingDetailQuery.data.posts}
+          reportTargetType="meeting_post"
           title={t("discovery.updatesTitle")}
         />
       ) : null}
@@ -2049,6 +2055,10 @@ export function DiscoveryPage({
           </button>
         ) : null}
       </div>
+      {viewer ? <ReportAction targetId={selectedGroupDetail.id} targetLabel="group" targetType="group" /> : null}
+      {viewer && selectedGroupDetail.visibility === "private" ? (
+        <ReportAction buttonLabel="Report invite abuse" targetId={selectedGroupDetail.id} targetLabel="private invite abuse" targetType="invite_abuse" />
+      ) : null}
       {selectedGroupDetailQuery.data ? (
         <PostBoard
           buttonLabel={t("discovery.postToGroup")}
@@ -2057,6 +2067,7 @@ export function DiscoveryPage({
           emptyLabel={t("discovery.noPostsYet")}
           onSubmit={async (content) => groupPostMutation.mutateAsync(content)}
           posts={selectedGroupDetailQuery.data.posts}
+          reportTargetType="group_post"
           title={t("discovery.updatesTitle")}
         />
       ) : null}

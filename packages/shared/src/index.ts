@@ -5,6 +5,25 @@ export const visibilitySchema = z.enum(["public", "private"]);
 export const groupRoleSchema = z.enum(["owner", "admin", "member"]);
 export const recurrenceTypeSchema = z.enum(["once", "weekly"]);
 export const membershipRequestStatusSchema = z.enum(["pending", "approved", "rejected"]);
+export const reportReasonSchema = z.enum([
+  "spam",
+  "harassment",
+  "hate_or_threats",
+  "sexual_content",
+  "scam_or_phishing",
+  "safety_concern",
+  "impersonation",
+  "underage_concern",
+  "other",
+]);
+export const reportTargetTypeSchema = z.enum([
+  "profile",
+  "group",
+  "meeting",
+  "group_post",
+  "meeting_post",
+  "invite_abuse",
+]);
 
 function isPrivateIpv4Host(hostname: string) {
   const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
@@ -217,6 +236,13 @@ export const mapQuerySchema = z.object({
   openOnly: z.coerce.boolean().default(false),
 });
 
+export const reportCreateSchema = z.object({
+  note: z.string().trim().max(500).optional().or(z.literal("")).nullable(),
+  reason: reportReasonSchema,
+  targetId: z.string().trim().min(1).max(120),
+  targetType: reportTargetTypeSchema,
+});
+
 export type AuthInput = z.infer<typeof authSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type GroupCreateInput = z.infer<typeof groupCreateSchema>;
@@ -228,6 +254,9 @@ export type MeetingCreateInput = z.infer<typeof meetingCreateSchema>;
 export type MeetingUpdateInput = z.infer<typeof meetingUpdateSchema>;
 export type PostInput = z.infer<typeof postSchema>;
 export type MapQueryInput = z.infer<typeof mapQuerySchema>;
+export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
+export type ReportReason = z.infer<typeof reportReasonSchema>;
+export type ReportTargetType = z.infer<typeof reportTargetTypeSchema>;
 
 export interface ViewerSummary {
   id: string;

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatDateTime } from "../lib/format";
 import { useI18n } from "../lib/i18n";
 import { PanelCard } from "./PanelCard";
+import { ReportAction } from "./ReportAction";
 
 interface PostBoardProps {
   buttonLabel?: string;
@@ -9,6 +10,7 @@ interface PostBoardProps {
   compact?: boolean;
   emptyLabel: string;
   onSubmit: (content: string) => Promise<unknown>;
+  reportTargetType?: "group_post" | "meeting_post";
   posts: Array<{
     author: { displayName: string };
     content: string;
@@ -25,6 +27,7 @@ export function PostBoard({
   emptyLabel,
   onSubmit,
   posts,
+  reportTargetType,
   title,
 }: PostBoardProps) {
   const { locale, t } = useI18n();
@@ -79,6 +82,9 @@ export function PostBoard({
               <p className="pinboard__message">
                 {post.content}
               </p>
+              {reportTargetType ? (
+                <ReportAction buttonLabel="Report post" targetId={post.id} targetLabel="post" targetType={reportTargetType} />
+              ) : null}
             </article>
           ))
         )}

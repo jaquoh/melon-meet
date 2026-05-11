@@ -5,6 +5,8 @@ import type {
   MeetingPost,
   MeetingSummary,
   MembershipRequestSummary,
+  ReportReason,
+  ReportTargetType,
   ViewerSummary,
   VenueSummary,
 } from "../../../../packages/shared/src";
@@ -189,6 +191,18 @@ export function logOut() {
 
 export function logOutOtherSessions() {
   return request<{ ok: true }>("/api/auth/logout-other-sessions", { method: "POST" });
+}
+
+export function createReport(payload: {
+  note?: string | null;
+  reason: ReportReason;
+  targetId: string;
+  targetType: ReportTargetType;
+}) {
+  return request<{ ok: true }>("/api/reports", {
+    body: JSON.stringify(payload),
+    method: "POST",
+  });
 }
 
 export function getGroups() {

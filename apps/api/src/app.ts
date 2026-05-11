@@ -16,8 +16,10 @@ import {
   meetingUpdateSchema,
   postSchema,
   profileUpdateSchema,
+  reportCreateSchema,
   roleUpdateSchema,
   type MeetingSummary,
+  type ReportTargetType,
   type VenueSummary,
 } from "../../../packages/shared/src";
 import {
@@ -311,6 +313,68 @@ async function assertPostNotSpammy(
       message: `That message was already posted in this ${options.scopeLabel} recently.`,
     });
   }
+}
+
+async function assertReportTargetExists(
+  db: D1Database,
+  viewerId: string,
+  targetType: ReportTargetType,
+  targetId: string,
+) {
+  if (targetType === "profile") {
+    const row = await firstRow<{ id: string }>(db, "SELECT id FROM users WHERE id = ?", targetId);
+    assertOrThrow(row, 404, "Report target not found.");
+    return;
+  }
+
+  if (targetType === "group") {
+    await assertCanAccessGroup(db, targetId, viewerId);
+    return;
+  }
+
+  if (targetType === "meeting") {
+    await getMeetingDetail(db, targetId, viewerId);
+    return;
+  }
+
+  if (targetType === "group_post") {
+    const post = await firstRow<{ group_id: string }>(
+      db,
+      `SELECT gp.group_id
+       FROM group_posts gp
+       JOIN app_groups g ON g.id = gp.group_id
+       WHERE gp.id = ?
+         AND g.archived_at IS NULL`,
+      targetId,
+    );
+    assertOrThrow(post, 404, "Report target not found.");
+    await assertCanAccessGroup(db, post.group_id, viewerId);
+    return;
+  }
+
+  if (targetType === "meeting_post") {
+    const post = await firstRow<{ meeting_id: string }>(
+      db,
+      `SELECT mp.meeting_id
+       FROM meeting_posts mp
+       JOIN meetings m ON m.id = mp.meeting_id
+       WHERE mp.id = ?
+         AND m.archived_at IS NULL`,
+      targetId,
+    );
+    assertOrThrow(post, 404, "Report target not found.");
+    await getMeetingDetail(db, post.meeting_id, viewerId);
+    return;
+  }
+
+  const group = await firstRow<{ id: string; visibility: GroupVisibility }>(
+    db,
+    "SELECT id, visibility FROM app_groups WHERE id = ? AND archived_at IS NULL",
+    targetId,
+  );
+  assertOrThrow(group, 404, "Report target not found.");
+  assertOrThrow(group.visibility === "private", 400, "Invite abuse reports only apply to private groups.");
+  await assertCanAccessGroup(db, group.id, viewerId);
 }
 
 function mapViewerSummary(row: ViewerRow) {
@@ -1623,6 +1687,51 @@ export function createApp() {
       viewerId,
     });
     return c.json({ ok: true });
+  });
+
+  app.post("/api/reports", zValidator("json", reportCreateSchema), async (c) => {
+    const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
+    const { note, reason, targetId, targetType } = c.req.valid("json");
+    await assertReportTargetExists(c.env.DB, viewer.id, targetType, targetId);
+
+    const existingOpenReport = await firstRow<{ id: string }>(
+      c.env.DB,
+      `SELECT id
+       FROM content_reports
+       WHERE reporter_user_id = ?
+         AND target_type = ?
+         AND target_id = ?
+         AND status IN ('open', 'triaged')
+       LIMIT 1`,
+      viewer.id,
+      targetType,
+      targetId,
+    );
+    assertOrThrow(!existingOpenReport, 409, "You already have an open report for this item.");
+
+    const timestamp = nowIso();
+    await runStatement(
+      c.env.DB,
+      `INSERT INTO content_reports (
+         id, reporter_user_id, target_type, target_id, reason, note, status, internal_notes, resolution, assignee_user_id, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, 'open', NULL, NULL, NULL, ?, ?)`,
+      crypto.randomUUID(),
+      viewer.id,
+      targetType,
+      targetId,
+      reason,
+      normalizeOptionalText(note ?? null),
+      timestamp,
+      timestamp,
+    );
+    logSecurityEvent(c, "content_report_created", "info", {
+      reason,
+      reporterUserId: viewer.id,
+      targetId,
+      targetType,
+    });
+    return c.json({ ok: true }, 201);
   });
 
   app.get("/api/me", async (c) => {

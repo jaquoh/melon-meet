@@ -485,6 +485,34 @@ img {
   resize: vertical;
 }
 
+.form-error,
+.success-copy {
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.form-error {
+  color: #a44133;
+}
+
+.success-copy {
+  color: #2c6a4f;
+}
+
+.report-action {
+  align-items: flex-start;
+}
+
+.report-action__panel {
+  width: min(100%, 30rem);
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--line) 85%, var(--panel-strong));
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--panel) 92%, var(--glass-panel-header));
+}
+
 .field-check {
   display: flex;
   align-items: center;
