@@ -151,6 +151,13 @@ What is clearly not public-launch ready yet:
   - cancel/remove session
   - revoke invite links
   - remove posts
+
+  Implemented so far:
+  - suspend reported user accounts
+  - archive reported groups
+  - cancel or archive reported sessions
+  - remove reported group and session posts
+  - revoke invite links for reported private-group abuse
   - review abuse history
 
 - [ ] Add audit logging for sensitive actions.

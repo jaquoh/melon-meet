@@ -549,6 +549,11 @@ img {
   border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
 }
 
+.moderation-report-card__actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
 .field-check {
   display: flex;
   align-items: center;

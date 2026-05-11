@@ -153,7 +153,7 @@ Configure operator access with comma-separated email allowlists in [wrangler.jso
 
 Behavior:
 
-- `MODERATION_ADMIN_EMAILS` grants full moderation queue access and is intended for later admin actions too.
+- `MODERATION_ADMIN_EMAILS` grants full moderation queue access plus admin enforcement actions.
 - `MODERATION_REVIEWER_EMAILS` grants queue access without future admin-only actions.
 - admins are checked first, so an email listed in both is treated as `admin`.
 

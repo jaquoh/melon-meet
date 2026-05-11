@@ -4,6 +4,7 @@ import type {
   GroupSummary,
   MeetingPost,
   MeetingSummary,
+  ModerationActionType,
   ModerationReportStatus,
   ModerationReportSummary,
   ModerationRole,
@@ -229,6 +230,13 @@ export function updateModerationReport(
   return request<{ report: ModerationReportSummary }>(`/api/moderation/reports/${reportId}`, {
     body: JSON.stringify(payload),
     method: "PATCH",
+  });
+}
+
+export function executeModerationAction(reportId: string, action: ModerationActionType) {
+  return request<{ report: ModerationReportSummary }>(`/api/moderation/reports/${reportId}/actions`, {
+    body: JSON.stringify({ action }),
+    method: "POST",
   });
 }
 

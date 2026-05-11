@@ -104,7 +104,7 @@ Checklist:
 - [x] Define the minimum moderation model.
 - [x] Add report actions in the UI.
 - [x] Add a report review queue for operators.
-- [ ] Add admin actions for users, groups, sessions, posts, and invite links.
+- [x] Add admin actions for users, groups, sessions, posts, and invite links.
 - [ ] Add audit logging for sensitive actions.
 - [ ] Add dedicated authorization tests for moderation/admin paths.
 
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add a report review queue for operators.
+- [x] Add admin actions for users, groups, sessions, posts, and invite links.
 
 Blocked by:
 

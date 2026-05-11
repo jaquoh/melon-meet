@@ -26,6 +26,15 @@ export const reportTargetTypeSchema = z.enum([
   "invite_abuse",
 ]);
 export const moderationReportStatusSchema = z.enum(["open", "triaged", "action_taken", "closed_no_action"]);
+export const moderationActionTypeSchema = z.enum([
+  "suspend_user",
+  "archive_group",
+  "cancel_meeting",
+  "archive_meeting",
+  "remove_group_post",
+  "remove_meeting_post",
+  "revoke_group_invite_links",
+]);
 
 function isPrivateIpv4Host(hostname: string) {
   const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
@@ -254,6 +263,10 @@ export const moderationReportUpdateSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, "At least one moderation update field must be provided.");
 
+export const moderationActionSchema = z.object({
+  action: moderationActionTypeSchema,
+});
+
 export type AuthInput = z.infer<typeof authSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type GroupCreateInput = z.infer<typeof groupCreateSchema>;
@@ -267,6 +280,8 @@ export type PostInput = z.infer<typeof postSchema>;
 export type MapQueryInput = z.infer<typeof mapQuerySchema>;
 export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 export type ModerationReportUpdateInput = z.infer<typeof moderationReportUpdateSchema>;
+export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
+export type ModerationActionType = z.infer<typeof moderationActionTypeSchema>;
 export type ModerationRole = z.infer<typeof moderationRoleSchema>;
 export type ModerationReportStatus = z.infer<typeof moderationReportStatusSchema>;
 export type ReportReason = z.infer<typeof reportReasonSchema>;

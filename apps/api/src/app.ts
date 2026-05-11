@@ -14,6 +14,7 @@ import {
   mapQuerySchema,
   meetingCreateSchema,
   meetingUpdateSchema,
+  moderationActionSchema,
   moderationReportUpdateSchema,
   postSchema,
   profileUpdateSchema,
@@ -21,6 +22,7 @@ import {
   roleUpdateSchema,
   type MeetingSummary,
   type ModerationRole,
+  type ModerationActionType,
   type ModerationReportStatus,
   type ReportTargetType,
   type VenueSummary,
@@ -507,6 +509,87 @@ async function mapModerationReportSummary(db: D1Database, env: AppEnv["Bindings"
     targetType: row.target_type,
     updatedAt: row.updated_at,
   };
+}
+
+function moderationActionResolution(action: ModerationActionType) {
+  if (action === "suspend_user") return "Admin suspended the reported user account.";
+  if (action === "archive_group") return "Admin archived the reported group.";
+  if (action === "cancel_meeting") return "Admin cancelled the reported session.";
+  if (action === "archive_meeting") return "Admin archived the reported session.";
+  if (action === "remove_group_post") return "Admin removed the reported group post.";
+  if (action === "remove_meeting_post") return "Admin removed the reported session post.";
+  return "Admin revoked invite links for the reported group.";
+}
+
+async function executeModerationAction(
+  db: D1Database,
+  report: { target_id: string; target_type: ReportTargetType },
+  action: ModerationActionType,
+) {
+  if (action === "suspend_user") {
+    assertOrThrow(report.target_type === "profile", 400, "This action only applies to profile reports.");
+    await runStatement(
+      db,
+      "UPDATE users SET account_status = ?, updated_at = ? WHERE id = ?",
+      "suspended",
+      nowIso(),
+      report.target_id,
+    );
+    await revokeAllSessionsForUser(db, report.target_id);
+    return;
+  }
+
+  if (action === "archive_group") {
+    assertOrThrow(report.target_type === "group", 400, "This action only applies to group reports.");
+    const timestamp = nowIso();
+    await runStatement(
+      db,
+      "UPDATE app_groups SET archived_at = ?, updated_at = ? WHERE id = ?",
+      timestamp,
+      timestamp,
+      report.target_id,
+    );
+    return;
+  }
+
+  if (action === "cancel_meeting") {
+    assertOrThrow(report.target_type === "meeting", 400, "This action only applies to session reports.");
+    await runStatement(
+      db,
+      "UPDATE meetings SET status = 'cancelled', updated_at = ? WHERE id = ?",
+      nowIso(),
+      report.target_id,
+    );
+    return;
+  }
+
+  if (action === "archive_meeting") {
+    assertOrThrow(report.target_type === "meeting", 400, "This action only applies to session reports.");
+    const timestamp = nowIso();
+    await runStatement(
+      db,
+      "UPDATE meetings SET status = 'cancelled', archived_at = ?, updated_at = ? WHERE id = ?",
+      timestamp,
+      timestamp,
+      report.target_id,
+    );
+    return;
+  }
+
+  if (action === "remove_group_post") {
+    assertOrThrow(report.target_type === "group_post", 400, "This action only applies to group-post reports.");
+    await runStatement(db, "DELETE FROM group_posts WHERE id = ?", report.target_id);
+    return;
+  }
+
+  if (action === "remove_meeting_post") {
+    assertOrThrow(report.target_type === "meeting_post", 400, "This action only applies to session-post reports.");
+    await runStatement(db, "DELETE FROM meeting_posts WHERE id = ?", report.target_id);
+    return;
+  }
+
+  assertOrThrow(report.target_type === "invite_abuse" || report.target_type === "group", 400, "This action only applies to group invite reports.");
+  await runStatement(db, "DELETE FROM group_invite_links WHERE group_id = ?", report.target_id);
 }
 
 function mapViewerSummary(row: ViewerRow) {
@@ -2078,6 +2161,104 @@ export function createApp() {
       assigneeUserId: updates.assigneeUserId ?? undefined,
       reportId,
       status: updates.status ?? existing.status,
+    });
+
+    return c.json({
+      report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),
+    });
+  });
+
+  app.post("/api/moderation/reports/:id/actions", zValidator("json", moderationActionSchema), async (c) => {
+    const viewer = await requireModerationViewer(c, "admin");
+    assertTrustedWriteOrigin(c);
+    const reportId = c.req.param("id");
+    const { action } = c.req.valid("json");
+    const report = await firstRow<{
+      assignee_user_id: string | null;
+      id: string;
+      internal_notes: string | null;
+      reporter_user_id: string;
+      target_id: string;
+      target_type: ReportTargetType;
+    }>(
+      c.env.DB,
+      `SELECT id, reporter_user_id, target_type, target_id, assignee_user_id, internal_notes
+       FROM content_reports
+       WHERE id = ?`,
+      reportId,
+    );
+    assertOrThrow(report, 404, "Report not found.");
+
+    await executeModerationAction(c.env.DB, report, action);
+
+    const resolution = moderationActionResolution(action);
+    const internalNotes = [report.internal_notes, `[${new Date().toISOString()}] ${resolution}`]
+      .filter((entry) => entry && entry.trim().length > 0)
+      .join("\n");
+
+    await runStatement(
+      c.env.DB,
+      `UPDATE content_reports
+       SET status = 'action_taken',
+           resolution = COALESCE(NULLIF(resolution, ''), ?),
+           internal_notes = ?,
+           assignee_user_id = COALESCE(assignee_user_id, ?),
+           updated_at = ?
+       WHERE id = ?`,
+      resolution,
+      internalNotes,
+      viewer.id,
+      nowIso(),
+      reportId,
+    );
+
+    const updatedReport = await firstRow<ModerationReportRow>(
+      c.env.DB,
+      `SELECT
+         cr.id,
+         cr.target_type,
+         cr.target_id,
+         cr.reason,
+         cr.note,
+         cr.status,
+         cr.internal_notes,
+         cr.resolution,
+         cr.created_at,
+         cr.updated_at,
+         reporter.id AS reporter_id,
+         reporter.email AS reporter_email,
+         reporter.email_verified_at AS reporter_email_verified_at,
+         reporter.display_name AS reporter_display_name,
+         reporter.bio AS reporter_bio,
+         reporter.home_area AS reporter_home_area,
+         reporter.playing_level AS reporter_playing_level,
+         reporter.avatar_url AS reporter_avatar_url,
+         reporter.is_profile_public AS reporter_is_profile_public,
+         reporter.show_email_publicly AS reporter_show_email_publicly,
+         assignee.id AS assignee_id,
+         assignee.email AS assignee_email,
+         assignee.email_verified_at AS assignee_email_verified_at,
+         assignee.display_name AS assignee_display_name,
+         assignee.bio AS assignee_bio,
+         assignee.home_area AS assignee_home_area,
+         assignee.playing_level AS assignee_playing_level,
+         assignee.avatar_url AS assignee_avatar_url,
+         assignee.is_profile_public AS assignee_is_profile_public,
+         assignee.show_email_publicly AS assignee_show_email_publicly
+       FROM content_reports cr
+       JOIN users reporter ON reporter.id = cr.reporter_user_id
+       LEFT JOIN users assignee ON assignee.id = cr.assignee_user_id
+       WHERE cr.id = ?`,
+      reportId,
+    );
+    assertOrThrow(updatedReport, 404, "Report not found.");
+
+    logSecurityEvent(c, "moderation_admin_action_taken", "warn", {
+      action,
+      actorUserId: viewer.id,
+      reportId,
+      targetId: report.target_id,
+      targetType: report.target_type,
     });
 
     return c.json({

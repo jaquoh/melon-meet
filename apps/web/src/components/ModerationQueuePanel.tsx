@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Flag, Shield, UserRoundCheck } from "lucide-react";
+import { Ban, Flag, Shield, Trash2, UserRoundCheck, UserX } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { ModerationReportStatus, ModerationReportSummary, ViewerSummary } from "../../../../packages/shared/src";
-import { getModerationReports, updateModerationReport } from "../lib/api";
+import type { ModerationActionType, ModerationReportStatus, ModerationReportSummary, ViewerSummary } from "../../../../packages/shared/src";
+import { executeModerationAction, getModerationReports, updateModerationReport } from "../lib/api";
 import { queryClient } from "../lib/query-client";
 
 const REPORT_STATUS_OPTIONS: Array<{ label: string; value: "action_taken" | "all" | "closed_no_action" | "open" | "triaged" }> = [
@@ -26,6 +26,31 @@ function formatTimestamp(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function adminActionsForReport(report: ModerationReportSummary): Array<{ action: ModerationActionType; icon: typeof Ban; label: string }> {
+  if (report.targetType === "profile") {
+    return [{ action: "suspend_user", icon: UserX, label: "Suspend user" }];
+  }
+  if (report.targetType === "group") {
+    return [
+      { action: "archive_group", icon: Ban, label: "Archive group" },
+      { action: "revoke_group_invite_links", icon: Trash2, label: "Revoke invite links" },
+    ];
+  }
+  if (report.targetType === "meeting") {
+    return [
+      { action: "cancel_meeting", icon: Ban, label: "Cancel session" },
+      { action: "archive_meeting", icon: Trash2, label: "Archive session" },
+    ];
+  }
+  if (report.targetType === "group_post") {
+    return [{ action: "remove_group_post", icon: Trash2, label: "Remove group post" }];
+  }
+  if (report.targetType === "meeting_post") {
+    return [{ action: "remove_meeting_post", icon: Trash2, label: "Remove session post" }];
+  }
+  return [{ action: "revoke_group_invite_links", icon: Trash2, label: "Revoke invite links" }];
 }
 
 function ModerationReportCard({
@@ -65,9 +90,22 @@ function ModerationReportCard({
       setError(mutationError instanceof Error ? mutationError.message : "Could not update report.");
     },
   });
+  const adminActionMutation = useMutation({
+    mutationFn: (action: ModerationActionType) => executeModerationAction(report.id, action),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "moderation-reports",
+      });
+      setError(null);
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Could not complete admin action.");
+    },
+  });
 
   const reporterLabel = `${report.reporter.displayName} (${report.reporter.email})`;
   const assigneeLabel = report.assignee ? `${report.assignee.displayName} (${report.assignee.email})` : "Unassigned";
+  const adminActions = viewer.moderationRole === "admin" ? adminActionsForReport(report) : [];
 
   return (
     <article className="moderation-report-card stack-sm">
@@ -148,7 +186,7 @@ function ModerationReportCard({
           <div className="form-actions">
             <button
               className="button-primary"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || adminActionMutation.isPending}
               onClick={() =>
                 updateMutation.mutate({
                   internalNotes,
@@ -162,7 +200,7 @@ function ModerationReportCard({
             </button>
             <button
               className="button-secondary"
-              disabled={updateMutation.isPending || report.assignee?.id === viewer.id}
+              disabled={updateMutation.isPending || adminActionMutation.isPending || report.assignee?.id === viewer.id}
               onClick={() =>
                 updateMutation.mutate({
                   assigneeUserId: viewer.id,
@@ -175,7 +213,7 @@ function ModerationReportCard({
             </button>
             <button
               className="button-secondary"
-              disabled={updateMutation.isPending || !report.assignee}
+              disabled={updateMutation.isPending || adminActionMutation.isPending || !report.assignee}
               onClick={() =>
                 updateMutation.mutate({
                   assigneeUserId: null,
@@ -186,6 +224,28 @@ function ModerationReportCard({
               Unassign
             </button>
           </div>
+          {adminActions.length > 0 ? (
+            <div className="moderation-report-card__actions">
+              <p className="panel-caption">Admin actions</p>
+              <div className="form-actions">
+                {adminActions.map((adminAction) => {
+                  const Icon = adminAction.icon;
+                  return (
+                    <button
+                      className="button-danger"
+                      disabled={updateMutation.isPending || adminActionMutation.isPending}
+                      key={adminAction.action}
+                      onClick={() => adminActionMutation.mutate(adminAction.action)}
+                      type="button"
+                    >
+                      <Icon size={14} strokeWidth={2} />
+                      {adminAction.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </article>
