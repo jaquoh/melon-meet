@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowRight, LogIn, Moon, Sun, User, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -9,7 +9,8 @@ import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
 import { FormInput } from "../components/FormInput";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { logIn, signUp } from "../lib/api";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { getPublicConfig, logIn, signUp } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { queryClient } from "../lib/query-client";
 
@@ -30,7 +31,15 @@ export function LandingPage({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedSignupTerms, setAcceptedSignupTerms] = useState(false);
+  const [signupTurnstileToken, setSignupTurnstileToken] = useState<string | null>(null);
+  const [signupGuardMessage, setSignupGuardMessage] = useState("");
+  const [signupTurnstileRenderNonce, setSignupTurnstileRenderNonce] = useState(0);
   const landingBackgroundImage = theme === "dark" ? landingHeroMelonDark : landingHeroMelon;
+  const publicConfigQuery = useQuery({
+    queryFn: getPublicConfig,
+    queryKey: ["public-config"],
+  });
+  const turnstileSiteKey = publicConfigQuery.data?.turnstileSiteKey ?? null;
   const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
@@ -65,9 +74,12 @@ export function LandingPage({
   );
 
   const authMutation = useMutation({
-    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
+    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password, signupTurnstileToken)),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      setSignupGuardMessage("");
+      setSignupTurnstileToken(null);
+      setSignupTurnstileRenderNonce((current) => current + 1);
       if (response.verificationRequired || !response.user.emailVerified) {
         navigate("/verify-email", {
           state: {
@@ -78,6 +90,12 @@ export function LandingPage({
         return;
       }
       navigate("/map");
+    },
+    onError: () => {
+      if (mode === "signup" && turnstileSiteKey) {
+        setSignupTurnstileToken(null);
+        setSignupTurnstileRenderNonce((current) => current + 1);
+      }
     },
   });
 
@@ -131,14 +149,23 @@ export function LandingPage({
                 <div className="mode-switch">
                   <button
                     className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
-                    onClick={() => setMode("login")}
+                    onClick={() => {
+                      setMode("login");
+                      setSignupGuardMessage("");
+                      setSignupTurnstileToken(null);
+                    }}
                     type="button"
                   >
                     {t("common.signIn")}
                   </button>
                   <button
                     className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
-                    onClick={() => setMode("signup")}
+                    onClick={() => {
+                      setMode("signup");
+                      setSignupGuardMessage("");
+                      setSignupTurnstileToken(null);
+                      setSignupTurnstileRenderNonce((current) => current + 1);
+                    }}
                     type="button"
                   >
                     {t("common.signUp")}
@@ -152,6 +179,11 @@ export function LandingPage({
                     if (mode === "signup" && !acceptedSignupTerms) {
                       return;
                     }
+                    if (mode === "signup" && turnstileSiteKey && !signupTurnstileToken) {
+                      setSignupGuardMessage("Complete the signup verification challenge before creating your account.");
+                      return;
+                    }
+                    setSignupGuardMessage("");
                     authMutation.mutate();
                   }}
                 >
@@ -198,6 +230,19 @@ export function LandingPage({
                         .
                       </label>
                     </div>
+                  ) : null}
+
+                  {mode === "signup" && turnstileSiteKey ? (
+                    <div className="field-stack">
+                      <span className="field-label">Signup verification</span>
+                      <TurnstileWidget key={signupTurnstileRenderNonce} onTokenChange={setSignupTurnstileToken} siteKey={turnstileSiteKey} />
+                    </div>
+                  ) : null}
+
+                  {mode === "signup" && signupGuardMessage ? (
+                    <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
+                      {signupGuardMessage}
+                    </p>
                   ) : null}
 
                   {authMutation.error ? (

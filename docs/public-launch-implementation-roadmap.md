@@ -60,10 +60,10 @@ Done means:
 
 Checklist:
 
-- [ ] Add route-level rate limits for write actions.
-- [ ] Add CSRF protection or strict origin validation for authenticated writes.
-- [ ] Add signup bot defense.
-- [ ] Add basic anti-spam limits for posts, invites, and requests.
+- [x] Add route-level rate limits for write actions.
+- [x] Add CSRF protection or strict origin validation for authenticated writes.
+- [x] Add signup bot defense.
+- [x] Add basic anti-spam limits for posts, invites, and requests.
 - [ ] Tighten validation and trust rules for user-supplied URLs.
 
 ## Phase 3: Operations and Production Safety
@@ -176,11 +176,11 @@ Use this section to keep the team aligned between sessions.
 
 Current phase:
 
-- [ ] Phase 1: Secure Accounts Foundation
+- [ ] Phase 2: Abuse and Request Protection
 
 Current session target:
 
-- [x] Define the exact account lifecycle and recovery model before implementation starts.
+- [x] Add basic anti-spam limits for posts, invites, and requests.
 
 Blocked by:
 

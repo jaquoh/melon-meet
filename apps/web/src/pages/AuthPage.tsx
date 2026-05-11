@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -6,19 +6,31 @@ import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
 import { FormInput } from "../components/FormInput";
 import { PanelCard } from "../components/PanelCard";
-import { logIn, signUp } from "../lib/api";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { getPublicConfig, logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
 
 export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [signupTurnstileToken, setSignupTurnstileToken] = useState<string | null>(null);
+  const [signupGuardMessage, setSignupGuardMessage] = useState("");
+  const [signupTurnstileRenderNonce, setSignupTurnstileRenderNonce] = useState(0);
   const navigate = useNavigate();
+  const publicConfigQuery = useQuery({
+    queryFn: getPublicConfig,
+    queryKey: ["public-config"],
+  });
+  const turnstileSiteKey = publicConfigQuery.data?.turnstileSiteKey ?? null;
 
   const authMutation = useMutation({
-    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password)),
+    mutationFn: async () => (mode === "login" ? logIn(email, password) : signUp(email, password, signupTurnstileToken)),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      setSignupGuardMessage("");
+      setSignupTurnstileToken(null);
+      setSignupTurnstileRenderNonce((current) => current + 1);
       if (response.verificationRequired || !response.user.emailVerified) {
         navigate("/verify-email", {
           state: {
@@ -29,6 +41,12 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
         return;
       }
       navigate("/map");
+    },
+    onError: () => {
+      if (mode === "signup" && turnstileSiteKey) {
+        setSignupTurnstileToken(null);
+        setSignupTurnstileRenderNonce((current) => current + 1);
+      }
     },
   });
 
@@ -95,15 +113,24 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
 
           <div className="mode-switch">
             <button
-              className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
-              onClick={() => setMode("login")}
+            className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
+              onClick={() => {
+                setMode("login");
+                setSignupGuardMessage("");
+                setSignupTurnstileToken(null);
+              }}
               type="button"
             >
               Log in
             </button>
             <button
-              className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
-              onClick={() => setMode("signup")}
+            className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
+              onClick={() => {
+                setMode("signup");
+                setSignupGuardMessage("");
+                setSignupTurnstileToken(null);
+                setSignupTurnstileRenderNonce((current) => current + 1);
+              }}
               type="button"
             >
               Sign up
@@ -114,6 +141,11 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             className="form-grid"
             onSubmit={(event) => {
               event.preventDefault();
+              if (mode === "signup" && turnstileSiteKey && !signupTurnstileToken) {
+                setSignupGuardMessage("Complete the signup verification challenge before creating your account.");
+                return;
+              }
+              setSignupGuardMessage("");
               authMutation.mutate();
             }}
           >
@@ -131,6 +163,19 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
               <Link className="muted-copy" to="/forgot-password">
                 Forgot your password?
               </Link>
+            ) : null}
+
+            {mode === "signup" && turnstileSiteKey ? (
+              <div className="field-stack">
+                <span className="field-label">Signup verification</span>
+                <TurnstileWidget key={signupTurnstileRenderNonce} onTokenChange={setSignupTurnstileToken} siteKey={turnstileSiteKey} />
+              </div>
+            ) : null}
+
+            {mode === "signup" && signupGuardMessage ? (
+              <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
+                {signupGuardMessage}
+              </p>
             ) : null}
 
             {authMutation.error ? (

@@ -448,6 +448,15 @@ img {
   padding-right: 5.2rem;
 }
 
+.turnstile-widget {
+  width: 100%;
+  min-height: 4.1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow-x: auto;
+}
+
 .field-input--inherited:disabled {
   background: color-mix(in srgb, var(--panel-strong) 75%, var(--panel));
   border-color: color-mix(in srgb, var(--line) 75%, var(--panel-strong));

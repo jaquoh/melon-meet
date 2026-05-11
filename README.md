@@ -91,6 +91,23 @@ Local behavior:
 - on `localhost`, if `RESEND_API_KEY` is missing, the API keeps returning the local dev verification/reset URLs instead of sending email
 - on deployed environments, missing `RESEND_API_KEY` causes account-email actions to fail until the secret is configured
 
+## Signup bot defense
+
+Public signup now supports Cloudflare Turnstile.
+
+Configure the site key as a Wrangler var and the secret as a Wrangler secret:
+
+```bash
+npx wrangler secret put TURNSTILE_SECRET_KEY --config wrangler.jsonc
+```
+
+Add `TURNSTILE_SITE_KEY` to the `vars` section in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17).
+
+Behavior:
+
+- on deployed environments, signup requires a valid Turnstile token when Turnstile is configured
+- on `localhost`, signup still works without Turnstile so local development stays simple
+
 ## Deployment notes
 
 - Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.

@@ -66,7 +66,7 @@ What is clearly not public-launch ready yet:
   - server-side `Origin` / `Referer` validation for same-site writes
   Why: `SameSite=Lax` helps, but explicit request-origin validation is still the safer public setup.
 
-- [ ] Add bot/spam defense to signup.
+- [x] Add bot/spam defense to signup.
   Recommended:
   - Turnstile or equivalent challenge after suspicious activity
   - tighter IP/device/email heuristics
@@ -127,7 +127,7 @@ What is clearly not public-launch ready yet:
   - optionally proxy images through controlled storage
   - add URL validation and normalization
 
-- [ ] Add content length, posting frequency, and duplicate-content controls.
+- [x] Add content length, posting frequency, and duplicate-content controls.
   Why: this reduces spam and low-effort abuse even from verified accounts.
 
 - [ ] Add moderation/reporting for profiles, groups, sessions, posts, and private-group invite abuse.

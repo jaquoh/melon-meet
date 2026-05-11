@@ -9,6 +9,7 @@ export const membershipRequestStatusSchema = z.enum(["pending", "approved", "rej
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  turnstileToken: z.string().trim().min(1).optional().nullable(),
 });
 
 export const playingLevelPattern = /^(?:\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?)?$/;

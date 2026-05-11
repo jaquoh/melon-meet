@@ -21,6 +21,10 @@ export interface AuthResponse {
   verificationRequired?: boolean;
 }
 
+export interface PublicConfigResponse {
+  turnstileSiteKey: string | null;
+}
+
 export interface GroupDetailResponse {
   group: {
     activityLabel: string | null;
@@ -113,9 +117,13 @@ export function getMe() {
   return request<MeResponse>("/api/me");
 }
 
-export function signUp(email: string, password: string) {
+export function getPublicConfig() {
+  return request<PublicConfigResponse>("/api/public-config");
+}
+
+export function signUp(email: string, password: string, turnstileToken?: string | null) {
   return request<AuthResponse>("/api/auth/signup", {
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, turnstileToken: turnstileToken ?? null }),
     method: "POST",
   });
 }

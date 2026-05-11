@@ -8,6 +8,8 @@ export interface AppBindings {
   EMAIL_FROM_ADDRESS: string;
   EMAIL_REPLY_TO_ADDRESS: string;
   RESEND_API_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
 }
 
 export interface AppVariables {

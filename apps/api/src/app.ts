@@ -55,13 +55,69 @@ type AccountStatus = "active" | "deletion-pending" | "suspended";
 
 const AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 8;
+const WRITE_SHORT_WINDOW_MS = 10 * 60 * 1000;
+const WRITE_MEDIUM_WINDOW_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
 const EMAIL_CHANGE_TTL_MS = 1000 * 60 * 60 * 24;
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
 const ACCOUNT_DELETION_RETENTION_MS = 1000 * 60 * 60 * 24 * 30;
+const POST_COOLDOWN_MS = 30 * 1000;
+const DUPLICATE_POST_WINDOW_MS = 1000 * 60 * 60 * 12;
+const MEMBERSHIP_REQUEST_COOLDOWN_MS = 1000 * 60 * 60 * 24;
+const INVITE_LINK_COOLDOWN_MS = 1000 * 60 * 5;
 const ACTIVE_ACCOUNT_STATUS: AccountStatus = "active";
 const DELETION_PENDING_ACCOUNT_STATUS: AccountStatus = "deletion-pending";
 const DELETED_USER_DISPLAY_NAME = "Deleted user";
+
+const WRITE_RATE_LIMITS = {
+  "write:friend-request": {
+    limit: 12,
+    message: "Too many friend requests. Please wait a bit before sending more.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:group-create": {
+    limit: 3,
+    message: "Too many group creation attempts. Please wait before creating another group.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:group-update": {
+    limit: 20,
+    message: "Too many group edits. Please wait a bit before making more changes.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:group-membership-request": {
+    limit: 8,
+    message: "Too many membership requests. Please wait before requesting more groups.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:group-invite-link-create": {
+    limit: 10,
+    message: "Too many invite links created. Please wait a bit before creating more.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:group-post": {
+    limit: 12,
+    message: "Too many group posts in a short time. Please wait before posting again.",
+    windowMs: WRITE_SHORT_WINDOW_MS,
+  },
+  "write:meeting-create": {
+    limit: 10,
+    message: "Too many meeting creation attempts. Please wait before creating another session.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+  "write:meeting-post": {
+    limit: 12,
+    message: "Too many meeting posts in a short time. Please wait before posting again.",
+    windowMs: WRITE_SHORT_WINDOW_MS,
+  },
+  "write:meeting-update": {
+    limit: 24,
+    message: "Too many meeting edits. Please wait a bit before making more changes.",
+    windowMs: WRITE_MEDIUM_WINDOW_MS,
+  },
+} as const;
+
+type WriteRateLimitScope = keyof typeof WRITE_RATE_LIMITS;
 
 type ViewerRow = {
   avatar_url: string | null;
@@ -199,12 +255,60 @@ function normalizeOptionalText(value: string | null | undefined) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function normalizeComparableText(value: string | null | undefined) {
+  return normalizeOptionalText(value)?.toLowerCase().replace(/\s+/g, " ") ?? "";
+}
+
+function isRecentIsoTimestamp(value: string, windowMs: number) {
+  return Date.now() - new Date(value).getTime() < windowMs;
+}
+
 function makeInviteCode() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 }
 
 function deletedUserEmail(userId: string) {
   return `deleted+${userId}@deleted.invalid`;
+}
+
+async function assertPostNotSpammy(
+  db: D1Database,
+  options: {
+    authorUserId: string;
+    content: string;
+    scopeId: string;
+    scopeLabel: string;
+    scopeColumn: "group_id" | "meeting_id";
+    table: "group_posts" | "meeting_posts";
+  },
+) {
+  const recentPosts = await allRows<{ content: string; created_at: string }>(
+    db,
+    `SELECT content, created_at
+     FROM ${options.table}
+     WHERE ${options.scopeColumn} = ?
+       AND author_user_id = ?
+       AND created_at >= ?
+     ORDER BY created_at DESC
+     LIMIT 10`,
+    options.scopeId,
+    options.authorUserId,
+    new Date(Date.now() - DUPLICATE_POST_WINDOW_MS).toISOString(),
+  );
+
+  const latestPost = recentPosts[0];
+  if (latestPost && isRecentIsoTimestamp(latestPost.created_at, POST_COOLDOWN_MS)) {
+    throw new HTTPException(429, {
+      message: `Please wait a little before posting again in this ${options.scopeLabel}.`,
+    });
+  }
+
+  const comparableContent = normalizeComparableText(options.content);
+  if (recentPosts.some((post) => normalizeComparableText(post.content) === comparableContent)) {
+    throw new HTTPException(409, {
+      message: `That message was already posted in this ${options.scopeLabel} recently.`,
+    });
+  }
 }
 
 function mapViewerSummary(row: ViewerRow) {
@@ -255,6 +359,32 @@ function appOrigin(c: Context<AppEnv>) {
 function isLocalOrigin(c: Context<AppEnv>) {
   const { hostname } = new URL(c.req.url);
   return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function turnstileConfigured(c: Context<AppEnv>) {
+  return Boolean(c.env.TURNSTILE_SECRET_KEY && c.env.TURNSTILE_SITE_KEY);
+}
+
+function requestOriginFromHeaders(c: Context<AppEnv>) {
+  const originHeader = c.req.header("Origin");
+  if (originHeader) {
+    try {
+      return new URL(originHeader).origin;
+    } catch {
+      return null;
+    }
+  }
+
+  const refererHeader = c.req.header("Referer");
+  if (refererHeader) {
+    try {
+      return new URL(refererHeader).origin;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 function buildVerifyEmailUrl(c: Context<AppEnv>, token: string) {
@@ -436,6 +566,73 @@ async function enforceAuthRateLimit(
   }
 
   return null;
+}
+
+async function enforceWriteRateLimit(
+  c: Context<AppEnv>,
+  scope: WriteRateLimitScope,
+  viewerId: string,
+) {
+  const config = WRITE_RATE_LIMITS[scope];
+  const rateLimit = await consumeRateLimit(c.env.DB, {
+    identifier: `${viewerId}:${getClientAddress(c)}`,
+    limit: config.limit,
+    scope,
+    windowMs: config.windowMs,
+  });
+
+  c.header("X-RateLimit-Limit", String(config.limit));
+  c.header("X-RateLimit-Remaining", String(rateLimit.remaining));
+  c.header("X-RateLimit-Reset", String(rateLimit.retryAfterSeconds));
+
+  if (!rateLimit.allowed) {
+    c.header("Retry-After", String(rateLimit.retryAfterSeconds));
+    return c.json(
+      {
+        error: config.message,
+      },
+      429,
+    );
+  }
+
+  return null;
+}
+
+function assertTrustedWriteOrigin(c: Context<AppEnv>) {
+  const requestOrigin = requestOriginFromHeaders(c);
+  if (!requestOrigin) {
+    assertOrThrow(isLocalOrigin(c), 403, "This write request is missing a trusted origin.");
+    return;
+  }
+
+  assertOrThrow(requestOrigin === appOrigin(c), 403, "Cross-site write requests are not allowed.");
+}
+
+async function verifySignupTurnstile(c: Context<AppEnv>, token: string | null | undefined) {
+  if (!turnstileConfigured(c)) {
+    assertOrThrow(isLocalOrigin(c), 503, "Signup bot protection is not configured.");
+    return;
+  }
+
+  const normalizedToken = token?.trim();
+  assertOrThrow(normalizedToken, 400, "Complete the signup verification challenge and try again.");
+
+  const payload = new URLSearchParams();
+  payload.set("secret", c.env.TURNSTILE_SECRET_KEY as string);
+  payload.set("response", normalizedToken);
+  payload.set("remoteip", getClientAddress(c));
+
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    body: payload,
+    method: "POST",
+  });
+  assertOrThrow(response.ok, 502, "Signup verification is temporarily unavailable.");
+
+  const result = await response.json() as {
+    "error-codes"?: string[];
+    success?: boolean;
+  };
+  assertOrThrow(result.success, 403, "Complete the signup verification challenge and try again.");
 }
 
 async function getGroupRole(
@@ -967,8 +1164,14 @@ export function createApp() {
 
   app.get("/api/health", (c) => c.json({ ok: true }));
 
+  app.get("/api/public-config", (c) =>
+    c.json({
+      turnstileSiteKey: c.env.TURNSTILE_SITE_KEY ?? null,
+    }),
+  );
+
   app.post("/api/auth/signup", zValidator("json", authSchema), async (c) => {
-    const { email, password } = c.req.valid("json");
+    const { email, password, turnstileToken } = c.req.valid("json");
     const limitedResponse = await enforceAuthRateLimit(c, "auth:signup", email);
     if (limitedResponse) {
       return limitedResponse;
@@ -979,6 +1182,7 @@ export function createApp() {
       email.toLowerCase(),
     );
     assertOrThrow(!existing, 409, "An account with this email already exists.");
+    await verifySignupTurnstile(c, turnstileToken);
 
     const userId = crypto.randomUUID();
     const createdAt = nowIso();
@@ -1062,6 +1266,7 @@ export function createApp() {
 
   app.post("/api/auth/verification/resend", async (c) => {
     const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
     if (viewer.emailVerified) {
       return c.json({ ok: true, devVerificationUrl: null });
     }
@@ -1187,6 +1392,7 @@ export function createApp() {
     zValidator("json", z.object({ currentPassword: z.string().min(1), password: z.string().min(8) })),
     async (c) => {
       const viewer = await requireViewer(c);
+      assertTrustedWriteOrigin(c);
       const { currentPassword, password } = c.req.valid("json");
 
       const row = await firstRow<{ password_hash: string }>(
@@ -1218,6 +1424,7 @@ export function createApp() {
     zValidator("json", z.object({ currentPassword: z.string().min(1), email: z.string().email() })),
     async (c) => {
       const viewer = await requireViewer(c);
+      assertTrustedWriteOrigin(c);
       const { currentPassword, email } = c.req.valid("json");
       const normalizedEmail = email.toLowerCase();
       assertOrThrow(normalizedEmail !== viewer.email.toLowerCase(), 400, "This is already your current email.");
@@ -1246,6 +1453,7 @@ export function createApp() {
 
   app.post("/api/auth/logout-other-sessions", async (c) => {
     const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
     await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
     return c.json({ ok: true });
   });
@@ -1302,6 +1510,7 @@ export function createApp() {
   });
 
   app.post("/api/auth/logout", async (c) => {
+    assertTrustedWriteOrigin(c);
     await revokeSessionByToken(c.env.DB, readSessionCookie(c));
     clearSessionCookie(c);
     return c.json({ ok: true });
@@ -1501,6 +1710,7 @@ export function createApp() {
 
   app.patch("/api/profiles/:id", zValidator("json", profileUpdateSchema), async (c) => {
     const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only edit your own profile.");
     const input = c.req.valid("json");
     const updatedAt = nowIso();
@@ -1543,6 +1753,7 @@ export function createApp() {
 
   app.delete("/api/profiles/:id", async (c) => {
     const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
     await requestAccountDeletion(c.env.DB, viewer.id);
     clearSessionCookie(c);
@@ -1551,6 +1762,11 @@ export function createApp() {
 
   app.post("/api/friends/requests", zValidator("json", friendRequestSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
+    const limitedResponse = await enforceWriteRateLimit(c, "write:friend-request", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
     const input = c.req.valid("json");
     const target = input.targetUserId
       ? await firstRow<{ id: string }>(
@@ -1559,12 +1775,38 @@ export function createApp() {
         input.targetUserId,
       )
       : await firstRow<{ id: string }>(
-        c.env.DB,
-        "SELECT id FROM users WHERE email = ?",
-        input.targetEmail?.toLowerCase() ?? "",
+      c.env.DB,
+      "SELECT id FROM users WHERE email = ?",
+      input.targetEmail?.toLowerCase() ?? "",
       );
     assertOrThrow(target, 404, "Target user not found.");
     assertOrThrow(target.id !== viewer.id, 400, "You cannot add yourself.");
+    const existingConnection = await firstRow<{
+      addressee_user_id: string;
+      requester_user_id: string;
+      status: "accepted" | "pending";
+    }>(
+      c.env.DB,
+      `SELECT requester_user_id, addressee_user_id, status
+       FROM friend_connections
+       WHERE (requester_user_id = ? AND addressee_user_id = ?)
+          OR (requester_user_id = ? AND addressee_user_id = ?)`,
+      viewer.id,
+      target.id,
+      target.id,
+      viewer.id,
+    );
+    assertOrThrow(existingConnection?.status !== "accepted", 409, "You are already connected with this user.");
+    assertOrThrow(
+      !(existingConnection?.status === "pending" && existingConnection.requester_user_id === viewer.id),
+      409,
+      "A friend request is already pending.",
+    );
+    assertOrThrow(
+      !(existingConnection?.status === "pending" && existingConnection.requester_user_id === target.id),
+      409,
+      "This user already sent you a friend request.",
+    );
 
     const createdAt = nowIso();
     await runStatement(
@@ -1584,6 +1826,7 @@ export function createApp() {
 
   app.post("/api/friends/requests/:id/accept", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const request = await firstRow<{ addressee_user_id: string; id: string }>(
       c.env.DB,
       "SELECT id, addressee_user_id FROM friend_connections WHERE id = ? AND status = 'pending'",
@@ -1602,6 +1845,7 @@ export function createApp() {
 
   app.delete("/api/friends/:id", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     await runStatement(
       c.env.DB,
       `DELETE FROM friend_connections
@@ -1620,6 +1864,11 @@ export function createApp() {
 
   app.post("/api/groups", zValidator("json", groupCreateSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
+    const limitedResponse = await enforceWriteRateLimit(c, "write:group-create", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
     const input = c.req.valid("json");
     const createdAt = nowIso();
     const groupId = crypto.randomUUID();
@@ -1788,8 +2037,13 @@ export function createApp() {
 
   app.patch("/api/groups/:id", zValidator("json", groupUpdateSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can edit the group.");
+    const limitedResponse = await enforceWriteRateLimit(c, "write:group-update", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
     const input = c.req.valid("json");
 
     await runStatement(
@@ -1821,6 +2075,7 @@ export function createApp() {
 
   app.delete("/api/groups/:id", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can archive the group.");
     await runStatement(
@@ -1835,6 +2090,7 @@ export function createApp() {
 
   app.post("/api/groups/:id/join", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const group = await getGroupRecord(c.env.DB, c.req.param("id"));
     assertOrThrow(group.visibility === "public", 403, "Private groups require an invite link.");
     await runStatement(
@@ -1854,9 +2110,29 @@ export function createApp() {
     zValidator("json", z.object({ note: z.string().trim().max(300).optional().nullable() })),
     async (c) => {
       const viewer = await requireVerifiedViewer(c);
+      assertTrustedWriteOrigin(c);
       const group = await getGroupRecord(c.env.DB, c.req.param("id"));
       const existingRole = await getGroupRole(c.env.DB, group.id, viewer.id);
       assertOrThrow(!existingRole, 400, "You are already a member of this group.");
+      const limitedResponse = await enforceWriteRateLimit(c, "write:group-membership-request", viewer.id);
+      if (limitedResponse) {
+        return limitedResponse;
+      }
+      const existingRequest = await firstRow<{ status: "approved" | "pending" | "rejected"; updated_at: string }>(
+        c.env.DB,
+        `SELECT status, updated_at
+         FROM group_membership_requests
+         WHERE group_id = ?
+           AND requester_user_id = ?`,
+        group.id,
+        viewer.id,
+      );
+      assertOrThrow(existingRequest?.status !== "pending", 409, "Your membership request is already pending.");
+      assertOrThrow(
+        !existingRequest || !isRecentIsoTimestamp(existingRequest.updated_at, MEMBERSHIP_REQUEST_COOLDOWN_MS),
+        429,
+        "Please wait before requesting access to this group again.",
+      );
       await runStatement(
         c.env.DB,
         `INSERT INTO group_membership_requests (
@@ -1932,6 +2208,7 @@ export function createApp() {
 
   app.post("/api/groups/:id/membership-requests/:requestId/approve", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
     const request = await firstRow<{ requester_user_id: string }>(
@@ -1965,6 +2242,7 @@ export function createApp() {
 
   app.post("/api/groups/:id/membership-requests/:requestId/reject", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can review requests.");
     await runStatement(
@@ -1981,9 +2259,32 @@ export function createApp() {
 
   app.post("/api/groups/:id/invite-links", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(group.visibility === "private", 400, "Invite links are only needed for private groups.");
     assertOrThrow(viewerRole === "owner", 403, "Only the group owner can create invite links.");
+    const limitedResponse = await enforceWriteRateLimit(c, "write:group-invite-link-create", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
+    const latestInvite = await firstRow<{ created_at: string }>(
+      c.env.DB,
+      `SELECT created_at
+       FROM group_invite_links
+       WHERE group_id = ?
+         AND created_by_user_id = ?
+         AND (expires_at IS NULL OR expires_at > ?)
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      group.id,
+      viewer.id,
+      nowIso(),
+    );
+    assertOrThrow(
+      !latestInvite || !isRecentIsoTimestamp(latestInvite.created_at, INVITE_LINK_COOLDOWN_MS),
+      429,
+      "Please wait a few minutes before creating another invite link for this group.",
+    );
 
     const code = makeInviteCode();
     await runStatement(
@@ -2001,6 +2302,7 @@ export function createApp() {
 
   app.post("/api/groups/invite-links/:code/accept", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const invite = await firstRow<{ group_id: string; id: string }>(
       c.env.DB,
       `SELECT id, group_id
@@ -2025,6 +2327,7 @@ export function createApp() {
 
   app.patch("/api/groups/:id/members/:userId", zValidator("json", roleUpdateSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner", 403, "Only the group owner can change member roles.");
     assertOrThrow(c.req.param("userId") !== group.owner_user_id, 400, "The group owner role cannot be reassigned in v1.");
@@ -2058,7 +2361,21 @@ export function createApp() {
 
   app.post("/api/groups/:id/posts", zValidator("json", groupPostSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    const limitedResponse = await enforceWriteRateLimit(c, "write:group-post", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
+    const content = c.req.valid("json").content;
+    await assertPostNotSpammy(c.env.DB, {
+      authorUserId: viewer.id,
+      content,
+      scopeColumn: "group_id",
+      scopeId: c.req.param("id"),
+      scopeLabel: "group",
+      table: "group_posts",
+    });
     await runStatement(
       c.env.DB,
       `INSERT INTO group_posts (id, group_id, author_user_id, content, created_at)
@@ -2066,7 +2383,7 @@ export function createApp() {
       crypto.randomUUID(),
       c.req.param("id"),
       viewer.id,
-      c.req.valid("json").content,
+      content,
       nowIso(),
     );
     return c.json({ ok: true }, 201);
@@ -2160,6 +2477,7 @@ export function createApp() {
 
   app.post("/api/meetings", zValidator("json", meetingCreateSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const input = c.req.valid("json");
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, input.groupId, viewer.id);
 
@@ -2168,6 +2486,10 @@ export function createApp() {
         ? Boolean(viewerRole)
         : viewerRole === "owner" || viewerRole === "admin";
     assertOrThrow(canCreate, 403, "You do not have permission to create meetings in this group.");
+    const limitedResponse = await enforceWriteRateLimit(c, "write:meeting-create", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
 
     const createdAt = nowIso();
     const groupActivity = normalizeOptionalText(input.activityLabel ?? null);
@@ -2349,6 +2671,7 @@ export function createApp() {
 
   app.patch("/api/meetings/:id", zValidator("json", meetingUpdateSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const meetingId = c.req.param("id");
     const input = c.req.valid("json");
 
@@ -2382,6 +2705,10 @@ export function createApp() {
     );
     assertOrThrow(meetingRow, 404, "Meeting not found.");
     assertOrThrow(meetingRow.owner_user_id === viewer.id, 403, "Only the meeting owner can edit this meeting.");
+    const limitedResponse = await enforceWriteRateLimit(c, "write:meeting-update", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
 
     const nextStartsAt = input.startsAt ?? meetingRow.starts_at;
     const nextEndsAt = input.endsAt ?? meetingRow.ends_at;
@@ -2570,6 +2897,7 @@ export function createApp() {
 
   app.post("/api/meetings/:id/claim", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const meeting = await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(meeting.status === "active", 400, "Cancelled meetings cannot be claimed.");
     assertOrThrow(new Date(meeting.endsAt).getTime() > Date.now(), 400, "Past meetings cannot be claimed.");
@@ -2589,6 +2917,7 @@ export function createApp() {
 
   app.delete("/api/meetings/:id/claim", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
     await runStatement(
       c.env.DB,
@@ -2601,6 +2930,7 @@ export function createApp() {
 
   app.post("/api/meetings/:id/cancel", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2621,6 +2951,7 @@ export function createApp() {
 
   app.post("/api/meetings/:id/revive", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2641,6 +2972,7 @@ export function createApp() {
 
   app.delete("/api/meetings/:id", async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     const meeting = await firstRow<{ group_id: string; owner_user_id: string }>(
       c.env.DB,
       "SELECT group_id, owner_user_id FROM meetings WHERE id = ?",
@@ -2676,7 +3008,21 @@ export function createApp() {
 
   app.post("/api/meetings/:id/posts", zValidator("json", postSchema), async (c) => {
     const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
     await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
+    const limitedResponse = await enforceWriteRateLimit(c, "write:meeting-post", viewer.id);
+    if (limitedResponse) {
+      return limitedResponse;
+    }
+    const content = c.req.valid("json").content;
+    await assertPostNotSpammy(c.env.DB, {
+      authorUserId: viewer.id,
+      content,
+      scopeColumn: "meeting_id",
+      scopeId: c.req.param("id"),
+      scopeLabel: "session",
+      table: "meeting_posts",
+    });
     await runStatement(
       c.env.DB,
       `INSERT INTO meeting_posts (id, meeting_id, author_user_id, content, created_at)
@@ -2684,7 +3030,7 @@ export function createApp() {
       crypto.randomUUID(),
       c.req.param("id"),
       viewer.id,
-      c.req.valid("json").content,
+      content,
       nowIso(),
     );
     return c.json({ ok: true }, 201);
