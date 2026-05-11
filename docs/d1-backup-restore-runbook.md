@@ -65,6 +65,12 @@ Recommended pre-change export command:
 npx wrangler d1 export DB --remote --output=./backups/d1-$(date +%Y%m%d-%H%M%S).sql --config wrangler.jsonc
 ```
 
+Recommended when you expect to restore into an already-migrated database:
+
+```bash
+npx wrangler d1 export DB --remote --no-schema --output=./backups/d1-data-$(date +%Y%m%d-%H%M%S).sql --config wrangler.jsonc
+```
+
 Operator notes:
 
 - exports block other database requests while running, so do them during low-traffic periods
@@ -180,6 +186,8 @@ Notes:
 - D1 imports SQL, not raw `.sqlite3` files
 - restoring from SQL is slower and more manual than Time Travel
 - use this mainly for controlled rebuilds, testing, or longer-term archive recovery
+- if the target database already has the schema, prefer a `--no-schema` export
+- a full schema+data export should be restored only into a blank target database
 
 Command pattern:
 
@@ -188,6 +196,59 @@ npx wrangler d1 execute DB --remote --file=./backups/<export-file>.sql --config 
 ```
 
 This should be treated as a deliberate maintenance operation, not the default emergency restore path.
+
+## Recorded Restore Drill
+
+### Drill date
+
+- 2026-05-11
+
+### Drill type
+
+- non-production local D1 restore drill
+- SQL export and replay validation
+
+### Goal
+
+- verify that a local D1 state can be exported, reset, and restored with matching row counts
+
+### Baseline counts before reset
+
+- users: 1
+- groups: 3
+- meetings: 18
+- venues: 57
+
+### Drill steps performed
+
+1. Exported the current local D1 database to SQL with `wrangler d1 export --local`.
+2. Removed the local D1 state directory.
+3. Verified that the freshly recreated local DB had no application rows.
+4. Replayed the schema migration files manually.
+5. Attempted to import the full SQL export into the migrated DB.
+   Result:
+   failed because the export included schema statements and the migrated DB already had those tables.
+6. Generated a data-only SQL replay from the export and imported that into the migrated DB.
+7. Re-ran the row-count check.
+
+### Baseline counts after restore
+
+- users: 1
+- groups: 3
+- meetings: 18
+- venues: 57
+
+### Result
+
+- restore drill passed
+- key table counts matched before and after the reset/restore cycle
+
+### Important findings
+
+- `wrangler d1 migrations apply DB --local` did not rebuild the wiped local schema reliably in this drill, so the migration SQL files were replayed directly with `wrangler d1 execute --local --file`
+- importing a full schema+data export into an already-migrated DB fails with `table already exists`
+- for SQL-file restore into an already-initialized DB, a data-only export (`--no-schema`) is the safer operator path
+- temporary SQL exports used for drills should be deleted after verification unless intentionally archived
 
 ## When to Use Which Recovery Path
 

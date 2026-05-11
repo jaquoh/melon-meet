@@ -82,7 +82,7 @@ Checklist:
 - [x] Add error monitoring and alerting.
 - [x] Add operational/security logging.
 - [x] Define backup and restore process for D1.
-- [ ] Test restore once and document the result.
+- [x] Test restore once and document the result.
 - [ ] Separate local, staging, and production environments clearly.
 - [ ] Create a production deploy and rollback runbook.
 - [ ] Add pre-deploy quality gates.
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Define backup and restore process for D1.
+- [x] Test restore once and document the result.
 
 Blocked by:
 
