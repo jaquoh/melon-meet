@@ -130,7 +130,7 @@ Checklist:
 - [ ] Document processors/subprocessors.
 - [ ] Decide analytics/cookie consent approach before adding analytics.
 
-## Phase 6: User Trust and Settings UX
+## Phase 6: User Trust, Notifications, and Settings UX
 
 Goal: users understand what is public, how their account works, and where to get help.
 
@@ -139,6 +139,8 @@ Done means:
 - users have a clear settings area
 - privacy and visibility choices are understandable
 - destructive actions are confirmed clearly
+- important account, moderation, session, and group events send the right email notifications
+- group membership lifecycle is complete, including a member leave-group path
 - the product explains safety boundaries in the right places
 
 Checklist:
@@ -148,6 +150,34 @@ Checklist:
 - [ ] Add clear privacy and visibility explanations.
 - [ ] Add destructive-action confirmations.
 - [ ] Improve invite-link controls and clarity.
+- [ ] Define the notification email event matrix and copy rules.
+- [ ] Add admin alert emails for reported content.
+- [ ] Add user moderation/account emails.
+  Cover:
+  - account suspended
+  - user's profile was reported
+  - user's group post was reported
+  - user's session post was reported
+  - a group they own was reported
+  - a session they own was reported
+  - report received / thanks
+  - report reviewed / result / thanks
+- [ ] Add session lifecycle emails.
+  Cover:
+  - session owner: spot claimed
+  - session owner: spot claimed and session became full
+  - session owner: spot released
+  - session attendees: session changed
+  - session attendees: session cancelled
+  - session attendees: session pinboard update
+- [ ] Add group lifecycle emails.
+  Cover:
+  - group members: new session added
+  - group members: new session series added
+  - group members: group deleted or archived
+  - group owners/admins: membership join request
+  - group owners/admins: member left group
+- [ ] Add a leave-group flow for non-owner members.
 - [ ] Add in-product safety disclaimers where they matter.
 - [ ] Add support/help contact visibility in the UI.
 
