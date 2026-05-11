@@ -25,7 +25,7 @@ export const PAGE_CONTENT = {
     sections: [
       {
         body: [
-          "Angaben gemaess Section 5 DDG / formerly Section 5 TMG.",
+          "Information pursuant to Section 5 DDG.",
           "Melon Meet",
           "Jacob Otto",
           "Halskestr. 6",
@@ -37,14 +37,12 @@ export const PAGE_CONTENT = {
       {
         body: [
           "Email: hello@melonmeet.com",
-          "Telephone: Not provided.",
         ],
         title: "Contact",
       },
       {
         body: [
           "Represented by: Jacob Otto",
-          "VAT ID: Not provided.",
         ],
         title: "Represented By and VAT",
       },
@@ -84,13 +82,13 @@ export const PAGE_CONTENT = {
   },
   privacy: {
     description:
-      "How Melon Meet collects and uses account, profile, group, and session data.",
+      "How Melon Meet processes personal data for accounts, profiles, groups, sessions, moderation, and platform security.",
     eyebrow: "Privacy",
     sections: [
       {
         body: [
-          "Last updated: April 25, 2026.",
-          "This Privacy Policy describes how Melon Meet collects, uses, and discloses your personal information when you visit the Melon Meet website and create a user account.",
+          "Last updated: May 11, 2026.",
+          "This Privacy Policy explains how Melon Meet processes personal data when you browse the website, create an account, use community features, contact us, or interact with security and moderation features.",
         ],
         title: "Overview",
       },
@@ -103,87 +101,134 @@ export const PAGE_CONTENT = {
       },
       {
         body: [
-          "Account information: When you register, we collect your email address and password. Passwords are hashed and are not stored in plain text.",
-          "Profile data: Information you voluntarily add to your profile, such as display name, profile picture, bio, home area, playing level, and profile visibility settings.",
-          "Community data: Group memberships, membership requests, sessions, session claims, posts, and organiser responsibilities needed to operate the service.",
-          "Usage and security data: Authentication sessions, login-related timestamps, IP address, browser type, and rate-limit information may be processed for security purposes.",
+          "Account data: email address, password hash, email verification status, and account status.",
+          "Profile data: display name, avatar URL, bio, home area, playing level, and profile visibility settings that you choose to add or change.",
+          "Community data: groups, memberships, membership requests, sessions, session series, invite links, spot claims, posts, friend connections, and organiser responsibilities needed to run the service.",
+          "Security and moderation data: authentication sessions, verification and reset tokens, request metadata, IP address, rate-limit records, moderation reports, moderation notes, audit log entries, and operational error records.",
+          "Communication data: recipient address and message content required to send account-related emails such as verification, password reset, and email-change emails.",
+          "Device preference data: theme and language preferences stored locally in your browser.",
         ],
-        title: "Data We Collect",
+        title: "Data We Process",
       },
       {
         body: [
-          "We process this data to provide and manage your user account, allow you to interact with the website, show public and private community content, let organisers manage groups and sessions, and secure the site against unauthorised access.",
+          "We process account, profile, group, session, and participation data to provide the Melon Meet service you request, including account access, profile management, group coordination, session discovery, attendance flows, and user-generated content.",
+          "We process security, moderation, and abuse-prevention data to protect the platform, enforce platform rules, investigate reports, prevent misuse, and maintain service integrity.",
+          "We also process data where necessary to respond to support requests and comply with legal obligations.",
         ],
-        title: "Purpose of Processing",
+        title: "Purposes of Processing",
       },
       {
         body: [
-          "Processing is based on your consent under Art. 6(1)(a) GDPR when you create an account and on the performance of a contract under Art. 6(1)(b) GDPR to provide the service.",
-          "Security-related processing may also be based on our legitimate interest under Art. 6(1)(f) GDPR in protecting the service and its users.",
+          "Art. 6(1)(b) GDPR: we process core account and community data where this is necessary to provide the service you request.",
+          "Art. 6(1)(f) GDPR: we process security, anti-abuse, moderation, and audit data based on our legitimate interests in protecting the service, our users, and our systems.",
+          "Art. 6(1)(c) GDPR: we may process data where necessary to comply with legal obligations.",
         ],
         title: "Legal Basis",
       },
       {
         body: [
-          "We retain your personal data only as long as necessary to provide the service and meet legal obligations.",
-          "If you delete your account, your data will be deleted or anonymised within 30 days unless longer retention is legally required.",
+          "Infrastructure and processors: Melon Meet uses Cloudflare for hosting, delivery, database infrastructure, and signup bot protection, and Resend for transactional email delivery.",
+          "Other users may see profile, group, session, and post data to the extent that your settings and the product design make that content visible to them.",
+          "Some processors may handle personal data outside the EU or EEA, including in the United States. Where this happens, we rely on the provider's contractual safeguards and applicable transfer mechanisms.",
         ],
-        title: "Data Retention",
+        title: "Recipients and Transfers",
       },
       {
         body: [
-          "You have the right to access, rectify, erase, or restrict processing of your data, and to object to processing where applicable.",
-          "Contact hello@melonmeet.com to exercise these rights.",
+          "Account and community data is retained while your account is active and as long as needed to operate the service.",
+          "Verification, reset, and email-change tokens are short-lived and are deleted or invalidated after use or expiry.",
+          "Session records are retained while they remain active or until they are revoked or expire.",
+          "Moderation, audit, and security records are retained for as long as reasonably needed to investigate abuse, enforce platform rules, secure the service, and meet legal obligations.",
+          "If you delete your account, access is removed immediately and your account enters a deletion-pending state. Personal data is then deleted or anonymised within 30 days under the current account lifecycle model unless longer retention is legally required.",
         ],
-        title: "User Rights",
+        title: "Retention",
+      },
+      {
+        body: [
+          "You have the right to request access, rectification, erasure, restriction of processing, objection, and data portability where applicable.",
+          "To exercise these rights, contact hello@melonmeet.com.",
+          "You also have the right to lodge a complaint with the Berliner Beauftragte fuer Datenschutz und Informationsfreiheit, Alt-Moabit 59-61, 10555 Berlin, Germany, mailbox@datenschutz-berlin.de.",
+        ],
+        title: "Your Rights",
+      },
+      {
+        body: [
+          "Melon Meet uses a strictly necessary authentication cookie for signed-in sessions.",
+          "The frontend also stores theme and language preferences in local browser storage.",
+          "Melon Meet does not currently use a separate analytics or advertising stack.",
+          "Melon Meet does not use solely automated decision-making with legal or similarly significant effects within the meaning of Art. 22 GDPR. The service does use technical anti-bot and security measures such as Turnstile and rate limiting.",
+        ],
+        title: "Cookies, Local Storage, and Automated Checks",
       },
     ],
     title: "Privacy Policy",
   },
   terms: {
     description:
-      "Rules for using Melon Meet accounts, profiles, groups, sessions, and user-generated content.",
+      "Rules for using Melon Meet accounts, profiles, groups, sessions, user-generated content, and moderation features.",
     eyebrow: "Terms",
     sections: [
       {
         body: [
-          "Last updated: April 25, 2026.",
-          "By creating an account on Melon Meet, you agree to these Terms of Service.",
+          "Last updated: May 11, 2026.",
+          "These Terms govern your use of Melon Meet. By creating an account or using signed-in features, you agree to them.",
         ],
-        title: "Acceptance of Terms",
+        title: "Scope",
       },
       {
         body: [
-          "You must provide accurate information.",
-          "You are responsible for keeping your password confidential.",
+          "You must provide accurate account information and keep it up to date.",
+          "You are responsible for maintaining the confidentiality of your password and for activity that happens through your account.",
           "You must be at least 16 years old to create an account.",
+          "We may require email verification before full participation features are available.",
         ],
         title: "User Accounts",
       },
       {
         body: [
-          "You agree not to post illegal, defamatory, harmful, harassing, spam, fraudulent, or privacy-invasive content.",
-          "You agree not to attempt to bypass security measures or access data you are not authorised to access.",
+          "You must not post illegal, defamatory, harmful, threatening, harassing, privacy-invasive, deceptive, or spam content.",
+          "You must not misuse invite flows, impersonate others, scrape protected areas, bypass security measures, interfere with the service, or access data you are not authorised to access.",
+          "You must not use Melon Meet to organise or promote unlawful activity.",
         ],
         title: "Acceptable Use",
       },
       {
         body: [
-          "You retain ownership of content you post, including profile pictures, profile text, group posts, and session details.",
-          "You grant Melon Meet a non-exclusive licence to display this content on the website as needed to operate the service.",
+          "You retain responsibility for the content you publish, including profile text, profile images, group details, session details, and posts.",
+          "Depending on your settings and the feature involved, some content may be visible publicly, to group members, or to other signed-in users.",
+          "You grant Melon Meet a non-exclusive right to host, display, and process your content as needed to operate and secure the service.",
         ],
         title: "User Content",
       },
       {
         body: [
-          "We reserve the right to suspend or terminate accounts that violate these terms or create risk for the community or service.",
+          "Melon Meet helps people coordinate around venues, groups, and sessions, but Melon Meet is not the operator of the underlying sports venues and is not a party to arrangements between participants.",
+          "Group owners and session organisers are responsible for the accuracy of the details they publish, including time, location, capacity, access conditions, and updates.",
+          "Melon Meet does not guarantee that a listed venue, session, group, or claimed spot will remain available, accurate, safe, or suitable for you.",
         ],
-        title: "Termination",
+        title: "Groups, Sessions, and Organiser Responsibility",
       },
       {
         body: [
-          "Melon Meet is provided \"as is\". We are not liable for damages arising from your use of the site to the extent permitted by law.",
-          "Outdoor sports carry inherent risk. Participants are responsible for their own safety, insurance, travel, and participation decisions.",
+          "Users can report profiles, groups, sessions, posts, and invite misuse. Melon Meet may review reported content and take action where needed.",
+          "Moderation action can include review, internal notes, content removal, invite-link revocation, session cancellation or archival, group archival, and account suspension.",
+          "We may suspend or restrict accounts and content that violate these Terms, create risk for the community, or interfere with the safe operation of the service.",
+        ],
+        title: "Moderation and Enforcement",
+      },
+      {
+        body: [
+          "You can delete your account through the product settings. Deletion removes access immediately and is completed under the account lifecycle described in the Privacy Policy.",
+          "We may suspend or terminate access where required for legal, security, moderation, or operational reasons.",
+        ],
+        title: "Suspension, Deletion, and Termination",
+      },
+      {
+        body: [
+          "Melon Meet is provided as a coordination platform. We do not guarantee uninterrupted availability, complete accuracy of all user-supplied content, or the conduct of other users.",
+          "Beach volleyball and other sports activities involve inherent risks. You are responsible for your own participation decisions, travel, insurance, equipment, and physical safety.",
+          "Nothing in these Terms excludes liability where exclusion is not permitted by applicable law.",
         ],
         title: "Limitation of Liability",
       },
@@ -224,7 +269,7 @@ export function InfoPage({
     { key: "impressum", label: t("info.links.impressum"), to: "/impressum" },
   ] as const;
   const location = useLocation();
-  const content = pages[page] ?? PAGE_CONTENT[page];
+  const content = page === "info" ? pages[page] ?? PAGE_CONTENT[page] : PAGE_CONTENT[page];
   const locationState =
     location.state && typeof location.state === "object"
       ? (location.state as { infoReturnTo?: string })

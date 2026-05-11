@@ -121,14 +121,18 @@ Done means:
 
 Checklist:
 
-- [ ] Replace placeholder support and legal details.
-- [ ] Align privacy policy with actual data handling.
-- [ ] Align terms with real product behavior and safety positioning.
+- [x] Replace placeholder support and legal details.
+- [x] Align privacy policy with actual data handling.
+- [x] Align terms with real product behavior and safety positioning.
 - [ ] Add versioned acceptance tracking for terms and privacy.
 - [ ] Define the retention and deletion schedule.
 - [ ] Define the user data request process.
 - [ ] Document processors/subprocessors.
 - [ ] Decide analytics/cookie consent approach before adding analytics.
+
+Reference:
+
+- [legal-compliance-draft.md](/Users/jbot/IdeaProjects/melon-meet/docs/legal-compliance-draft.md)
 
 ## Phase 6: User Trust, Notifications, and Settings UX
 
