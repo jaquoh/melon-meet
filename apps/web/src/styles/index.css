@@ -2632,6 +2632,13 @@ img {
   min-width: 0;
 }
 
+.workspace-user-pill__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workspace-user-pill__avatar {
   width: 1.8rem;
   height: 1.8rem;
@@ -5373,8 +5380,9 @@ img {
   }
 
   .workspace-mobile-inline__actions .workspace-action--primary-slot {
-    font-size: clamp(0.68rem, 2.7vw, 0.76rem);
-    line-height: 1.1;
+    min-width: 0;
+    font-size: clamp(0.62rem, 2.35vw, 0.7rem);
+    line-height: 1;
   }
 
   .workspace-mobile-inline__actions .workspace-user-menu > summary {
@@ -5383,22 +5391,24 @@ img {
 
   .workspace-mobile-inline__actions .workspace-user-pill {
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
-    justify-items: start;
-    gap: 0.28rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    min-width: 0;
   }
 
-  .workspace-mobile-inline__actions .workspace-user-pill > span:last-child {
+  .workspace-mobile-inline__actions .workspace-user-pill__name {
     min-width: 0;
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.2;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
   }
 
   .workspace-mobile-inline__actions .workspace-user-pill__avatar {
-    width: 2rem;
-    height: 2rem;
+    display: none;
   }
 
   .workspace-frame--detail .workspace-cell--mobile-top {

@@ -104,7 +104,7 @@ export function WorkspaceShell({
         <span className="workspace-user-pill__avatar">
           {viewer.avatarUrl ? <img alt={viewer.displayName} src={viewer.avatarUrl} /> : viewer.displayName.slice(0, 1)}
         </span>
-        <span>{viewer.displayName}</span>
+        <span className="workspace-user-pill__name">{viewer.displayName}</span>
       </span>
     </Link>
   ) : (

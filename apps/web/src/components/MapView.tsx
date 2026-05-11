@@ -1762,6 +1762,7 @@ export function MapView({
   const hoveredTransitPillRefsRef = useRef<TransitLineRef[]>([]);
   const selectedTransitStationKeyRef = useRef<TransitStationKey | null>(null);
   const selectedTransitRefsRef = useRef<TransitLineRef[]>([]);
+  const ignoreTransitToggleClickRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [transitData, setTransitData] = useState<TransitFeatureCollection | null>(null);
   const [showTransit, setShowTransit] = useState(true);
@@ -2246,13 +2247,21 @@ export function MapView({
           aria-pressed={showTransit}
           className={`map-transit-toggle__button ${showTransit ? "is-active" : "is-inactive"}`.trim()}
           onClick={(event) => {
-            if (event.detail === 0) {
+            if (ignoreTransitToggleClickRef.current) {
+              ignoreTransitToggleClickRef.current = false;
+              return;
+            }
+            if (event.detail === 0 || event.detail === 1) {
               setShowTransit((current) => !current);
             }
           }}
-          onPointerUp={(event) => {
+          onPointerDown={(event) => {
+            if (event.pointerType === "mouse") {
+              return;
+            }
             event.preventDefault();
             event.stopPropagation();
+            ignoreTransitToggleClickRef.current = true;
             setShowTransit((current) => !current);
           }}
           type="button"
