@@ -33,10 +33,16 @@ Before a production deploy:
 Run:
 
 ```bash
-npm run typecheck
-npm test
-npm run build
+npm run quality:gate:production
 ```
+
+What this gate currently enforces:
+
+- `npm run typecheck`
+- `npm test`
+- `npm run build`
+- production `database_id` must not be a placeholder
+- staging and production environment config must stay separated in `wrangler.jsonc`
 
 ### 2. Deploy staging
 
@@ -44,6 +50,7 @@ Run:
 
 ```bash
 npm run db:migrate:staging
+npm run quality:gate:staging
 npm run deploy:staging
 ```
 

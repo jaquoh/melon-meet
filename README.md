@@ -60,6 +60,8 @@ The seed includes:
 npm run typecheck
 npm test
 npm run build
+npm run quality:gate
+npm run quality:gate:staging
 npm run db:migrate:staging
 npm run db:seed:staging
 npm run deploy:staging
@@ -142,6 +144,8 @@ These logs are written to the Worker log stream with request IDs, environment, p
 
 - Replace the production `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real production D1 database ID before deploying.
 - Replace `REPLACE_WITH_STAGING_D1_DATABASE_ID` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31) before using staging.
+- `npm run quality:gate:production` runs the current pre-deploy checks for production.
+- `npm run quality:gate:staging` runs the current pre-deploy checks for staging.
 - Run `npm run db:migrate:remote` before the first production deploy.
 - Run `npm run db:migrate:staging` before the first staging deploy that needs the remote schema.
 - `npm run db:seed:remote` is production-safe and inserts only venue data.

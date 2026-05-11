@@ -296,7 +296,7 @@ What is clearly not public-launch ready yet:
   - outage message process
   - abuse escalation process
 
-- [ ] Add CI gates before deploy.
+- [x] Add CI gates before deploy.
   Minimum:
   - typecheck
   - tests

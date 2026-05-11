@@ -35,9 +35,8 @@ This checklist is meant for the first public beta launch on Cloudflare.
 
 ## 4. Quality Gates
 
-- Run `npm run typecheck`.
-- Run `npm test`.
-- Run `npm run build`.
+- Run `npm run quality:gate:staging`.
+- Run `npm run quality:gate:production`.
 - Test the main user journeys in a deployed environment:
   - sign up
   - log in
