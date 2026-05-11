@@ -641,9 +641,23 @@ function appOrigin(c: Context<AppEnv>) {
   return new URL(c.req.url).origin;
 }
 
+function isLoopbackHostname(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 function isLocalOrigin(c: Context<AppEnv>) {
   const { hostname } = new URL(c.req.url);
-  return hostname === "localhost" || hostname === "127.0.0.1";
+  return isLoopbackHostname(hostname);
+}
+
+function isTrustedLocalDevOriginPair(requestOrigin: string, targetOrigin: string) {
+  try {
+    const requestUrl = new URL(requestOrigin);
+    const targetUrl = new URL(targetOrigin);
+    return isLoopbackHostname(requestUrl.hostname) && isLoopbackHostname(targetUrl.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function turnstileConfigured(c: Context<AppEnv>) {
@@ -1004,7 +1018,11 @@ function assertTrustedWriteOrigin(c: Context<AppEnv>) {
       requestOrigin,
     });
   }
-  assertOrThrow(requestOrigin === appOrigin(c), 403, "Cross-site write requests are not allowed.");
+  assertOrThrow(
+    requestOrigin === appOrigin(c) || isTrustedLocalDevOriginPair(requestOrigin, appOrigin(c)),
+    403,
+    "Cross-site write requests are not allowed.",
+  );
 }
 
 async function verifySignupTurnstile(c: Context<AppEnv>, token: string | null | undefined) {

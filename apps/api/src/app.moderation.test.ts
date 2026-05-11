@@ -156,12 +156,14 @@ async function requestJson(
     cookie,
     env,
     method = "GET",
+    origin,
   }: {
     baseUrl?: string;
     body?: Record<string, unknown>;
     cookie?: string;
     env: AppBindings;
     method?: "GET" | "PATCH" | "POST";
+    origin?: string;
   },
 ) {
   const app = createApp();
@@ -171,7 +173,9 @@ async function requestJson(
   }
   if (body) {
     headers.set("Content-Type", "application/json");
-    headers.set("Origin", baseUrl);
+    headers.set("Origin", origin ?? baseUrl);
+  } else if (origin) {
+    headers.set("Origin", origin);
   }
 
   const response = await app.fetch(
@@ -429,5 +433,39 @@ describe("signup policy acceptance tracking", () => {
         policy_version: CURRENT_POLICY_VERSIONS.terms,
       },
     ]);
+  });
+});
+
+describe("local dev trusted origins", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("allows local frontend and local api origins to differ by port", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, {
+      displayName: "Local Dev User",
+      email: "local@example.com",
+      id: "user-local-dev",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-local-dev");
+
+    const response = await requestJson("/api/auth/logout", {
+      baseUrl: LOCAL_BASE_URL,
+      cookie,
+      env,
+      method: "POST",
+      origin: "http://localhost:5173",
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+    });
   });
 });
