@@ -102,7 +102,7 @@ What is clearly not public-launch ready yet:
   - restore drill cadence
   Why: without restore confidence, user trust is fragile.
 
-- [ ] Introduce environment separation and release discipline.
+- [x] Introduce environment separation and release discipline.
   Required:
   - local / staging / production separation
   - separate D1 databases

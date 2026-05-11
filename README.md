@@ -60,6 +60,9 @@ The seed includes:
 npm run typecheck
 npm test
 npm run build
+npm run db:migrate:staging
+npm run db:seed:staging
+npm run deploy:staging
 npm run db:migrate:remote
 npm run db:seed:remote
 npm run db:seed:remote:demo
@@ -137,13 +140,18 @@ These logs are written to the Worker log stream with request IDs, environment, p
 
 ## Deployment notes
 
-- Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.
+- Replace the production `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real production D1 database ID before deploying.
+- Replace `REPLACE_WITH_STAGING_D1_DATABASE_ID` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31) before using staging.
 - Run `npm run db:migrate:remote` before the first production deploy.
+- Run `npm run db:migrate:staging` before the first staging deploy that needs the remote schema.
 - `npm run db:seed:remote` is production-safe and inserts only venue data.
+- `npm run db:seed:staging` seeds the staging remote database with venue data only.
 - If you want the full demo content in a remote database, run `npm run db:seed:remote:demo` after migrations.
+- If you want full demo content in staging, run `npm run db:seed:staging:demo` after migrations.
 - If local auth, venues, or meetings look out of sync after pulling changes, run `npm run db:reset:local`.
 - If remote migration or seed commands fail with Cloudflare authorization errors, re-authenticate Wrangler and confirm the configured account can access the D1 database.
 - For production D1 recovery steps, use [docs/d1-backup-restore-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/d1-backup-restore-runbook.md).
+- For environment boundaries and the recommended release path, use [docs/environment-separation.md](/Users/jbot/IdeaProjects/melon-meet/docs/environment-separation.md).
 - `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).

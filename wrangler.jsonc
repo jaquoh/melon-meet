@@ -25,5 +25,25 @@
   },
   "triggers": {
     "crons": ["17 3 * * *"]
+  },
+  "env": {
+    "staging": {
+      "name": "melon-meet-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "melon-meet-staging-db",
+          "database_id": "REPLACE_WITH_STAGING_D1_DATABASE_ID",
+          "migrations_dir": "./apps/api/migrations"
+        }
+      ],
+      "vars": {
+        "APP_NAME": "Melon Meet (Staging)",
+        "DEFAULT_TIMEZONE": "Europe/Berlin",
+        "EMAIL_FROM_ADDRESS": "Melon Meet <noreply@mail.melonmeet.com>",
+        "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
+        "ENVIRONMENT_NAME": "staging"
+      }
+    }
   }
 }
