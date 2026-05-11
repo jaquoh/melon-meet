@@ -86,7 +86,7 @@ Checklist:
 - [x] Separate local, staging, and production environments clearly.
 - [x] Create a production deploy and rollback runbook.
 - [x] Add pre-deploy quality gates.
-- [ ] Add production smoke tests for critical flows.
+- [x] Add production smoke tests for critical flows.
 
 ## Phase 4: Moderation and Admin Controls
 
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add pre-deploy quality gates.
+- [x] Add production smoke tests for critical flows.
 
 Blocked by:
 

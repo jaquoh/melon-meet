@@ -65,11 +65,13 @@ npm run quality:gate:staging
 npm run db:migrate:staging
 npm run db:seed:staging
 npm run deploy:staging
+npm run smoke:staging
 npm run db:migrate:remote
 npm run db:seed:remote
 npm run db:seed:remote:demo
 npm run transit:generate
 npm run deploy
+npm run smoke:production
 ```
 
 ## Transactional email
@@ -146,6 +148,9 @@ These logs are written to the Worker log stream with request IDs, environment, p
 - Replace `REPLACE_WITH_STAGING_D1_DATABASE_ID` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31) before using staging.
 - `npm run quality:gate:production` runs the current pre-deploy checks for production.
 - `npm run quality:gate:staging` runs the current pre-deploy checks for staging.
+- `npm run smoke:staging` runs deployed smoke checks against `SMOKE_BASE_URL_STAGING` or `SMOKE_BASE_URL`.
+- `npm run smoke:production` runs deployed smoke checks against `SMOKE_BASE_URL_PRODUCTION` or `SMOKE_BASE_URL`.
+- Set `SMOKE_EMAIL_STAGING` / `SMOKE_PASSWORD_STAGING` or `SMOKE_EMAIL_PRODUCTION` / `SMOKE_PASSWORD_PRODUCTION` if you want the authenticated portion of the smoke checks.
 - Run `npm run db:migrate:remote` before the first production deploy.
 - Run `npm run db:migrate:staging` before the first staging deploy that needs the remote schema.
 - `npm run db:seed:remote` is production-safe and inserts only venue data.

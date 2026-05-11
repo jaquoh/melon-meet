@@ -304,7 +304,7 @@ What is clearly not public-launch ready yet:
   - migration validation
   - lint if added
 
-- [ ] Add smoke tests for the critical user journeys in a deployed environment.
+- [x] Add smoke tests for the critical user journeys in a deployed environment.
   Cover:
   - signup
   - verify email

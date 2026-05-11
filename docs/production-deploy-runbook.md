@@ -64,13 +64,9 @@ npm run db:seed:staging
 
 Minimum staging checks:
 
-- `/api/health`
-- sign up
-- verify email
-- login
-- create group
-- create meeting
-- load map
+- `npm run smoke:staging`
+- if staging smoke credentials are configured, confirm the authenticated portion passes too
+- if the release specifically changes signup/email/account flows, still do a manual auth walkthrough in staging
 
 Do not continue to production until staging looks healthy.
 
@@ -100,12 +96,9 @@ npm run deploy
 
 Minimum production checks:
 
-- `/api/health`
-- login
-- map load
-- groups list
-- meetings list
-- one safe authenticated write if appropriate
+- `npm run smoke:production`
+- if production smoke credentials are configured, confirm the authenticated portion passes too
+- if the release touched a high-risk user flow, do one focused manual check in addition to the automated smoke run
 
 ### 7. Record the release
 

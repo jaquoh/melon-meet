@@ -54,6 +54,7 @@ npm run db:migrate:staging
 npm run db:seed:staging
 npm run db:seed:staging:demo
 npm run deploy:staging
+npm run smoke:staging
 ```
 
 Required config:
@@ -93,6 +94,7 @@ Commands:
 npm run db:migrate:remote
 npm run db:seed:remote
 npm run deploy
+npm run smoke:production
 ```
 
 ## Rules

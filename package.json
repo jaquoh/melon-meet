@@ -13,6 +13,8 @@
     "quality:gate": "node scripts/predeploy-checks.mjs --env=production",
     "quality:gate:production": "node scripts/predeploy-checks.mjs --env=production",
     "quality:gate:staging": "node scripts/predeploy-checks.mjs --env=staging",
+    "smoke:staging": "node scripts/smoke-test.mjs --env=staging",
+    "smoke:production": "node scripts/smoke-test.mjs --env=production",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",

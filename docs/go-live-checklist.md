@@ -37,6 +37,8 @@ This checklist is meant for the first public beta launch on Cloudflare.
 
 - Run `npm run quality:gate:staging`.
 - Run `npm run quality:gate:production`.
+- Run `npm run smoke:staging`.
+- Run `npm run smoke:production`.
 - Test the main user journeys in a deployed environment:
   - sign up
   - log in
