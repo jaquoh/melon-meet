@@ -42,6 +42,7 @@ import {
   verifyPassword,
   writeSessionCookie,
 } from "./lib/auth";
+import { writeAuditLogEvent } from "./lib/audit-log";
 import { allRows, firstRow, runStatement } from "./lib/db";
 import { sendResendEmail } from "./lib/email";
 import { assertOrThrow } from "./lib/http";
@@ -1885,6 +1886,14 @@ export function createApp() {
     const viewer = await requireViewer(c);
     assertTrustedWriteOrigin(c);
     await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
+    await writeAuditLogEvent(c.env.DB, {
+      action: "other_sessions_revoked",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "User revoked all other active sessions.",
+      targetId: viewer.id,
+      targetType: "user",
+    });
     logSecurityEvent(c, "other_sessions_revoked", "info", {
       viewerId: viewer.id,
     });
@@ -2162,6 +2171,20 @@ export function createApp() {
       reportId,
       status: updates.status ?? existing.status,
     });
+    await writeAuditLogEvent(c.env.DB, {
+      action: "moderation_report_updated",
+      actorUserId: viewer.id,
+      metadata: {
+        assigneeUserId: updates.assigneeUserId ?? null,
+        reportId,
+        requestId: c.get("requestId"),
+        resolution: updates.resolution ?? null,
+        status: updates.status ?? existing.status,
+      },
+      summary: "Operator updated a moderation report.",
+      targetId: reportId,
+      targetType: "moderation_report",
+    });
 
     return c.json({
       report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),
@@ -2257,6 +2280,20 @@ export function createApp() {
       action,
       actorUserId: viewer.id,
       reportId,
+      targetId: report.target_id,
+      targetType: report.target_type,
+    });
+    await writeAuditLogEvent(c.env.DB, {
+      action: "moderation_admin_action_taken",
+      actorUserId: viewer.id,
+      metadata: {
+        moderationAction: action,
+        reportId,
+        requestId: c.get("requestId"),
+        targetId: report.target_id,
+        targetType: report.target_type,
+      },
+      summary: moderationActionResolution(action),
       targetId: report.target_id,
       targetType: report.target_type,
     });
@@ -2506,6 +2543,14 @@ export function createApp() {
     assertTrustedWriteOrigin(c);
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
     await requestAccountDeletion(c.env.DB, viewer.id);
+    await writeAuditLogEvent(c.env.DB, {
+      action: "account_deletion_requested",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "User requested account deletion.",
+      targetId: viewer.id,
+      targetType: "user",
+    });
     clearSessionCookie(c);
     logSecurityEvent(c, "account_deletion_requested", "warn", {
       viewerId: viewer.id,
@@ -2842,6 +2887,14 @@ export function createApp() {
       nowIso(),
       group.id,
     );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "group_archived",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "Group was archived.",
+      targetId: group.id,
+      targetType: "group",
+    });
     return c.json({ ok: true });
   });
 
@@ -2859,6 +2912,37 @@ export function createApp() {
       viewer.id,
       nowIso(),
     );
+    return c.json({ ok: true });
+  });
+
+  app.delete("/api/groups/:id/membership", async (c) => {
+    const viewer = await requireVerifiedViewer(c);
+    assertTrustedWriteOrigin(c);
+    const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
+    assertOrThrow(Boolean(viewerRole), 400, "You are not a member of this group.");
+    assertOrThrow(viewerRole !== "owner", 400, "Group owners cannot leave their own group.");
+    await runStatement(
+      c.env.DB,
+      "DELETE FROM app_group_members WHERE group_id = ? AND user_id = ?",
+      group.id,
+      viewer.id,
+    );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "group_membership_left",
+      actorUserId: viewer.id,
+      metadata: {
+        requestId: c.get("requestId"),
+        role: viewerRole,
+      },
+      summary: "Member left a group.",
+      targetId: group.id,
+      targetType: "group",
+    });
+    logSecurityEvent(c, "group_membership_left", "info", {
+      groupId: group.id,
+      memberUserId: viewer.id,
+      role: viewerRole,
+    });
     return c.json({ ok: true });
   });
 
@@ -3062,6 +3146,17 @@ export function createApp() {
       creatorUserId: viewer.id,
       groupId: group.id,
     });
+    await writeAuditLogEvent(c.env.DB, {
+      action: "group_invite_link_created",
+      actorUserId: viewer.id,
+      metadata: {
+        code,
+        requestId: c.get("requestId"),
+      },
+      summary: "Group invite link was created.",
+      targetId: group.id,
+      targetType: "group",
+    });
     return c.json({ code }, 201);
   });
 
@@ -3106,6 +3201,18 @@ export function createApp() {
       group.id,
       c.req.param("userId"),
     );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "group_member_role_changed",
+      actorUserId: viewer.id,
+      metadata: {
+        newRole: c.req.valid("json").role,
+        requestId: c.get("requestId"),
+        targetUserId: c.req.param("userId"),
+      },
+      summary: "Group member role was changed.",
+      targetId: group.id,
+      targetType: "group",
+    });
     return c.json({ ok: true });
   });
 
@@ -3711,6 +3818,14 @@ export function createApp() {
       nowIso(),
       c.req.param("id"),
     );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "meeting_cancelled",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "Session was cancelled.",
+      targetId: c.req.param("id"),
+      targetType: "meeting",
+    });
     return c.json({ ok: true });
   });
 
@@ -3732,6 +3847,14 @@ export function createApp() {
       nowIso(),
       c.req.param("id"),
     );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "meeting_revived",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "Session was revived.",
+      targetId: c.req.param("id"),
+      targetType: "meeting",
+    });
     return c.json({ ok: true });
   });
 
@@ -3754,6 +3877,14 @@ export function createApp() {
       nowIso(),
       c.req.param("id"),
     );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "meeting_archived",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: "Session was archived.",
+      targetId: c.req.param("id"),
+      targetType: "meeting",
+    });
     return c.json({ ok: true });
   });
 

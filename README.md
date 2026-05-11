@@ -142,6 +142,27 @@ The API also emits structured security-event logs for the launch-critical flows:
 
 These logs are written to the Worker log stream with request IDs, environment, path, user/session context, and masked email addresses where relevant.
 
+## Audit log
+
+Sensitive state-changing actions now also write durable audit records into the D1 `audit_log_events` table.
+
+Current coverage includes:
+
+- account deletion requests
+- logout-other-devices / other-session revocation
+- moderation queue updates and admin enforcement actions
+- group member role changes
+- leave-group events
+- invite-link creation
+- group archive actions
+- session cancel, revive, and archive actions
+
+Before deploying this audit-log slice, run:
+
+```bash
+npm run db:migrate:remote
+```
+
 ## Moderation queue
 
 The minimum moderation queue is now live in the signed-in profile area for configured operators.
@@ -165,6 +186,8 @@ Example:
   "MODERATION_ADMIN_EMAILS": "hello@melonmeet.com,ops@melonmeet.com"
 }
 ```
+
+For the planned notification rollout, use [notification-email-matrix.md](/Users/jbot/IdeaProjects/melon-meet/docs/notification-email-matrix.md).
 
 ## Deployment notes
 

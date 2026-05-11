@@ -160,7 +160,7 @@ What is clearly not public-launch ready yet:
   - revoke invite links for reported private-group abuse
   - review abuse history
 
-- [ ] Add audit logging for sensitive actions.
+- [x] Add audit logging for sensitive actions.
   Track:
   - signup
   - login failures
@@ -171,6 +171,17 @@ What is clearly not public-launch ready yet:
   - invite-link creation
   - moderation actions
   Why: this matters for both security and dispute handling.
+
+  Implemented so far:
+  - durable audit log table for sensitive actions
+  - account deletion requests
+  - other-session revocation
+  - group member role changes
+  - group leave events
+  - group invite-link creation
+  - group archive actions
+  - session cancel, revive, and archive actions
+  - moderation queue updates and moderation admin actions
 
 - [ ] Review authorization edge cases with dedicated tests.
   Focus on:

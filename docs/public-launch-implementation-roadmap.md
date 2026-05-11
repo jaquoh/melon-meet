@@ -105,7 +105,7 @@ Checklist:
 - [x] Add report actions in the UI.
 - [x] Add a report review queue for operators.
 - [x] Add admin actions for users, groups, sessions, posts, and invite links.
-- [ ] Add audit logging for sensitive actions.
+- [x] Add audit logging for sensitive actions.
 - [ ] Add dedicated authorization tests for moderation/admin paths.
 
 ## Phase 5: Legal, Privacy, and Compliance Alignment
@@ -177,9 +177,13 @@ Checklist:
   - group members: group deleted or archived
   - group owners/admins: membership join request
   - group owners/admins: member left group
-- [ ] Add a leave-group flow for non-owner members.
+- [x] Add a leave-group flow for non-owner members.
 - [ ] Add in-product safety disclaimers where they matter.
 - [ ] Add support/help contact visibility in the UI.
+
+Reference:
+
+- [notification-email-matrix.md](/Users/jbot/IdeaProjects/melon-meet/docs/notification-email-matrix.md)
 
 ## Phase 7: Launch Readiness and Controlled Rollout
 
@@ -210,7 +214,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add admin actions for users, groups, sessions, posts, and invite links.
+- [x] Add audit logging for sensitive actions.
 
 Blocked by:
 

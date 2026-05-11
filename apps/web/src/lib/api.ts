@@ -263,6 +263,12 @@ export function getGroup(groupId: string) {
   return request<GroupDetailResponse>(`/api/groups/${groupId}`);
 }
 
+export function leaveGroup(groupId: string) {
+  return request<{ ok: true }>(`/api/groups/${groupId}/membership`, {
+    method: "DELETE",
+  });
+}
+
 export function updateGroup(groupId: string, payload: Record<string, unknown>) {
   return request<{ ok: true }>(`/api/groups/${groupId}`, {
     body: JSON.stringify(payload),

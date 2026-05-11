@@ -47,6 +47,7 @@ import {
   createMeeting,
   createMeetingPost,
   createMembershipRequest,
+  leaveGroup,
   getGroup,
   getGroups,
   getMap,
@@ -322,6 +323,19 @@ export function DiscoveryPage({
 
   const membershipMutation = useMutation({
     mutationFn: (groupId: string) => createMembershipRequest(groupId),
+  });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: (groupId: string) => leaveGroup(groupId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["group", selectedGroupId] });
+      await queryClient.invalidateQueries({ queryKey: ["groups"] });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      await queryClient.invalidateQueries({ queryKey: ["map"] });
+      navigateToWorkspacePath("/groups", {
+        selectedGroupId: null,
+      });
+    },
   });
 
   const meetings = mapQuery.data?.meetings ?? [];
@@ -2078,6 +2092,17 @@ export function DiscoveryPage({
             {t("common.requestMembership")}
           </button>
         ) : null}
+        {selectedGroupDetail.viewerRole && selectedGroupDetail.viewerRole !== "owner" ? (
+          <button
+            className="button-secondary button-inline"
+            disabled={leaveGroupMutation.isPending}
+            onClick={() => leaveGroupMutation.mutate(selectedGroupDetail.id)}
+            type="button"
+          >
+            <LogOut size={14} strokeWidth={2} />
+            <span>{leaveGroupMutation.isPending ? "Leaving..." : "Leave group"}</span>
+          </button>
+        ) : null}
         {selectedGroupDetail.messengerUrl ? <a className="button-secondary button-inline" href={selectedGroupDetail.messengerUrl} rel="noreferrer" target="_blank">{t("common.messenger")}</a> : null}
         {"viewerCanEditGroup" in selectedGroupDetail && selectedGroupDetail.viewerCanEditGroup ? (
           <button className="button-secondary button-inline" onClick={() => setEditingTarget({ kind: "group" })} type="button">
@@ -2086,6 +2111,9 @@ export function DiscoveryPage({
           </button>
         ) : null}
       </div>
+      {leaveGroupMutation.isError ? (
+        <p className="form-error">{leaveGroupMutation.error instanceof Error ? leaveGroupMutation.error.message : "Could not leave the group."}</p>
+      ) : null}
       {viewer ? <ReportAction targetId={selectedGroupDetail.id} targetLabel="group" targetType="group" /> : null}
       {viewer && selectedGroupDetail.visibility === "private" ? (
         <ReportAction buttonLabel="Report invite abuse" targetId={selectedGroupDetail.id} targetLabel="private invite abuse" targetType="invite_abuse" />
