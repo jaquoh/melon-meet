@@ -106,7 +106,7 @@ Checklist:
 - [x] Add a report review queue for operators.
 - [x] Add admin actions for users, groups, sessions, posts, and invite links.
 - [x] Add audit logging for sensitive actions.
-- [ ] Add dedicated authorization tests for moderation/admin paths.
+- [x] Add dedicated authorization tests for moderation/admin paths.
 
 ## Phase 5: Legal, Privacy, and Compliance Alignment
 
