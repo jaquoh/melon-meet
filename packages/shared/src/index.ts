@@ -6,6 +6,67 @@ export const groupRoleSchema = z.enum(["owner", "admin", "member"]);
 export const recurrenceTypeSchema = z.enum(["once", "weekly"]);
 export const membershipRequestStatusSchema = z.enum(["pending", "approved", "rejected"]);
 
+function isPrivateIpv4Host(hostname: string) {
+  const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!match) {
+    return false;
+  }
+
+  const octets = match.slice(1).map((entry) => Number(entry));
+  if (octets.some((octet) => Number.isNaN(octet) || octet < 0 || octet > 255)) {
+    return false;
+  }
+
+  const [first, second] = octets;
+  return (
+    first === 10 ||
+    first === 127 ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
+
+function isBlockedPublicUrlHostname(hostname: string) {
+  const normalizedHostname = hostname.trim().toLowerCase();
+  return (
+    normalizedHostname === "localhost" ||
+    normalizedHostname.endsWith(".localhost") ||
+    normalizedHostname === "[::1]" ||
+    isPrivateIpv4Host(normalizedHostname)
+  );
+}
+
+function normalizePublicHttpsUrl(value: string) {
+  const trimmed = value.trim();
+  const url = new URL(trimmed);
+  if (url.protocol !== "https:") {
+    throw new Error("Use an https URL.");
+  }
+  if (url.username || url.password) {
+    throw new Error("URLs with embedded credentials are not allowed.");
+  }
+  if (!url.hostname || isBlockedPublicUrlHostname(url.hostname)) {
+    throw new Error("URL must point to a public host.");
+  }
+  url.hash = "";
+  return url.toString();
+}
+
+export const publicHttpsUrlSchema = z.string().trim().min(1).transform((value, ctx) => {
+  try {
+    return normalizePublicHttpsUrl(value);
+  } catch (error) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: error instanceof Error ? error.message : "Enter a valid public https URL.",
+    });
+    return z.NEVER;
+  }
+});
+
+const optionalPublicHttpsUrlSchema = publicHttpsUrlSchema.optional().or(z.literal("")).nullable();
+
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -19,7 +80,7 @@ export const profileUpdateSchema = z.object({
   bio: z.string().trim().max(500).default(""),
   homeArea: z.string().trim().max(120).default(""),
   playingLevel: z.string().trim().max(20).regex(playingLevelPattern, "Use values like 3, 3.5, 2-3, or 3.5-4.").default(""),
-  avatarUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  avatarUrl: optionalPublicHttpsUrlSchema,
   isProfilePublic: z.boolean().default(false),
   showEmailPublicly: z.boolean().default(false),
 });
@@ -35,8 +96,8 @@ export const groupCreateSchema = z.object({
   description: z.string().trim().min(10).max(1000),
   visibility: visibilitySchema,
   activityLabel: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
-  messengerUrl: z.string().url().optional().or(z.literal("")).nullable(),
-  heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  messengerUrl: optionalPublicHttpsUrlSchema,
+  heroImageUrl: optionalPublicHttpsUrlSchema,
 });
 
 export const groupUpdateSchema = groupCreateSchema.partial().refine(
@@ -90,7 +151,7 @@ export const meetingCreateSchema = z
     pricing: pricingSchema,
     costPerPerson: z.number().min(0).max(500).optional().nullable(),
     capacity: z.number().int().min(2).max(200),
-    heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+    heroImageUrl: optionalPublicHttpsUrlSchema,
     recurrence: recurrenceSchema,
   })
   .refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
@@ -114,7 +175,7 @@ export const meetingUpdateSchema = z
     pricing: pricingSchema.optional(),
     costPerPerson: z.number().min(0).max(500).optional().nullable(),
     capacity: z.number().int().min(2).max(200).optional(),
-    heroImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+    heroImageUrl: optionalPublicHttpsUrlSchema,
     applyToSeries: z.boolean().optional(),
     seriesDates: z
       .array(

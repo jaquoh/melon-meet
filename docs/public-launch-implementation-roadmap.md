@@ -64,7 +64,7 @@ Checklist:
 - [x] Add CSRF protection or strict origin validation for authenticated writes.
 - [x] Add signup bot defense.
 - [x] Add basic anti-spam limits for posts, invites, and requests.
-- [ ] Tighten validation and trust rules for user-supplied URLs.
+- [x] Tighten validation and trust rules for user-supplied URLs.
 
 ## Phase 3: Operations and Production Safety
 
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add basic anti-spam limits for posts, invites, and requests.
+- [x] Tighten validation and trust rules for user-supplied URLs.
 
 Blocked by:
 

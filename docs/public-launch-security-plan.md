@@ -110,7 +110,7 @@ What is clearly not public-launch ready yet:
   - documented rollback procedure
   - production-only config review before each deploy
 
-- [ ] Review and tighten all user-supplied URL fields.
+- [x] Review and tighten all user-supplied URL fields.
   Current risky fields:
   - profile avatar URL
   - group hero image URL
