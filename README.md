@@ -162,6 +162,7 @@ These logs are written to the Worker log stream with request IDs, environment, p
 - For production D1 recovery steps, use [docs/d1-backup-restore-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/d1-backup-restore-runbook.md).
 - For environment boundaries and the recommended release path, use [docs/environment-separation.md](/Users/jbot/IdeaProjects/melon-meet/docs/environment-separation.md).
 - For production deploy and rollback steps, use [docs/production-deploy-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/production-deploy-runbook.md).
+- For the current trust-and-safety baseline, use [docs/minimum-moderation-model.md](/Users/jbot/IdeaProjects/melon-meet/docs/minimum-moderation-model.md).
 - `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).

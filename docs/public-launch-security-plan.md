@@ -138,6 +138,8 @@ What is clearly not public-launch ready yet:
   - hide/suspend/remove actions
   - user notice templates
 
+  Baseline policy is now defined in [minimum-moderation-model.md](/Users/jbot/IdeaProjects/melon-meet/docs/minimum-moderation-model.md).
+
 - [ ] Add admin/operator capabilities.
   Minimum:
   - suspend user
