@@ -505,12 +505,47 @@ img {
   align-items: flex-start;
 }
 
-.report-action__panel {
-  width: min(100%, 30rem);
-  padding: 0.9rem;
+.report-action__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.report-action__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 12, 12, 0.44);
+}
+
+.report-action__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 32rem);
+  max-height: min(100%, 42rem);
+  padding: 1rem;
   border: 1px solid color-mix(in srgb, var(--line) 85%, var(--panel-strong));
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--panel) 92%, var(--glass-panel-header));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--panel) 96%, var(--glass-panel-header));
+  box-shadow: var(--shadow);
+  overflow: auto;
+}
+
+.report-action__content {
+  padding-top: 0.25rem;
+}
+
+.report-action__header {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.report-action__close {
+  flex: 0 0 auto;
 }
 
 .moderation-queue {
@@ -727,9 +762,9 @@ img {
 
 .badge-accent,
 .mini-chip--accent {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  color: var(--accent-strong);
 }
 
 .mini-chip--success {
@@ -1401,6 +1436,10 @@ img {
 .landing-shell__left,
 .landing-shell__right {
   overflow: auto;
+}
+
+.landing-shell--info-page .landing-shell__right {
+  overflow: visible;
 }
 
 .landing-shell--auth .landing-shell__center,
@@ -2923,7 +2962,7 @@ img {
   width: 2.45rem;
   min-width: 2.45rem;
   padding: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
   flex: 0 0 2.45rem;
   background: var(--glass-panel-header);
   backdrop-filter: blur(8px);
@@ -4146,7 +4185,7 @@ img {
 
 .workspace-ghost-button--filter {
   min-height: 2.45rem;
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
 }
 
 .workspace-ghost-button--filter.is-active {
@@ -4158,7 +4197,7 @@ img {
 
 .workspace-ghost-button--display {
   min-height: 2.45rem;
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
 }
 
 .filter-dropdown {
@@ -4190,7 +4229,7 @@ img {
   width: 2.45rem;
   min-width: 2.45rem;
   padding: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
   flex: 0 0 auto;
 }
 
@@ -4378,7 +4417,7 @@ img {
   min-height: 2.1rem;
   padding: 0.42rem 0.68rem;
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
   background: transparent;
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.68rem;
@@ -4396,11 +4435,19 @@ img {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(max-content, 1fr));
+  border-radius: 0.82rem;
 }
 
 .filter-price-group button {
   min-width: 0;
+  min-height: 2.1rem;
+  padding: 0.42rem 0.68rem;
   justify-content: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .time-filter-group {
@@ -4408,7 +4455,7 @@ img {
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
 }
 
 .time-filter-group button {
@@ -4720,7 +4767,7 @@ img {
   min-height: 2.65rem;
   padding-inline: 0.8rem;
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: 0.82rem;
   background: var(--glass-panel-header);
 }
 
@@ -4857,7 +4904,7 @@ img {
   .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--filter,
   .workspace-frame--unified .map-overlay-controls .workspace-ghost-button--display {
     border: 1px solid var(--line);
-    border-radius: 0.5rem;
+    border-radius: 0.82rem;
     background: var(--glass-panel-header);
   }
 

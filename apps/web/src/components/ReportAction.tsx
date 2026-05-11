@@ -1,4 +1,4 @@
-import { Flag } from "lucide-react";
+import { Flag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReportReason, ReportTargetType } from "../../../../packages/shared/src";
 import { createReport } from "../lib/api";
@@ -26,7 +26,7 @@ export function ReportAction({
   targetLabel: string;
   targetType: ReportTargetType;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ReportReason>("spam");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +34,7 @@ export function ReportAction({
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    setExpanded(false);
+    setOpen(false);
     setReason("spam");
     setNote("");
     setError(null);
@@ -54,7 +54,6 @@ export function ReportAction({
         targetType,
       });
       setSubmitted(true);
-      setExpanded(false);
       setNote("");
       setReason("spam");
     } catch (submitError) {
@@ -69,7 +68,7 @@ export function ReportAction({
       <button
         className="button-secondary button-inline"
         onClick={() => {
-          setExpanded((current) => !current);
+          setOpen(true);
           setError(null);
           setSubmitted(false);
         }}
@@ -78,43 +77,92 @@ export function ReportAction({
         <Flag size={14} strokeWidth={2} />
         <span>{buttonLabel}</span>
       </button>
-      {expanded ? (
-        <form className="report-action__panel stack-sm" onSubmit={handleSubmit}>
-          <p className="panel-caption">Report {targetLabel}</p>
-          <select className="field-select" onChange={(event) => setReason(event.target.value as ReportReason)} value={reason}>
-            {REPORT_REASON_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <textarea
-            className="field-area"
-            maxLength={500}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Optional note"
-            rows={4}
-            value={note}
-          />
-          {error ? <p className="form-error">{error}</p> : null}
-          <div className="form-actions">
-            <button className="button-primary" disabled={submitting} type="submit">
-              {submitting ? "Sending..." : "Submit report"}
-            </button>
-            <button
-              className="button-secondary"
-              onClick={() => {
-                setExpanded(false);
-                setError(null);
-              }}
-              type="button"
-            >
-              Cancel
-            </button>
+      {open ? (
+        <div className="report-action__modal" role="dialog" aria-modal="true" aria-label={`Report ${targetLabel}`}>
+          <div className="report-action__backdrop" onClick={() => setOpen(false)} />
+          <div className="report-action__dialog stack-sm">
+            {submitted ? (
+              <div className="stack-sm report-action__content">
+                <div className="report-action__header">
+                  <div className="stack-xs">
+                    <p className="panel-caption">Report sent</p>
+                    <h3 className="detail-title">Thanks for the report.</h3>
+                  </div>
+                  <button
+                    aria-label="Close report dialog"
+                    className="button-secondary workspace-panel-close-square report-action__close"
+                    onClick={() => setOpen(false)}
+                    type="button"
+                  >
+                    <X size={16} strokeWidth={2} />
+                  </button>
+                </div>
+                <p className="muted-copy">We received it and will review it as soon as possible.</p>
+                <div className="form-actions">
+                  <button
+                    className="button-primary"
+                    onClick={() => {
+                      setOpen(false);
+                      setSubmitted(false);
+                    }}
+                    type="button"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form className="report-action__content stack-sm" onSubmit={handleSubmit}>
+                <div className="report-action__header">
+                  <div className="stack-xs">
+                    <p className="panel-caption">Report {targetLabel}</p>
+                    <h3 className="detail-title">Tell us what happened</h3>
+                  </div>
+                  <button
+                    aria-label="Close report dialog"
+                    className="button-secondary workspace-panel-close-square report-action__close"
+                    onClick={() => setOpen(false)}
+                    type="button"
+                  >
+                    <X size={16} strokeWidth={2} />
+                  </button>
+                </div>
+                <select className="field-select" onChange={(event) => setReason(event.target.value as ReportReason)} value={reason}>
+                  {REPORT_REASON_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  className="field-area"
+                  maxLength={500}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Optional note"
+                  rows={4}
+                  value={note}
+                />
+                {error ? <p className="form-error">{error}</p> : null}
+                <div className="form-actions">
+                  <button className="button-primary" disabled={submitting} type="submit">
+                    {submitting ? "Sending..." : "Submit report"}
+                  </button>
+                  <button
+                    className="button-secondary"
+                    onClick={() => {
+                      setOpen(false);
+                      setError(null);
+                    }}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
-        </form>
+        </div>
       ) : null}
-      {submitted ? <p className="success-copy">Thanks. Your report was submitted.</p> : null}
     </div>
   );
 }
