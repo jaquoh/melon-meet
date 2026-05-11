@@ -33,7 +33,7 @@
         {
           "binding": "DB",
           "database_name": "melon-meet-staging-db",
-          "database_id": "REPLACE_WITH_STAGING_D1_DATABASE_ID",
+          "database_id": "0dabe8cc-9503-4606-936f-f47e3899feec",
           "migrations_dir": "./apps/api/migrations"
         }
       ],
