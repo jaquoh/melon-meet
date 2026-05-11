@@ -1,23 +1,58 @@
 import { createApp, finalizePendingAccountDeletions } from "./app";
+import { reportOperationalError } from "./lib/monitoring";
+import type { AppBindings } from "./types/env";
 
 const app = createApp();
 
 export default {
-  fetch(request: Request, env: { ASSETS: Fetcher }) {
+  async fetch(
+    request: Request,
+    env: AppBindings,
+  ) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api")) {
-      return app.fetch(request, env);
-    }
+    try {
+      if (url.pathname.startsWith("/api")) {
+        return await app.fetch(request, env);
+      }
 
-    return env.ASSETS.fetch(request);
+      return await env.ASSETS.fetch(request);
+    } catch (error) {
+      await reportOperationalError(env, error, {
+        method: request.method,
+        path: url.pathname,
+        source: "worker",
+        status: 500,
+      });
+      return new Response(JSON.stringify({ error: "Unexpected server error." }), {
+        headers: {
+          "content-type": "application/json",
+        },
+        status: 500,
+      });
+    }
   },
-  scheduled(_controller: ScheduledController, env: { DB: D1Database }, ctx: ExecutionContext) {
+  scheduled(
+    controller: ScheduledController,
+    env: Pick<AppBindings, "ALERT_WEBHOOK_URL" | "APP_NAME" | "DB" | "ENVIRONMENT_NAME">,
+    ctx: ExecutionContext,
+  ) {
     ctx.waitUntil(
-      finalizePendingAccountDeletions(env.DB).then((count) => {
-        if (count > 0) {
-          console.info(`Finalized ${count} pending account deletion(s).`);
-        }
-      }),
+      finalizePendingAccountDeletions(env.DB)
+        .then((count) => {
+          if (count > 0) {
+            console.info(`Finalized ${count} pending account deletion(s).`);
+          }
+        })
+        .catch(async (error) => {
+          await reportOperationalError(env, error, {
+            extra: {
+              cron: controller.cron,
+            },
+            source: "scheduled",
+            status: 500,
+          });
+          throw error;
+        }),
     );
   },
 };

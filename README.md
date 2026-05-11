@@ -108,6 +108,18 @@ Behavior:
 - on deployed environments, signup requires a valid Turnstile token when Turnstile is configured
 - on `localhost`, signup still works without Turnstile so local development stays simple
 
+## Error monitoring
+
+The API now emits structured Worker error logs with a request ID and can forward unhandled request errors plus cron failures to an ops webhook.
+
+Configure the optional alert webhook as a Wrangler secret:
+
+```bash
+npx wrangler secret put ALERT_WEBHOOK_URL --config wrangler.jsonc
+```
+
+The default deployment config sets `ENVIRONMENT_NAME=production` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17). If you add staging later, give that environment its own value so alerts clearly show where failures came from.
+
 ## Deployment notes
 
 - Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.

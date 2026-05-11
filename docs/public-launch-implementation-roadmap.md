@@ -79,7 +79,7 @@ Done means:
 
 Checklist:
 
-- [ ] Add error monitoring and alerting.
+- [x] Add error monitoring and alerting.
 - [ ] Add operational/security logging.
 - [ ] Define backup and restore process for D1.
 - [ ] Test restore once and document the result.
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Tighten validation and trust rules for user-supplied URLs.
+- [x] Add error monitoring and alerting.
 
 Blocked by:
 

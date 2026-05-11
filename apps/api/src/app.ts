@@ -37,6 +37,7 @@ import {
 import { allRows, firstRow, runStatement } from "./lib/db";
 import { sendResendEmail } from "./lib/email";
 import { assertOrThrow } from "./lib/http";
+import { reportOperationalError } from "./lib/monitoring";
 import { consumeRateLimit } from "./lib/rate-limit";
 import {
   durationMinutes,
@@ -1139,6 +1140,9 @@ export function createApp() {
   const app = new Hono<AppEnv>();
 
   app.use("*", async (c, next) => {
+    const requestId = crypto.randomUUID();
+    c.set("requestId", requestId);
+    c.header("x-request-id", requestId);
     await next();
     c.header("Referrer-Policy", "strict-origin-when-cross-origin");
     c.header("X-Content-Type-Options", "nosniff");
@@ -1153,13 +1157,21 @@ export function createApp() {
     await next();
   });
 
-  app.onError((error, c) => {
+  app.onError(async (error, c) => {
     if (error instanceof HTTPException) {
       return c.json({ error: error.message }, error.status);
     }
 
-    console.error(error);
-    return c.json({ error: "Unexpected server error." }, 500);
+    await reportOperationalError(c.env, error, {
+      method: c.req.method,
+      path: new URL(c.req.url).pathname,
+      requestId: c.get("requestId"),
+      sessionId: c.get("sessionId"),
+      source: "request",
+      status: 500,
+      userId: c.get("viewer")?.id ?? null,
+    });
+    return c.json({ error: "Unexpected server error.", requestId: c.get("requestId") }, 500);
   });
 
   app.get("/api/health", (c) => c.json({ ok: true }));
