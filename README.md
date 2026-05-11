@@ -143,6 +143,7 @@ These logs are written to the Worker log stream with request IDs, environment, p
 - If you want the full demo content in a remote database, run `npm run db:seed:remote:demo` after migrations.
 - If local auth, venues, or meetings look out of sync after pulling changes, run `npm run db:reset:local`.
 - If remote migration or seed commands fail with Cloudflare authorization errors, re-authenticate Wrangler and confirm the configured account can access the D1 database.
+- For production D1 recovery steps, use [docs/d1-backup-restore-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/d1-backup-restore-runbook.md).
 - `wrangler.jsonc` is configured for SPA route fallback so BrowserRouter deep links keep working in production.
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).

@@ -24,6 +24,7 @@ This checklist is meant for the first public beta launch on Cloudflare.
 - Confirm auth rate limiting is working after migration `0006_auth_rate_limits.sql`.
 - Add a moderation/report flow for groups, meetings, and posts.
 - Add basic operational logging and error monitoring for Worker exceptions.
+- Review and follow the D1 recovery runbook in [/Users/jbot/IdeaProjects/melon-meet/docs/d1-backup-restore-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/d1-backup-restore-runbook.md).
 - Review account deletion and content-removal behavior with real user scenarios.
 
 ## 4. Quality Gates

@@ -94,7 +94,7 @@ What is clearly not public-launch ready yet:
   - deploy failures
   Suggested tools: Sentry, Cloudflare logs, uptime monitoring, alert routing.
 
-- [ ] Create a production backup and restore plan for D1.
+- [x] Create a production backup and restore plan for D1.
   Must define:
   - backup frequency
   - retention
