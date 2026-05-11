@@ -22,8 +22,8 @@
     "EMAIL_FROM_ADDRESS": "Melon Meet <noreply@mail.melonmeet.com>",
     "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
     "ENVIRONMENT_NAME": "production",
-    "MODERATION_ADMIN_EMAILS": "",
-    "MODERATION_REVIEWER_EMAILS": ""
+    "MODERATION_ADMIN_EMAILS": "admin@melonmeet.com",
+    "MODERATION_REVIEWER_EMAILS": "admin@melonmeet.com"
   },
   "triggers": {
     "crons": ["17 3 * * *"]
