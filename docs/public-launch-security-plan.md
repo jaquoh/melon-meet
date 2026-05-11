@@ -138,6 +138,10 @@ What is clearly not public-launch ready yet:
   - hide/suspend/remove actions
   - user notice templates
 
+  Implemented so far:
+  - report submission for profiles, groups, sessions, posts, and private-group invite abuse
+  - operator queue with assignment, internal notes, and status transitions
+
   Baseline policy is now defined in [minimum-moderation-model.md](/Users/jbot/IdeaProjects/melon-meet/docs/minimum-moderation-model.md).
 
 - [ ] Add admin/operator capabilities.

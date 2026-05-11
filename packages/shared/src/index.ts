@@ -5,6 +5,7 @@ export const visibilitySchema = z.enum(["public", "private"]);
 export const groupRoleSchema = z.enum(["owner", "admin", "member"]);
 export const recurrenceTypeSchema = z.enum(["once", "weekly"]);
 export const membershipRequestStatusSchema = z.enum(["pending", "approved", "rejected"]);
+export const moderationRoleSchema = z.enum(["support_reviewer", "admin"]);
 export const reportReasonSchema = z.enum([
   "spam",
   "harassment",
@@ -24,6 +25,7 @@ export const reportTargetTypeSchema = z.enum([
   "meeting_post",
   "invite_abuse",
 ]);
+export const moderationReportStatusSchema = z.enum(["open", "triaged", "action_taken", "closed_no_action"]);
 
 function isPrivateIpv4Host(hostname: string) {
   const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
@@ -243,6 +245,15 @@ export const reportCreateSchema = z.object({
   targetType: reportTargetTypeSchema,
 });
 
+export const moderationReportUpdateSchema = z
+  .object({
+    assigneeUserId: z.string().uuid().optional().nullable(),
+    internalNotes: z.string().trim().max(2000).optional().or(z.literal("")).nullable(),
+    resolution: z.string().trim().max(500).optional().or(z.literal("")).nullable(),
+    status: moderationReportStatusSchema.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "At least one moderation update field must be provided.");
+
 export type AuthInput = z.infer<typeof authSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type GroupCreateInput = z.infer<typeof groupCreateSchema>;
@@ -255,6 +266,9 @@ export type MeetingUpdateInput = z.infer<typeof meetingUpdateSchema>;
 export type PostInput = z.infer<typeof postSchema>;
 export type MapQueryInput = z.infer<typeof mapQuerySchema>;
 export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
+export type ModerationReportUpdateInput = z.infer<typeof moderationReportUpdateSchema>;
+export type ModerationRole = z.infer<typeof moderationRoleSchema>;
+export type ModerationReportStatus = z.infer<typeof moderationReportStatusSchema>;
 export type ReportReason = z.infer<typeof reportReasonSchema>;
 export type ReportTargetType = z.infer<typeof reportTargetTypeSchema>;
 
@@ -269,6 +283,24 @@ export interface ViewerSummary {
   avatarUrl: string | null;
   isProfilePublic: boolean;
   showEmailPublicly: boolean;
+  moderationRole: ModerationRole | null;
+}
+
+export interface ModerationReportSummary {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  status: ModerationReportStatus;
+  reason: ReportReason;
+  note: string | null;
+  internalNotes: string | null;
+  resolution: string | null;
+  targetType: ReportTargetType;
+  targetId: string;
+  targetLabel: string;
+  targetPath: string | null;
+  reporter: ViewerSummary;
+  assignee: ViewerSummary | null;
 }
 
 export interface FriendSummary {

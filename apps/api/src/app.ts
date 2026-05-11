@@ -14,13 +14,17 @@ import {
   mapQuerySchema,
   meetingCreateSchema,
   meetingUpdateSchema,
+  moderationReportUpdateSchema,
   postSchema,
   profileUpdateSchema,
   reportCreateSchema,
   roleUpdateSchema,
   type MeetingSummary,
+  type ModerationRole,
+  type ModerationReportStatus,
   type ReportTargetType,
   type VenueSummary,
+  type ViewerSummary,
 } from "../../../packages/shared/src";
 import {
   clearSessionCookie,
@@ -123,6 +127,10 @@ const WRITE_RATE_LIMITS = {
 
 type WriteRateLimitScope = keyof typeof WRITE_RATE_LIMITS;
 
+const moderationReportListQuerySchema = z.object({
+  status: z.enum(["all", "open", "triaged", "action_taken", "closed_no_action"]).default("open"),
+});
+
 type ViewerRow = {
   avatar_url: string | null;
   bio: string;
@@ -166,6 +174,39 @@ type VenueRow = {
   source_url: string | null;
   source_urls_json: string | null;
   website_url: string | null;
+};
+
+type ModerationReportRow = {
+  assignee_avatar_url: string | null;
+  assignee_bio: string;
+  assignee_display_name: string;
+  assignee_email: string;
+  assignee_email_verified_at: string | null;
+  assignee_home_area: string;
+  assignee_id: string | null;
+  assignee_is_profile_public: number;
+  assignee_playing_level: string | null;
+  assignee_show_email_publicly: number;
+  created_at: string;
+  id: string;
+  internal_notes: string | null;
+  note: string | null;
+  reason: string;
+  reporter_avatar_url: string | null;
+  reporter_bio: string;
+  reporter_display_name: string;
+  reporter_email: string;
+  reporter_email_verified_at: string | null;
+  reporter_home_area: string;
+  reporter_id: string;
+  reporter_is_profile_public: number;
+  reporter_playing_level: string | null;
+  reporter_show_email_publicly: number;
+  resolution: string | null;
+  status: ModerationReportStatus;
+  target_id: string;
+  target_type: ReportTargetType;
+  updated_at: string;
 };
 
 function parseJsonArray(value: string | null | undefined) {
@@ -377,6 +418,97 @@ async function assertReportTargetExists(
   await assertCanAccessGroup(db, group.id, viewerId);
 }
 
+async function resolveModerationReportTargetLabel(
+  db: D1Database,
+  targetType: ReportTargetType,
+  targetId: string,
+) {
+  if (targetType === "profile") {
+    const row = await firstRow<{ display_name: string }>(db, "SELECT display_name FROM users WHERE id = ?", targetId);
+    return row ? `Profile: ${row.display_name}` : `Profile ${targetId}`;
+  }
+
+  if (targetType === "group" || targetType === "invite_abuse") {
+    const row = await firstRow<{ name: string }>(db, "SELECT name FROM app_groups WHERE id = ?", targetId);
+    return row ? `${targetType === "invite_abuse" ? "Invite abuse" : "Group"}: ${row.name}` : `${targetType === "invite_abuse" ? "Invite abuse" : "Group"} ${targetId}`;
+  }
+
+  if (targetType === "meeting") {
+    const row = await firstRow<{ title: string }>(db, "SELECT title FROM meetings WHERE id = ?", targetId);
+    return row ? `Session: ${row.title}` : `Session ${targetId}`;
+  }
+
+  if (targetType === "group_post") {
+    const row = await firstRow<{ group_name: string; content: string }>(
+      db,
+      `SELECT g.name AS group_name, gp.content
+       FROM group_posts gp
+       JOIN app_groups g ON g.id = gp.group_id
+       WHERE gp.id = ?`,
+      targetId,
+    );
+    return row ? `Group post in ${row.group_name}: ${row.content.slice(0, 80)}` : `Group post ${targetId}`;
+  }
+
+  const row = await firstRow<{ meeting_title: string; content: string }>(
+    db,
+    `SELECT m.title AS meeting_title, mp.content
+     FROM meeting_posts mp
+     JOIN meetings m ON m.id = mp.meeting_id
+     WHERE mp.id = ?`,
+    targetId,
+  );
+  return row ? `Session post in ${row.meeting_title}: ${row.content.slice(0, 80)}` : `Session post ${targetId}`;
+}
+
+async function mapModerationReportSummary(db: D1Database, env: AppEnv["Bindings"], row: ModerationReportRow) {
+  const reporter = applyModerationRoleToViewer(env, mapViewerSummary({
+    avatar_url: row.reporter_avatar_url,
+    bio: row.reporter_bio,
+    display_name: row.reporter_display_name,
+    email: row.reporter_email,
+    email_verified_at: row.reporter_email_verified_at,
+    home_area: row.reporter_home_area,
+    id: row.reporter_id,
+    is_profile_public: row.reporter_is_profile_public,
+    playing_level: row.reporter_playing_level,
+    show_email_publicly: row.reporter_show_email_publicly,
+  }));
+
+  const assignee =
+    row.assignee_id
+      ? applyModerationRoleToViewer(env, mapViewerSummary({
+          avatar_url: row.assignee_avatar_url,
+          bio: row.assignee_bio,
+          display_name: row.assignee_display_name,
+          email: row.assignee_email,
+          email_verified_at: row.assignee_email_verified_at,
+          home_area: row.assignee_home_area,
+          id: row.assignee_id,
+          is_profile_public: row.assignee_is_profile_public,
+          playing_level: row.assignee_playing_level,
+          show_email_publicly: row.assignee_show_email_publicly,
+        }))
+      : null;
+
+  return {
+    assignee,
+    createdAt: row.created_at,
+    id: row.id,
+    internalNotes: row.internal_notes,
+    note: row.note,
+    reason: row.reason,
+    reporter,
+    resolution: row.resolution,
+    status: row.status,
+    targetId: row.target_id,
+    targetLabel: await resolveModerationReportTargetLabel(db, row.target_type, row.target_id),
+    targetPath: reportTargetPath(row.target_type, row.target_id),
+    targetType: row.target_type,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapViewerSummary(row: ViewerRow) {
   return {
     avatarUrl: row.avatar_url,
@@ -387,6 +519,7 @@ function mapViewerSummary(row: ViewerRow) {
     homeArea: row.home_area,
     id: row.id,
     isProfilePublic: Boolean(row.is_profile_public),
+    moderationRole: null,
     playingLevel: row.playing_level?.trim() ?? "",
     showEmailPublicly: Boolean(row.show_email_publicly),
   };
@@ -467,6 +600,58 @@ function buildVerifyEmailChangeUrl(c: Context<AppEnv>, token: string) {
 
 function localDevLink(c: Context<AppEnv>, url: string) {
   return isLocalOrigin(c) ? url : null;
+}
+
+function parseEmailAllowlist(value: string | undefined) {
+  return new Set(
+    (value ?? "")
+      .split(",")
+      .map((entry) => entry.trim().toLowerCase())
+      .filter((entry) => entry.length > 0),
+  );
+}
+
+function moderationRoleForEmail(env: AppEnv["Bindings"], email: string): ModerationRole | null {
+  const normalizedEmail = email.trim().toLowerCase();
+  const adminEmails = parseEmailAllowlist(env.MODERATION_ADMIN_EMAILS);
+  if (adminEmails.has(normalizedEmail)) {
+    return "admin";
+  }
+
+  const reviewerEmails = parseEmailAllowlist(env.MODERATION_REVIEWER_EMAILS);
+  if (reviewerEmails.has(normalizedEmail)) {
+    return "support_reviewer";
+  }
+
+  return null;
+}
+
+function applyModerationRoleToViewer(env: AppEnv["Bindings"], viewer: ViewerSummary) {
+  return {
+    ...viewer,
+    moderationRole: moderationRoleForEmail(env, viewer.email),
+  };
+}
+
+async function requireModerationViewer(c: Context<AppEnv>, minimumRole: ModerationRole = "support_reviewer") {
+  const viewer = await requireViewer(c);
+  const role = viewer.moderationRole;
+  const allowed = minimumRole === "support_reviewer" ? role === "support_reviewer" || role === "admin" : role === "admin";
+  assertOrThrow(allowed, 403, "You do not have moderation access.");
+  return viewer;
+}
+
+function reportTargetPath(targetType: ReportTargetType, targetId: string) {
+  if (targetType === "profile") {
+    return `/profile/${targetId}`;
+  }
+  if (targetType === "group" || targetType === "invite_abuse") {
+    return `/groups/${targetId}`;
+  }
+  if (targetType === "meeting") {
+    return `/sessions/${targetId}`;
+  }
+  return null;
 }
 
 async function sendAccountEmail(
@@ -1247,7 +1432,7 @@ export function createApp() {
   app.use("*", async (c, next) => {
     const resolved = await resolveSessionViewer(c.env.DB, readSessionCookie(c));
     c.set("sessionId", resolved?.sessionId ?? null);
-    c.set("viewer", resolved?.viewer ?? null);
+    c.set("viewer", resolved?.viewer ? applyModerationRoleToViewer(c.env, resolved.viewer) : null);
     await next();
   });
 
@@ -1732,6 +1917,172 @@ export function createApp() {
       targetType,
     });
     return c.json({ ok: true }, 201);
+  });
+
+  app.get("/api/moderation/reports", zValidator("query", moderationReportListQuerySchema), async (c) => {
+    const viewer = await requireModerationViewer(c);
+    const { status } = c.req.valid("query");
+    const reports = await allRows<ModerationReportRow>(
+      c.env.DB,
+      `SELECT
+         cr.id,
+         cr.target_type,
+         cr.target_id,
+         cr.reason,
+         cr.note,
+         cr.status,
+         cr.internal_notes,
+         cr.resolution,
+         cr.created_at,
+         cr.updated_at,
+         reporter.id AS reporter_id,
+         reporter.email AS reporter_email,
+         reporter.email_verified_at AS reporter_email_verified_at,
+         reporter.display_name AS reporter_display_name,
+         reporter.bio AS reporter_bio,
+         reporter.home_area AS reporter_home_area,
+         reporter.playing_level AS reporter_playing_level,
+         reporter.avatar_url AS reporter_avatar_url,
+         reporter.is_profile_public AS reporter_is_profile_public,
+         reporter.show_email_publicly AS reporter_show_email_publicly,
+         assignee.id AS assignee_id,
+         assignee.email AS assignee_email,
+         assignee.email_verified_at AS assignee_email_verified_at,
+         assignee.display_name AS assignee_display_name,
+         assignee.bio AS assignee_bio,
+         assignee.home_area AS assignee_home_area,
+         assignee.playing_level AS assignee_playing_level,
+         assignee.avatar_url AS assignee_avatar_url,
+         assignee.is_profile_public AS assignee_is_profile_public,
+         assignee.show_email_publicly AS assignee_show_email_publicly
+       FROM content_reports cr
+       JOIN users reporter ON reporter.id = cr.reporter_user_id
+       LEFT JOIN users assignee ON assignee.id = cr.assignee_user_id
+       ${status === "all" ? "" : "WHERE cr.status = ?"}
+       ORDER BY
+         CASE cr.status
+           WHEN 'open' THEN 1
+           WHEN 'triaged' THEN 2
+           WHEN 'action_taken' THEN 3
+           ELSE 4
+         END,
+         cr.created_at DESC
+       LIMIT 200`,
+      ...(status === "all" ? [] : [status]),
+    );
+
+    return c.json({
+      reports: await Promise.all(reports.map((row) => mapModerationReportSummary(c.env.DB, c.env, row))),
+      viewerModerationRole: viewer.moderationRole,
+    });
+  });
+
+  app.patch("/api/moderation/reports/:id", zValidator("json", moderationReportUpdateSchema), async (c) => {
+    const viewer = await requireModerationViewer(c);
+    assertTrustedWriteOrigin(c);
+    const reportId = c.req.param("id");
+    const updates = c.req.valid("json");
+    const existing = await firstRow<{ id: string; status: ModerationReportStatus }>(
+      c.env.DB,
+      "SELECT id, status FROM content_reports WHERE id = ?",
+      reportId,
+    );
+    assertOrThrow(existing, 404, "Report not found.");
+
+    if (updates.assigneeUserId) {
+      const assignee = await firstRow<{ email: string; id: string }>(
+        c.env.DB,
+        "SELECT id, email FROM users WHERE id = ?",
+        updates.assigneeUserId,
+      );
+      assertOrThrow(assignee, 400, "Assignee not found.");
+      assertOrThrow(Boolean(moderationRoleForEmail(c.env, assignee.email)), 400, "Assignee must have moderation access.");
+    }
+
+    const assignments: string[] = [];
+    const params: Array<string | null> = [];
+
+    if (updates.status !== undefined) {
+      assignments.push("status = ?");
+      params.push(updates.status);
+    }
+    if (updates.internalNotes !== undefined) {
+      assignments.push("internal_notes = ?");
+      params.push(normalizeOptionalText(updates.internalNotes ?? null));
+    }
+    if (updates.resolution !== undefined) {
+      assignments.push("resolution = ?");
+      params.push(normalizeOptionalText(updates.resolution ?? null));
+    }
+    if (updates.assigneeUserId !== undefined) {
+      assignments.push("assignee_user_id = ?");
+      params.push(updates.assigneeUserId ?? null);
+    }
+
+    const updatedAt = nowIso();
+    assignments.push("updated_at = ?");
+    params.push(updatedAt);
+    params.push(reportId);
+
+    await runStatement(
+      c.env.DB,
+      `UPDATE content_reports
+       SET ${assignments.join(", ")}
+       WHERE id = ?`,
+      ...params,
+    );
+
+    const updatedReport = await firstRow<ModerationReportRow>(
+      c.env.DB,
+      `SELECT
+         cr.id,
+         cr.target_type,
+         cr.target_id,
+         cr.reason,
+         cr.note,
+         cr.status,
+         cr.internal_notes,
+         cr.resolution,
+         cr.created_at,
+         cr.updated_at,
+         reporter.id AS reporter_id,
+         reporter.email AS reporter_email,
+         reporter.email_verified_at AS reporter_email_verified_at,
+         reporter.display_name AS reporter_display_name,
+         reporter.bio AS reporter_bio,
+         reporter.home_area AS reporter_home_area,
+         reporter.playing_level AS reporter_playing_level,
+         reporter.avatar_url AS reporter_avatar_url,
+         reporter.is_profile_public AS reporter_is_profile_public,
+         reporter.show_email_publicly AS reporter_show_email_publicly,
+         assignee.id AS assignee_id,
+         assignee.email AS assignee_email,
+         assignee.email_verified_at AS assignee_email_verified_at,
+         assignee.display_name AS assignee_display_name,
+         assignee.bio AS assignee_bio,
+         assignee.home_area AS assignee_home_area,
+         assignee.playing_level AS assignee_playing_level,
+         assignee.avatar_url AS assignee_avatar_url,
+         assignee.is_profile_public AS assignee_is_profile_public,
+         assignee.show_email_publicly AS assignee_show_email_publicly
+       FROM content_reports cr
+       JOIN users reporter ON reporter.id = cr.reporter_user_id
+       LEFT JOIN users assignee ON assignee.id = cr.assignee_user_id
+       WHERE cr.id = ?`,
+      reportId,
+    );
+    assertOrThrow(updatedReport, 404, "Report not found.");
+
+    logSecurityEvent(c, "moderation_report_updated", "info", {
+      actorUserId: viewer.id,
+      assigneeUserId: updates.assigneeUserId ?? undefined,
+      reportId,
+      status: updates.status ?? existing.status,
+    });
+
+    return c.json({
+      report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),
+    });
   });
 
   app.get("/api/me", async (c) => {

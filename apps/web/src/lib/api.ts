@@ -4,6 +4,9 @@ import type {
   GroupSummary,
   MeetingPost,
   MeetingSummary,
+  ModerationReportStatus,
+  ModerationReportSummary,
+  ModerationRole,
   MembershipRequestSummary,
   ReportReason,
   ReportTargetType,
@@ -79,6 +82,11 @@ export interface MapResponse {
 export interface VenueDetailResponse {
   meetings: MeetingSummary[];
   venue: VenueSummary;
+}
+
+export interface ModerationReportsResponse {
+  reports: ModerationReportSummary[];
+  viewerModerationRole: ModerationRole;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -202,6 +210,25 @@ export function createReport(payload: {
   return request<{ ok: true }>("/api/reports", {
     body: JSON.stringify(payload),
     method: "POST",
+  });
+}
+
+export function getModerationReports(status: "action_taken" | "all" | "closed_no_action" | "open" | "triaged" = "open") {
+  return request<ModerationReportsResponse>(`/api/moderation/reports?status=${encodeURIComponent(status)}`);
+}
+
+export function updateModerationReport(
+  reportId: string,
+  payload: {
+    assigneeUserId?: string | null;
+    internalNotes?: string | null;
+    resolution?: string | null;
+    status?: ModerationReportStatus;
+  },
+) {
+  return request<{ report: ModerationReportSummary }>(`/api/moderation/reports/${reportId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH",
   });
 }
 

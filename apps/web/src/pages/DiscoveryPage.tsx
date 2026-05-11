@@ -6,6 +6,7 @@ import {
   Compass,
   Edit3,
   ExternalLink,
+  Flag,
   Filter,
   KeyRound,
   List,
@@ -32,6 +33,7 @@ import { FilterCheckbox } from "../components/FilterCheckbox";
 import { FormInput } from "../components/FormInput";
 import { GroupForm } from "../components/GroupForm";
 import { MeetingForm } from "../components/MeetingForm";
+import { ModerationQueuePanel } from "../components/ModerationQueuePanel";
 import { PostBoard } from "../components/PostBoard";
 import { ProfileForm } from "../components/ProfileForm";
 import type { ProfileFormValues } from "../components/ProfileForm";
@@ -246,6 +248,7 @@ export function DiscoveryPage({
   const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [managingAccount, setManagingAccount] = useState(false);
+  const [reviewingModeration, setReviewingModeration] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
@@ -744,6 +747,10 @@ export function DiscoveryPage({
   function closeManageAccount() {
     setManagingAccount(false);
     resetAccountManagementState();
+  }
+
+  function closeModerationReview() {
+    setReviewingModeration(false);
   }
 
   function closeProfileEdit() {
@@ -1669,6 +1676,15 @@ export function DiscoveryPage({
               </button>
             </div>
           </div>
+        ) : reviewingModeration && isOwnProfile && viewer?.moderationRole ? (
+          <div className="account-sections-stack">
+            <ModerationQueuePanel viewer={viewer} />
+            <div className="subtle-action-row">
+              <button className="button-secondary account-sections-stack__manage" onClick={closeModerationReview} type="button">
+                Back to profile
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             {selectedProfileDetailQuery.data?.profileIsPrivate && !isOwnProfile ? (
@@ -1736,6 +1752,7 @@ export function DiscoveryPage({
                         className="button-secondary account-sections-stack__manage"
                         onClick={() => {
                           closeProfileEdit();
+                          closeModerationReview();
                           resetAccountManagementState();
                           setManagingAccount(true);
                         }}
@@ -1744,6 +1761,20 @@ export function DiscoveryPage({
                         <Shield size={14} strokeWidth={2} />
                         <span>Manage Account</span>
                       </button>
+                      {viewer?.moderationRole ? (
+                        <button
+                          className="button-secondary account-sections-stack__manage"
+                          onClick={() => {
+                            closeProfileEdit();
+                            closeManageAccount();
+                            setReviewingModeration(true);
+                          }}
+                          type="button"
+                        >
+                          <Flag size={14} strokeWidth={2} />
+                          <span>Review Reports</span>
+                        </button>
+                      ) : null}
                     </div>
                     <button className="button-danger account-sections-stack__signout" onClick={onLogOut} type="button">
                       <LogOut size={14} strokeWidth={2} />

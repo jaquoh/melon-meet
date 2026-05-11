@@ -103,7 +103,7 @@ Checklist:
 
 - [x] Define the minimum moderation model.
 - [x] Add report actions in the UI.
-- [ ] Add a report review queue for operators.
+- [x] Add a report review queue for operators.
 - [ ] Add admin actions for users, groups, sessions, posts, and invite links.
 - [ ] Add audit logging for sensitive actions.
 - [ ] Add dedicated authorization tests for moderation/admin paths.
@@ -176,11 +176,11 @@ Use this section to keep the team aligned between sessions.
 
 Current phase:
 
-- [ ] Phase 2: Abuse and Request Protection
+- [ ] Phase 4: Moderation and Admin Controls
 
 Current session target:
 
-- [x] Add report actions in the UI.
+- [x] Add a report review queue for operators.
 
 Blocked by:
 

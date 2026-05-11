@@ -142,10 +142,33 @@ The API also emits structured security-event logs for the launch-critical flows:
 
 These logs are written to the Worker log stream with request IDs, environment, path, user/session context, and masked email addresses where relevant.
 
+## Moderation queue
+
+The minimum moderation queue is now live in the signed-in profile area for configured operators.
+
+Configure operator access with comma-separated email allowlists in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17):
+
+- `MODERATION_REVIEWER_EMAILS`
+- `MODERATION_ADMIN_EMAILS`
+
+Behavior:
+
+- `MODERATION_ADMIN_EMAILS` grants full moderation queue access and is intended for later admin actions too.
+- `MODERATION_REVIEWER_EMAILS` grants queue access without future admin-only actions.
+- admins are checked first, so an email listed in both is treated as `admin`.
+
+Example:
+
+```json
+{
+  "MODERATION_REVIEWER_EMAILS": "reviewer@melonmeet.com",
+  "MODERATION_ADMIN_EMAILS": "hello@melonmeet.com,ops@melonmeet.com"
+}
+```
+
 ## Deployment notes
 
 - Replace the production `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real production D1 database ID before deploying.
-- Replace `REPLACE_WITH_STAGING_D1_DATABASE_ID` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31) before using staging.
 - `npm run quality:gate:production` runs the current pre-deploy checks for production.
 - `npm run quality:gate:staging` runs the current pre-deploy checks for staging.
 - `npm run smoke:staging` runs deployed smoke checks against `SMOKE_BASE_URL_STAGING` or `SMOKE_BASE_URL`.

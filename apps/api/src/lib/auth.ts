@@ -228,6 +228,7 @@ export async function resolveSessionViewer(
       emailVerified: Boolean(row.email_verified_at),
       homeArea: row.home_area,
       id: row.id,
+      moderationRole: null,
       playingLevel: row.playing_level,
       isProfilePublic: Boolean(row.is_profile_public),
       showEmailPublicly: Boolean(row.show_email_publicly),

@@ -21,7 +21,9 @@
     "DEFAULT_TIMEZONE": "Europe/Berlin",
     "EMAIL_FROM_ADDRESS": "Melon Meet <noreply@mail.melonmeet.com>",
     "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
-    "ENVIRONMENT_NAME": "production"
+    "ENVIRONMENT_NAME": "production",
+    "MODERATION_ADMIN_EMAILS": "",
+    "MODERATION_REVIEWER_EMAILS": ""
   },
   "triggers": {
     "crons": ["17 3 * * *"]
@@ -42,7 +44,9 @@
         "DEFAULT_TIMEZONE": "Europe/Berlin",
         "EMAIL_FROM_ADDRESS": "Melon Meet <noreply@mail.melonmeet.com>",
         "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
-        "ENVIRONMENT_NAME": "staging"
+        "ENVIRONMENT_NAME": "staging",
+        "MODERATION_ADMIN_EMAILS": "",
+        "MODERATION_REVIEWER_EMAILS": ""
       }
     }
   }
