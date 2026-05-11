@@ -103,7 +103,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
                 title: "Verantwortliche Stelle",
                 body: [
                   "Verantwortlicher: Melon Meet, Jacob Otto, Halskestr. 6, 12167 Berlin, Deutschland.",
-                  "Kontakt: hello@melonmeet.example.",
+                  "Kontakt: hello@melonmeet.com.",
                 ],
               },
               {
@@ -139,7 +139,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
                 title: "Deine Rechte",
                 body: [
                   "Du hast das Recht auf Auskunft, Berichtigung, Loeschung oder Einschraenkung der Verarbeitung deiner Daten sowie - soweit anwendbar - ein Widerspruchsrecht.",
-                  "Kontaktiere hello@melonmeet.example, um diese Rechte auszuueben.",
+                  "Kontaktiere hello@melonmeet.com, um diese Rechte auszuueben.",
                 ],
               },
             ],
@@ -204,7 +204,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
               },
               {
                 title: "Kontakt",
-                body: ["Email: hello@melonmeet.example", "Telephone: Not provided."],
+                body: ["Email: hello@melonmeet.com", "Telephone: Not provided."],
               },
               {
                 title: "Vertretung und USt",
@@ -281,7 +281,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
                 title: "Responsable del tratamiento",
                 body: [
                   "Responsable: Melon Meet, Jacob Otto, Halskestr. 6, 12167 Berlin, Alemania.",
-                  "Contacto: hello@melonmeet.example.",
+                  "Contacto: hello@melonmeet.com.",
                 ],
               },
               {
@@ -317,7 +317,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
                 title: "Derechos de la persona usuaria",
                 body: [
                   "Tienes derecho a acceder, rectificar, borrar o limitar el tratamiento de tus datos, asi como a oponerte al tratamiento cuando corresponda.",
-                  "Contacta con hello@melonmeet.example para ejercer estos derechos.",
+                  "Contacta con hello@melonmeet.com para ejercer estos derechos.",
                 ],
               },
             ],
@@ -382,7 +382,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
               },
               {
                 title: "Contacto",
-                body: ["Email: hello@melonmeet.example", "Telephone: Not provided."],
+                body: ["Email: hello@melonmeet.com", "Telephone: Not provided."],
               },
               {
                 title: "Representacion e IVA",
@@ -458,7 +458,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
               title: "Data Controller",
               body: [
                 "Controller: Melon Meet, Jacob Otto, Halskestr. 6, 12167 Berlin, Germany.",
-                "Contact: hello@melonmeet.example.",
+                "Contact: hello@melonmeet.com.",
               ],
             },
             {
@@ -494,7 +494,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
               title: "User Rights",
               body: [
                 "You have the right to access, rectify, erase, or restrict processing of your data, and to object to processing where applicable.",
-                "Contact hello@melonmeet.example to exercise these rights.",
+                "Contact hello@melonmeet.com to exercise these rights.",
               ],
             },
           ],
@@ -566,7 +566,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
             },
             {
               title: "Contact",
-              body: ["Email: hello@melonmeet.example", "Telephone: Not provided."],
+              body: ["Email: hello@melonmeet.com", "Telephone: Not provided."],
             },
             {
               title: "Represented By and VAT",

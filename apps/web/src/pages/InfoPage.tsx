@@ -36,7 +36,7 @@ export const PAGE_CONTENT = {
       },
       {
         body: [
-          "Email: hello@melonmeet.example",
+          "Email: hello@melonmeet.com",
           "Telephone: Not provided.",
         ],
         title: "Contact",
@@ -97,7 +97,7 @@ export const PAGE_CONTENT = {
       {
         body: [
           "Controller: Melon Meet, Jacob Otto, Halskestr. 6, 12167 Berlin, Germany.",
-          "Contact: hello@melonmeet.example.",
+          "Contact: hello@melonmeet.com.",
         ],
         title: "Data Controller",
       },
@@ -133,7 +133,7 @@ export const PAGE_CONTENT = {
       {
         body: [
           "You have the right to access, rectify, erase, or restrict processing of your data, and to object to processing where applicable.",
-          "Contact hello@melonmeet.example to exercise these rights.",
+          "Contact hello@melonmeet.com to exercise these rights.",
         ],
         title: "User Rights",
       },
