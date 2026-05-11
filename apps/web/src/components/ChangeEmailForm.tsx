@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormInput } from "./FormInput";
 
 export function ChangeEmailForm({
   currentEmail,
@@ -29,26 +30,12 @@ export function ChangeEmailForm({
 
       <label className="field-stack">
         <span className="field-label">New email</span>
-        <input
-          autoComplete="email"
-          className="field-input"
-          onChange={(event) => setEmail(event.target.value)}
-          required
-          type="email"
-          value={email}
-        />
+        <FormInput autoComplete="email" onChange={setEmail} required type="email" value={email} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Current password</span>
-        <input
-          autoComplete="current-password"
-          className="field-input"
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          required
-          type="password"
-          value={currentPassword}
-        />
+        <FormInput autoComplete="current-password" onChange={setCurrentPassword} required type="password" value={currentPassword} />
       </label>
 
       <div className="form-actions form-actions--start">

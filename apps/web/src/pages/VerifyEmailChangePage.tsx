@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import type { ThemeMode } from "../App";
 import { LaunchFlowLayout } from "../components/LaunchFlowLayout";
 import { PanelCard } from "../components/PanelCard";
@@ -14,7 +14,6 @@ export function VerifyEmailChangePage({
   theme: ThemeMode;
   toggleTheme: () => void;
 }) {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
@@ -39,16 +38,6 @@ export function VerifyEmailChangePage({
     }
     verifyMutation.mutate(token);
   }, [token, verifyMutation]);
-
-  useEffect(() => {
-    if (status !== "success") {
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      navigate("/map", { replace: true });
-    }, 1400);
-    return () => window.clearTimeout(timeout);
-  }, [navigate, status]);
 
   return (
     <LaunchFlowLayout
@@ -79,6 +68,14 @@ export function VerifyEmailChangePage({
               ? "Please wait while we verify the new email address."
               : statusMessage || "Open the verification link from your new email address."}
         </p>
+
+        {status === "success" ? (
+          <div className="form-actions form-actions--start">
+            <Link className="button-primary" to="/map">
+              Back to the app
+            </Link>
+          </div>
+        ) : null}
 
         {status === "error" || !token ? (
           <div className="form-actions form-actions--start">

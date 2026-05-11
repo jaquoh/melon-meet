@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { ThemeMode } from "../App";
+import { FormInput } from "../components/FormInput";
 import { LaunchFlowLayout } from "../components/LaunchFlowLayout";
 import { PanelCard } from "../components/PanelCard";
 import { requestPasswordReset } from "../lib/api";
@@ -56,13 +57,7 @@ export function ForgotPasswordPage({
         >
           <label className="field-stack">
             <span className="field-label">Email</span>
-            <input
-              className="field-input"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              type="email"
-              value={email}
-            />
+            <FormInput autoComplete="email" onChange={setEmail} required type="email" value={email} />
           </label>
 
           {submittedMessage ? (

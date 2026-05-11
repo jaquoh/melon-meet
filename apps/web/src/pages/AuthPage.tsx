@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import type { ViewerSummary } from "../../../../packages/shared/src";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { FormInput } from "../components/FormInput";
 import { PanelCard } from "../components/PanelCard";
 import { logIn, signUp } from "../lib/api";
 import { queryClient } from "../lib/query-client";
@@ -118,20 +119,19 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
           >
             <label className="field-stack">
               <span className="field-label">Email</span>
-              <input className="field-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+              <FormInput autoComplete="email" onChange={setEmail} required type="email" value={email} />
             </label>
 
             <label className="field-stack">
-              <span className="field-label" style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
-                <span>Password</span>
-                {mode === "login" ? (
-                  <Link className="muted-copy" to="/forgot-password">
-                    Forgot your password?
-                  </Link>
-                ) : null}
-              </span>
-              <input className="field-input" minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+              <span className="field-label">Password</span>
+              <FormInput autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} onChange={setPassword} required type="password" value={password} />
             </label>
+
+            {mode === "login" ? (
+              <Link className="muted-copy" to="/forgot-password">
+                Forgot your password?
+              </Link>
+            ) : null}
 
             {authMutation.error ? (
               <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>

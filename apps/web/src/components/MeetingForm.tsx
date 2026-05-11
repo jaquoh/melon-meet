@@ -5,6 +5,7 @@ import type { GroupSummary, MeetingSummary } from "../../../../packages/shared/s
 import { getVenues } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { FilterCheckbox } from "./FilterCheckbox";
+import { FormInput } from "./FormInput";
 import { fromDateTimeLocalInput, toDateTimeLocalInput } from "../lib/format";
 
 interface MeetingFormProps {
@@ -65,14 +66,14 @@ export function MeetingForm({
     initialMeeting?.locationAddress ?? initialLocation?.locationAddress ?? "",
   );
   const [latitude, setLatitude] = useState(
-    initialMeeting?.latitude ?? initialLocation?.latitude ?? 52.52,
+    (initialMeeting?.latitude ?? initialLocation?.latitude ?? 52.52).toString(),
   );
   const [longitude, setLongitude] = useState(
-    initialMeeting?.longitude ?? initialLocation?.longitude ?? 13.405,
+    (initialMeeting?.longitude ?? initialLocation?.longitude ?? 13.405).toString(),
   );
   const [pricing, setPricing] = useState<"free" | "paid">(initialMeeting?.pricing ?? "free");
   const [costPerPerson, setCostPerPerson] = useState(initialMeeting?.costPerPerson?.toString() ?? "");
-  const [capacity, setCapacity] = useState(initialMeeting?.capacity ?? 8);
+  const [capacity, setCapacity] = useState((initialMeeting?.capacity ?? 8).toString());
   const [buildSeries, setBuildSeries] = useState(seriesMode);
   const [seriesDates, setSeriesDates] = useState<Array<{ endsAt: string; startsAt: string }>>(
     initialSeriesDates.map((entry) => ({
@@ -97,8 +98,8 @@ export function MeetingForm({
       setSelectedVenueId("other");
       setLocationName(initialLocation.locationName);
       setLocationAddress(initialLocation.locationAddress);
-      setLatitude(initialLocation.latitude);
-      setLongitude(initialLocation.longitude);
+      setLatitude(initialLocation.latitude.toString());
+      setLongitude(initialLocation.longitude.toString());
     }
   }, [initialLocation]);
 
@@ -108,8 +109,8 @@ export function MeetingForm({
     }
     setLocationName(knownVenue.name);
     setLocationAddress(knownVenue.address);
-    setLatitude(knownVenue.latitude);
-    setLongitude(knownVenue.longitude);
+    setLatitude(knownVenue.latitude.toString());
+    setLongitude(knownVenue.longitude.toString());
   }, [isOtherLocation, knownVenue]);
 
   useEffect(() => {
@@ -149,14 +150,14 @@ export function MeetingForm({
       const payload = initialMeeting
         ? {
             activityLabel,
-            capacity: Number(capacity),
+            capacity: Number(capacity || 0),
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
             heroImageUrl,
-            latitude: Number(latitude),
+            latitude: Number(latitude || 0),
             locationAddress,
             locationName,
-            longitude: Number(longitude),
+            longitude: Number(longitude || 0),
             pricing,
             costPerPerson: pricing === "paid" ? Number(costPerPerson || 0) : null,
             seriesDates: buildSeries || seriesMode
@@ -173,15 +174,15 @@ export function MeetingForm({
           }
         : {
             activityLabel,
-            capacity: Number(capacity),
+            capacity: Number(capacity || 0),
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
             groupId,
             heroImageUrl,
-            latitude: Number(latitude),
+            latitude: Number(latitude || 0),
             locationAddress,
             locationName,
-            longitude: Number(longitude),
+            longitude: Number(longitude || 0),
             pricing,
             costPerPerson: pricing === "paid" ? Number(costPerPerson || 0) : null,
             recurrence: { type: "once" },
@@ -227,12 +228,12 @@ export function MeetingForm({
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.shortName")}</span>
-        <input className="field-input" maxLength={24} onChange={(event) => setShortName(event.target.value)} required value={shortName} />
+        <FormInput maxLength={24} onChange={setShortName} required value={shortName} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.title")}</span>
-        <input className="field-input" onChange={(event) => setTitle(event.target.value)} required value={title} />
+        <FormInput onChange={setTitle} required value={title} />
       </label>
 
       <label className="field-stack field-full">
@@ -242,17 +243,17 @@ export function MeetingForm({
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.heroImageUrl")}</span>
-        <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
+        <FormInput onChange={setHeroImageUrl} placeholder="https://..." type="url" value={heroImageUrl} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.starts")}</span>
-        <input className="field-input" onChange={(event) => setStartsAt(event.target.value)} required type="datetime-local" value={startsAt} />
+        <FormInput onChange={setStartsAt} required type="datetime-local" value={startsAt} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.ends")}</span>
-        <input className="field-input" onChange={(event) => setEndsAt(event.target.value)} required type="datetime-local" value={endsAt} />
+        <FormInput onChange={setEndsAt} required type="datetime-local" value={endsAt} />
       </label>
 
       <div className="field-full stack-sm">
@@ -297,12 +298,12 @@ export function MeetingForm({
 
       <label className="field-stack">
         <span className="field-label">{t("forms.activity")}</span>
-        <input className="field-input" onChange={(event) => setActivityLabel(event.target.value)} value={activityLabel} />
+        <FormInput onChange={setActivityLabel} value={activityLabel} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.capacity")}</span>
-        <input className="field-input" min={2} onChange={(event) => setCapacity(Number(event.target.value))} required type="number" value={capacity} />
+        <FormInput min={2} onChange={setCapacity} required type="number" value={capacity} />
       </label>
 
       <div className="field-stack">
@@ -320,15 +321,7 @@ export function MeetingForm({
             {pricing === "paid" ? (
               <label className="field-stack">
                 <span className="field-label">{t("forms.amountPerPerson")}</span>
-                <input
-                  className="field-input"
-                  min={0}
-                  onChange={(event) => setCostPerPerson(event.target.value)}
-                  placeholder="10"
-                  step="0.5"
-                  type="number"
-                  value={costPerPerson}
-                />
+                <FormInput min={0} onChange={setCostPerPerson} placeholder="10" step="0.5" type="number" value={costPerPerson} />
               </label>
             ) : (
               <div className="meeting-pricing-row__placeholder" aria-hidden="true" />
@@ -357,22 +350,22 @@ export function MeetingForm({
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.locationName")}</span>
-        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationName(event.target.value)} required value={locationName} />
+        <FormInput className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={setLocationName} required value={locationName} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.address")}</span>
-        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLocationAddress(event.target.value)} required value={locationAddress} />
+        <FormInput className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={setLocationAddress} required value={locationAddress} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.latitude")}</span>
-        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLatitude(Number(event.target.value))} required step="0.000001" type="number" value={latitude} />
+        <FormInput className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={setLatitude} required step="0.000001" type="number" value={latitude} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.longitude")}</span>
-        <input className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={(event) => setLongitude(Number(event.target.value))} required step="0.000001" type="number" value={longitude} />
+        <FormInput className={inheritedFieldClassName} disabled={!isOtherLocation} onChange={setLongitude} required step="0.000001" type="number" value={longitude} />
       </label>
 
     </form>

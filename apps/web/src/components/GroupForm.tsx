@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useI18n } from "../lib/i18n";
+import { FormInput } from "./FormInput";
 
 interface GroupFormProps {
   formId?: string;
@@ -58,23 +59,17 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
     <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">{t("forms.name")}</span>
-        <input className="field-input" onChange={(event) => setName(event.target.value)} required value={name} />
+        <FormInput onChange={setName} required value={name} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.slug")}</span>
-        <input
-          className="field-input"
-          onChange={(event) => setSlug(event.target.value)}
-          pattern="[a-z0-9-]+"
-          required
-          value={slug}
-        />
+        <FormInput onChange={setSlug} pattern="[a-z0-9-]+" required value={slug} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.activityLabel")}</span>
-        <input className="field-input" onChange={(event) => setActivityLabel(event.target.value)} value={activityLabel} />
+        <FormInput onChange={setActivityLabel} value={activityLabel} />
       </label>
 
       <label className="field-stack">
@@ -92,12 +87,12 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.heroImageUrl")}</span>
-        <input className="field-input" onChange={(event) => setHeroImageUrl(event.target.value)} placeholder="https://..." type="url" value={heroImageUrl} />
+        <FormInput onChange={setHeroImageUrl} placeholder="https://..." type="url" value={heroImageUrl} />
       </label>
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.messengerUrl")}</span>
-        <input className="field-input" onChange={(event) => setMessengerUrl(event.target.value)} placeholder="https://t.me/..." type="url" value={messengerUrl} />
+        <FormInput onChange={setMessengerUrl} placeholder="https://t.me/..." type="url" value={messengerUrl} />
       </label>
 
     </form>

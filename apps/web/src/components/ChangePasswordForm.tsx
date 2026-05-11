@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormInput } from "./FormInput";
 
 export function ChangePasswordForm({
   onSubmit,
@@ -32,40 +33,17 @@ export function ChangePasswordForm({
     <form className="form-grid" onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">Current password</span>
-        <input
-          autoComplete="current-password"
-          className="field-input"
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          required
-          type="password"
-          value={currentPassword}
-        />
+        <FormInput autoComplete="current-password" onChange={setCurrentPassword} required type="password" value={currentPassword} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">New password</span>
-        <input
-          autoComplete="new-password"
-          className="field-input"
-          minLength={8}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-          type="password"
-          value={password}
-        />
+        <FormInput autoComplete="new-password" minLength={8} onChange={setPassword} required type="password" value={password} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">Confirm new password</span>
-        <input
-          autoComplete="new-password"
-          className="field-input"
-          minLength={8}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          required
-          type="password"
-          value={confirmPassword}
-        />
+        <FormInput autoComplete="new-password" minLength={8} onChange={setConfirmPassword} required type="password" value={confirmPassword} />
       </label>
 
       {passwordMismatch ? (

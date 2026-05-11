@@ -389,6 +389,44 @@ img {
   gap: 0.35rem;
 }
 
+.field-input-shell {
+  position: relative;
+  display: block;
+}
+
+.field-input-shell__actions {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding-right: 0.55rem;
+  pointer-events: none;
+}
+
+.field-input-shell__action {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--text) 68%, var(--muted));
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.field-input-shell__action:hover {
+  background: color-mix(in srgb, var(--panel-strong) 72%, transparent);
+  color: var(--text);
+}
+
 .field-input,
 .field-select,
 .field-area {
@@ -404,6 +442,10 @@ img {
     border-color 140ms ease,
     background-color 140ms ease,
     box-shadow 140ms ease;
+}
+
+.field-input--with-trailing-actions {
+  padding-right: 5.2rem;
 }
 
 .field-input--inherited:disabled {
@@ -4229,6 +4271,10 @@ img {
 .account-sections-stack__signout {
   width: 100%;
   justify-content: center;
+}
+
+.account-sections-stack__manage {
+  width: 100%;
 }
 
 .filter-chip {

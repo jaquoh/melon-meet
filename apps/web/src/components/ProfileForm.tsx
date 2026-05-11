@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../lib/i18n";
 import { FilterCheckbox } from "./FilterCheckbox";
+import { FormInput } from "./FormInput";
 
 const PLAYING_LEVEL_PARTIAL_PATTERN = /^\d*(?:\.\d*)?(?:-\d*(?:\.\d*)?)?$/;
 
@@ -50,26 +51,20 @@ export function ProfileForm({
     <form className="form-grid form-grid--two" id={formId} onSubmit={handleSubmit}>
       <label className="field-stack">
         <span className="field-label">{t("forms.displayName")}</span>
-        <input
-          className="field-input"
-          onChange={(event) => onChange({ ...profile, displayName: event.target.value })}
-          required
-          value={profile.displayName}
-        />
+        <FormInput onChange={(displayName) => onChange({ ...profile, displayName })} required value={profile.displayName} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.homeArea")}</span>
-        <input className="field-input" onChange={(event) => onChange({ ...profile, homeArea: event.target.value })} value={profile.homeArea} />
+        <FormInput onChange={(homeArea) => onChange({ ...profile, homeArea })} value={profile.homeArea} />
       </label>
 
       <label className="field-stack">
         <span className="field-label">{t("forms.playingLevel")}</span>
-        <input
-          className="field-input"
+        <FormInput
           inputMode="decimal"
-          onChange={(event) => {
-            const nextValue = event.target.value.trim();
+          onChange={(playingLevel) => {
+            const nextValue = playingLevel.trim();
             if (PLAYING_LEVEL_PARTIAL_PATTERN.test(nextValue)) {
               onChange({ ...profile, playingLevel: nextValue });
             }
@@ -84,12 +79,7 @@ export function ProfileForm({
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.avatarUrl")}</span>
-        <input
-          className="field-input"
-          onChange={(event) => onChange({ ...profile, avatarUrl: event.target.value })}
-          type="url"
-          value={profile.avatarUrl}
-        />
+        <FormInput onChange={(avatarUrl) => onChange({ ...profile, avatarUrl })} type="url" value={profile.avatarUrl} />
       </label>
 
       <label className="field-stack field-full">

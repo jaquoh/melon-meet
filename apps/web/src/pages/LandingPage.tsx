@@ -7,6 +7,7 @@ import type { ThemeMode } from "../App";
 import landingHeroMelonDark from "../assets/landing-hero-melon-dark.png";
 import landingHeroMelon from "../assets/landing-hero-melon.png";
 import watermelonMark from "../assets/watermelon-mark.svg";
+import { FormInput } from "../components/FormInput";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { logIn, signUp } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -156,27 +157,26 @@ export function LandingPage({
                 >
                   <label className="field-stack">
                     <span className="field-label">{t("landing.email")}</span>
-                    <input className="field-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+                    <FormInput autoComplete="email" onChange={setEmail} required type="email" value={email} />
                   </label>
 
                   <label className="field-stack">
-                    <span className="field-label" style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
-                      <span>{t("landing.password")}</span>
-                      {mode === "login" ? (
-                        <Link className="muted-copy" to="/forgot-password">
-                          Forgot your password?
-                        </Link>
-                      ) : null}
-                    </span>
-                    <input
-                      className="field-input"
+                    <span className="field-label">{t("landing.password")}</span>
+                    <FormInput
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
                       minLength={8}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={setPassword}
                       required
                       type="password"
                       value={password}
                     />
                   </label>
+
+                  {mode === "login" ? (
+                    <Link className="muted-copy" to="/forgot-password">
+                      Forgot your password?
+                    </Link>
+                  ) : null}
 
                   {mode === "signup" ? (
                     <div className="auth-consent-row">

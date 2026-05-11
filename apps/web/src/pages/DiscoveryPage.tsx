@@ -29,6 +29,7 @@ import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { ChangeEmailForm } from "../components/ChangeEmailForm";
 import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
+import { FormInput } from "../components/FormInput";
 import { GroupForm } from "../components/GroupForm";
 import { MeetingForm } from "../components/MeetingForm";
 import { PostBoard } from "../components/PostBoard";
@@ -243,11 +244,14 @@ export function DiscoveryPage({
   const [selectedGroup, setSelectedGroup] = useState<GroupSummary | null>(null);
   const [editingTarget, setEditingTarget] = useState<EditingTarget>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [managingAccount, setManagingAccount] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
   const [changeEmailStatus, setChangeEmailStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [deleteAccountStatus, setDeleteAccountStatus] = useState<{ kind: "error"; message: string } | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [sessionStatus, setSessionStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
@@ -725,6 +729,75 @@ export function DiscoveryPage({
     return () => document.removeEventListener("pointerdown", handleDocumentPointerDown);
   }, [showMobileFilters]);
 
+  function resetAccountManagementState() {
+    setChangingEmail(false);
+    setChangingPassword(false);
+    setConfirmingDeleteAccount(false);
+    setChangeEmailStatus(null);
+    setChangePasswordStatus(null);
+    setDeleteAccountStatus(null);
+    setDeleteConfirmation("");
+    setSessionStatus(null);
+  }
+
+  function closeManageAccount() {
+    setManagingAccount(false);
+    resetAccountManagementState();
+  }
+
+  function closeProfileEdit() {
+    setEditingProfile(false);
+    setProfileDraft(null);
+  }
+
+  function toggleEmailSection() {
+    setChangingEmail((current) => {
+      const next = !current;
+      if (!next) {
+        setChangeEmailStatus(null);
+      }
+      return next;
+    });
+    setChangingPassword(false);
+    setChangePasswordStatus(null);
+    setSessionStatus(null);
+    setConfirmingDeleteAccount(false);
+    setDeleteAccountStatus(null);
+    setDeleteConfirmation("");
+  }
+
+  function togglePasswordSection() {
+    setChangingPassword((current) => {
+      const next = !current;
+      if (!next) {
+        setChangePasswordStatus(null);
+        setSessionStatus(null);
+      }
+      return next;
+    });
+    setChangingEmail(false);
+    setChangeEmailStatus(null);
+    setConfirmingDeleteAccount(false);
+    setDeleteAccountStatus(null);
+    setDeleteConfirmation("");
+  }
+
+  function toggleDeleteAccountSection() {
+    setConfirmingDeleteAccount((current) => {
+      const next = !current;
+      if (!next) {
+        setDeleteAccountStatus(null);
+        setDeleteConfirmation("");
+      }
+      return next;
+    });
+    setChangingEmail(false);
+    setChangeEmailStatus(null);
+    setChangingPassword(false);
+    setChangePasswordStatus(null);
+    setSessionStatus(null);
+  }
+
   useEffect(() => {
     if (!routeProfileId) {
       return;
@@ -735,12 +808,8 @@ export function DiscoveryPage({
     setSelectedGroup(null);
     setEditingTarget(null);
     setEditingProfile(false);
-    setChangingEmail(false);
-    setChangingPassword(false);
-    setChangeEmailStatus(null);
-    setChangePasswordStatus(null);
-    setDeleteAccountStatus(null);
-    setSessionStatus(null);
+    setManagingAccount(false);
+    resetAccountManagementState();
     setProfileDraft(null);
   }, [routeProfileId]);
 
@@ -847,8 +916,7 @@ export function DiscoveryPage({
   const updateProfileMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => updateProfile(selectedProfileId as string, payload),
     onSuccess: async () => {
-      setEditingProfile(false);
-      setProfileDraft(null);
+      closeProfileEdit();
       await queryClient.invalidateQueries({ queryKey: ["profile", selectedProfileId] });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
     },
@@ -861,7 +929,6 @@ export function DiscoveryPage({
         kind: "success",
         message: "Your password has been updated. Other devices have been signed out.",
       });
-      setChangingPassword(false);
     },
     onError: (error: Error) => {
       setChangePasswordStatus({
@@ -879,7 +946,6 @@ export function DiscoveryPage({
         kind: "success",
         message: "A verification link has been prepared for your new email address.",
       });
-      setChangingEmail(false);
     },
     onError: (error: Error) => {
       setChangeEmailStatus({
@@ -1145,8 +1211,7 @@ export function DiscoveryPage({
     setSelectedVenue(null);
     setSelectedGroup(null);
     setEditingTarget(null);
-    setEditingProfile(false);
-    setProfileDraft(null);
+    closeManageAccount();
     clearVenueQueryParam();
     if (!routeGroupId && !routeMeetingId && !routeVenueId && !routeProfileId) {
       setIsClearingSelection(false);
@@ -1162,8 +1227,7 @@ export function DiscoveryPage({
       setSelectedVenue(null);
       setSelectedGroup(null);
       setEditingTarget(null);
-      setEditingProfile(false);
-      setProfileDraft(null);
+      closeManageAccount();
 
       const goToPrevious =
         typeof returnPath === "string" &&
@@ -1453,36 +1517,157 @@ export function DiscoveryPage({
         </div>
         {editingProfile && isOwnProfile ? (
           activeProfileDraft ? (
-          <>
-            <ProfileForm
-              formId="workspace-profile-edit-form"
-              onChange={setProfileDraft}
-              onSubmit={async (payload) => updateProfileMutation.mutateAsync(payload)}
-              profile={activeProfileDraft}
-            />
-            <div className="editor-action-row">
-              <div className="editor-action-row__right">
-                <button
-                  className="button-secondary"
-                  onClick={() => {
-                        setEditingProfile(false);
-                        setChangingEmail(false);
-                        setChangingPassword(false);
-                        setChangeEmailStatus(null);
-                        setChangePasswordStatus(null);
-                        setProfileDraft(null);
-                      }}
-                  type="button"
-                >
-                  {t("common.cancel")}
-                </button>
-                <button className="button-primary" form="workspace-profile-edit-form" type="submit">
-                  {t("common.save")}
-                </button>
+            <>
+              <ProfileForm
+                formId="workspace-profile-edit-form"
+                onChange={setProfileDraft}
+                onSubmit={async (payload) => updateProfileMutation.mutateAsync(payload)}
+                profile={activeProfileDraft}
+              />
+              <div className="editor-action-row">
+                <div className="editor-action-row__right">
+                  <button className="button-secondary" onClick={closeProfileEdit} type="button">
+                    {t("common.cancel")}
+                  </button>
+                  <button className="button-primary" form="workspace-profile-edit-form" type="submit">
+                    {t("common.save")}
+                  </button>
+                </div>
               </div>
-            </div>
-          </>
+            </>
           ) : null
+        ) : managingAccount && isOwnProfile ? (
+          <div className="account-sections-stack">
+            <section className={`account-section ${changingEmail ? "is-open" : ""}`.trim()}>
+              <button aria-expanded={changingEmail} className="account-section__trigger" onClick={toggleEmailSection} type="button">
+                <span className="account-section__headline">
+                  <Mail size={16} strokeWidth={2} />
+                  <span>Change email</span>
+                </span>
+                <ChevronDown size={16} strokeWidth={2} />
+              </button>
+              {changingEmail ? (
+                <div className="account-section__panel">
+                  <p className="panel-caption">Account email</p>
+                  <ChangeEmailForm
+                    currentEmail={selectedProfileDetail.email}
+                    onSubmit={async (payload) => changeEmailMutation.mutateAsync(payload)}
+                  />
+                  {changeEmailStatus ? (
+                    <p
+                      className="empty-state"
+                      style={changeEmailStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                    >
+                      {changeEmailStatus.message}
+                    </p>
+                  ) : null}
+                  {changeEmailStatus?.devVerificationUrl ? (
+                    <a className="muted-copy" href={changeEmailStatus.devVerificationUrl}>
+                      Open email-change verification link
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            <section className={`account-section ${changingPassword ? "is-open" : ""}`.trim()}>
+              <button aria-expanded={changingPassword} className="account-section__trigger" onClick={togglePasswordSection} type="button">
+                <span className="account-section__headline">
+                  <KeyRound size={16} strokeWidth={2} />
+                  <span>Change password</span>
+                </span>
+                <ChevronDown size={16} strokeWidth={2} />
+              </button>
+              {changingPassword ? (
+                <div className="account-section__panel">
+                  <p className="panel-caption">Account security</p>
+                  <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
+                  <div className="form-actions">
+                    <button
+                      className="button-secondary"
+                      disabled={logoutOtherSessionsMutation.isPending}
+                      onClick={async () => {
+                        setSessionStatus(null);
+                        await logoutOtherSessionsMutation.mutateAsync();
+                      }}
+                      type="button"
+                    >
+                      <MonitorOff size={14} strokeWidth={2} />
+                      {logoutOtherSessionsMutation.isPending ? "Signing out devices" : "Log out other devices"}
+                    </button>
+                  </div>
+                  {sessionStatus ? (
+                    <p
+                      className="empty-state"
+                      style={sessionStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                    >
+                      {sessionStatus.message}
+                    </p>
+                  ) : null}
+                  {changePasswordStatus ? (
+                    <p
+                      className="empty-state"
+                      style={changePasswordStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                    >
+                      {changePasswordStatus.message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            <section className={`account-section account-section--danger ${confirmingDeleteAccount ? "is-open" : ""}`.trim()}>
+              <button
+                aria-expanded={confirmingDeleteAccount}
+                className="account-section__trigger"
+                onClick={toggleDeleteAccountSection}
+                type="button"
+              >
+                <span className="account-section__headline">
+                  <Trash2 size={16} strokeWidth={2} />
+                  <span>Delete account</span>
+                </span>
+                <ChevronDown size={16} strokeWidth={2} />
+              </button>
+              {confirmingDeleteAccount ? (
+                <div className="account-section__panel">
+                  <p className="panel-caption">Delete account</p>
+                  <p className="muted-copy">
+                    This removes access immediately, signs out all devices, and scrubs your profile and login identity now. Remaining cleanup finishes within 30 days.
+                  </p>
+                  <label className="field-stack">
+                    <span className="field-label">Type byebye to confirm</span>
+                    <FormInput onChange={setDeleteConfirmation} placeholder="byebye" value={deleteConfirmation} />
+                  </label>
+                  <div className="form-actions">
+                    <button
+                      className="button-danger"
+                      disabled={deleteProfileMutation.isPending || deleteConfirmation !== "byebye"}
+                      onClick={async () => {
+                        setDeleteAccountStatus(null);
+                        await deleteProfileMutation.mutateAsync();
+                      }}
+                      type="button"
+                    >
+                      <Trash2 size={14} strokeWidth={2} />
+                      {deleteProfileMutation.isPending ? "Deleting" : "Delete account"}
+                    </button>
+                  </div>
+                  {deleteAccountStatus ? (
+                    <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
+                      {deleteAccountStatus.message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            <div className="subtle-action-row">
+              <button className="button-secondary account-sections-stack__manage" onClick={closeManageAccount} type="button">
+                Back to profile
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             {selectedProfileDetailQuery.data?.profileIsPrivate && !isOwnProfile ? (
@@ -1532,157 +1717,35 @@ export function DiscoveryPage({
                   <div className="account-sections-stack">
                     <div className="subtle-action-row">
                       <button
-                        className="button-secondary button-inline"
+                        className="button-secondary account-sections-stack__manage"
                         onClick={() => {
+                          closeManageAccount();
                           setProfileDraft(createProfileDraft(selectedProfileDetail));
                           setEditingProfile(true);
                         }}
                         type="button"
                       >
                         <Edit3 size={14} strokeWidth={2} />
-                        {t("common.edit")}
+                        <span>Edit Profile</span>
+                      </button>
+                      <button
+                        className="button-secondary account-sections-stack__manage"
+                        onClick={() => {
+                          closeProfileEdit();
+                          resetAccountManagementState();
+                          setManagingAccount(true);
+                        }}
+                        type="button"
+                      >
+                        <Shield size={14} strokeWidth={2} />
+                        <span>Manage Account</span>
                       </button>
                     </div>
-                    <section className={`account-section ${changingEmail ? "is-open" : ""}`.trim()}>
-                      <button
-                        aria-expanded={changingEmail}
-                        className="account-section__trigger"
-                        onClick={() => {
-                          setChangingEmail((current) => !current);
-                          setChangingPassword(false);
-                          setChangeEmailStatus(null);
-                        }}
-                        type="button"
-                      >
-                        <span className="account-section__headline">
-                          <Mail size={16} strokeWidth={2} />
-                          <span>Change email</span>
-                        </span>
-                        <ChevronDown size={16} strokeWidth={2} />
-                      </button>
-                      {changingEmail ? (
-                        <div className="account-section__panel">
-                          <p className="panel-caption">Account email</p>
-                          <ChangeEmailForm
-                            currentEmail={selectedProfileDetail.email}
-                            onSubmit={async (payload) => changeEmailMutation.mutateAsync(payload)}
-                          />
-                          {changeEmailStatus ? (
-                            <p
-                              className="empty-state"
-                              style={changeEmailStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
-                            >
-                              {changeEmailStatus.message}
-                            </p>
-                          ) : null}
-                          {changeEmailStatus?.devVerificationUrl ? (
-                            <a className="muted-copy" href={changeEmailStatus.devVerificationUrl}>
-                              Open email-change verification link
-                            </a>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </section>
-                    <section className={`account-section ${changingPassword ? "is-open" : ""}`.trim()}>
-                      <button
-                        aria-expanded={changingPassword}
-                        className="account-section__trigger"
-                        onClick={() => {
-                          setChangingPassword((current) => !current);
-                          setChangingEmail(false);
-                          setChangePasswordStatus(null);
-                        }}
-                        type="button"
-                      >
-                        <span className="account-section__headline">
-                          <KeyRound size={16} strokeWidth={2} />
-                          <span>Change password</span>
-                        </span>
-                        <ChevronDown size={16} strokeWidth={2} />
-                      </button>
-                      {changingPassword ? (
-                        <div className="account-section__panel">
-                          <p className="panel-caption">Account security</p>
-                          <ChangePasswordForm onSubmit={async (payload) => changePasswordMutation.mutateAsync(payload)} />
-                          <div className="form-actions">
-                            <button
-                              className="button-secondary"
-                              disabled={logoutOtherSessionsMutation.isPending}
-                              onClick={async () => {
-                                setSessionStatus(null);
-                                await logoutOtherSessionsMutation.mutateAsync();
-                              }}
-                              type="button"
-                            >
-                              <MonitorOff size={14} strokeWidth={2} />
-                              {logoutOtherSessionsMutation.isPending ? "Signing out devices" : "Log out other devices"}
-                            </button>
-                          </div>
-                          {sessionStatus ? (
-                            <p
-                              className="empty-state"
-                              style={sessionStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
-                            >
-                              {sessionStatus.message}
-                            </p>
-                          ) : null}
-                          {changePasswordStatus ? (
-                            <p
-                              className="empty-state"
-                              style={changePasswordStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
-                            >
-                              {changePasswordStatus.message}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </section>
-                    <section className="account-section account-section--danger is-open">
-                      <div className="account-section__panel">
-                        <p className="panel-caption">Delete account</p>
-                        <p className="muted-copy">
-                          This removes access immediately, signs out all devices, and scrubs your profile and login identity now. Remaining cleanup finishes within 30 days.
-                        </p>
-                        <div className="form-actions">
-                          <button
-                            className="button-danger"
-                            disabled={deleteProfileMutation.isPending}
-                            onClick={async () => {
-                              if (
-                                typeof window !== "undefined" &&
-                                !window.confirm(
-                                  "Delete your account now? You will be signed out immediately and this cannot be undone from the app.",
-                                )
-                              ) {
-                                return;
-                              }
-                              setDeleteAccountStatus(null);
-                              await deleteProfileMutation.mutateAsync();
-                            }}
-                            type="button"
-                          >
-                            <Trash2 size={14} strokeWidth={2} />
-                            {deleteProfileMutation.isPending ? "Deleting" : "Delete account"}
-                          </button>
-                        </div>
-                        {deleteAccountStatus ? (
-                          <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
-                            {deleteAccountStatus.message}
-                          </p>
-                        ) : null}
-                      </div>
-                    </section>
-                    <button className="button-danger button-inline account-sections-stack__signout" onClick={onLogOut} type="button">
+                    <button className="button-danger account-sections-stack__signout" onClick={onLogOut} type="button">
                       <LogOut size={14} strokeWidth={2} />
                       Sign out
                     </button>
                   </div>
-                ) : null}
-                {isOwnProfile && !changingEmail && changeEmailStatus?.kind === "success" ? (
-                  <p className="empty-state">{changeEmailStatus.message}</p>
-                ) : null}
-                {isOwnProfile && !changingPassword && changePasswordStatus?.kind === "success" ? (
-                  <p className="empty-state">{changePasswordStatus.message}</p>
                 ) : null}
                 {selectedProfileAttending.length > 0 ? (
                   <EventTimeline
@@ -2098,11 +2161,10 @@ export function DiscoveryPage({
             <div className="custom-range-grid">
               <label className="field-stack">
                 <span className="field-label">{t("common.from")}</span>
-                <input
-                  className="field-input"
-                  onChange={(event) => {
-                    normalizeWorkspacePath({ customStartAt: event.target.value });
-                    setCustomStartAt(event.target.value);
+                <FormInput
+                  onChange={(value) => {
+                    normalizeWorkspacePath({ customStartAt: value });
+                    setCustomStartAt(value);
                   }}
                   type="datetime-local"
                   value={customStartAt}
@@ -2110,11 +2172,10 @@ export function DiscoveryPage({
               </label>
               <label className="field-stack">
                 <span className="field-label">{t("common.to")}</span>
-                <input
-                  className="field-input"
-                  onChange={(event) => {
-                    normalizeWorkspacePath({ customEndAt: event.target.value });
-                    setCustomEndAt(event.target.value);
+                <FormInput
+                  onChange={(value) => {
+                    normalizeWorkspacePath({ customEndAt: value });
+                    setCustomEndAt(value);
                   }}
                   type="datetime-local"
                   value={customEndAt}
@@ -2408,11 +2469,10 @@ export function DiscoveryPage({
               <div className="custom-range-grid">
                 <label className="field-stack">
                   <span className="field-label">{t("common.from")}</span>
-                  <input
-                    className="field-input"
-                    onChange={(event) => {
-                      normalizeWorkspacePath({ customStartAt: event.target.value });
-                      setCustomStartAt(event.target.value);
+                  <FormInput
+                    onChange={(value) => {
+                      normalizeWorkspacePath({ customStartAt: value });
+                      setCustomStartAt(value);
                     }}
                     type="datetime-local"
                     value={customStartAt}
@@ -2420,11 +2480,10 @@ export function DiscoveryPage({
                 </label>
                 <label className="field-stack">
                   <span className="field-label">{t("common.to")}</span>
-                  <input
-                    className="field-input"
-                    onChange={(event) => {
-                      normalizeWorkspacePath({ customEndAt: event.target.value });
-                      setCustomEndAt(event.target.value);
+                  <FormInput
+                    onChange={(value) => {
+                      normalizeWorkspacePath({ customEndAt: value });
+                      setCustomEndAt(value);
                     }}
                     type="datetime-local"
                     value={customEndAt}

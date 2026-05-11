@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { ThemeMode } from "../App";
+import { FormInput } from "../components/FormInput";
 import { LaunchFlowLayout } from "../components/LaunchFlowLayout";
 import { PanelCard } from "../components/PanelCard";
 import { resetPassword } from "../lib/api";
@@ -85,26 +86,12 @@ export function ResetPasswordPage({
           >
             <label className="field-stack">
               <span className="field-label">New password</span>
-              <input
-                className="field-input"
-                minLength={8}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                type="password"
-                value={password}
-              />
+              <FormInput autoComplete="new-password" minLength={8} onChange={setPassword} required type="password" value={password} />
             </label>
 
             <label className="field-stack">
               <span className="field-label">Confirm new password</span>
-              <input
-                className="field-input"
-                minLength={8}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-                type="password"
-                value={confirmPassword}
-              />
+              <FormInput autoComplete="new-password" minLength={8} onChange={setConfirmPassword} required type="password" value={confirmPassword} />
             </label>
 
             {passwordMismatch ? (
