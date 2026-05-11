@@ -39,6 +39,7 @@ import { sendResendEmail } from "./lib/email";
 import { assertOrThrow } from "./lib/http";
 import { reportOperationalError } from "./lib/monitoring";
 import { consumeRateLimit } from "./lib/rate-limit";
+import { logSecurityEvent, maskEmailAddress } from "./lib/security-log";
 import {
   durationMinutes,
   horizonDate,
@@ -558,6 +559,11 @@ async function enforceAuthRateLimit(
 
   if (!rateLimit.allowed) {
     c.header("Retry-After", String(rateLimit.retryAfterSeconds));
+    logSecurityEvent(c, "auth_rate_limit_blocked", "warn", {
+      email: maskEmailAddress(email),
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+      scope,
+    });
     return c.json(
       {
         error: "Too many authentication attempts. Please wait a few minutes and try again.",
@@ -588,6 +594,11 @@ async function enforceWriteRateLimit(
 
   if (!rateLimit.allowed) {
     c.header("Retry-After", String(rateLimit.retryAfterSeconds));
+    logSecurityEvent(c, "write_rate_limit_blocked", "warn", {
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+      scope,
+      viewerId,
+    });
     return c.json(
       {
         error: config.message,
@@ -602,20 +613,34 @@ async function enforceWriteRateLimit(
 function assertTrustedWriteOrigin(c: Context<AppEnv>) {
   const requestOrigin = requestOriginFromHeaders(c);
   if (!requestOrigin) {
+    if (!isLocalOrigin(c)) {
+      logSecurityEvent(c, "trusted_origin_missing", "warn");
+    }
     assertOrThrow(isLocalOrigin(c), 403, "This write request is missing a trusted origin.");
     return;
   }
 
+  if (requestOrigin !== appOrigin(c)) {
+    logSecurityEvent(c, "trusted_origin_mismatch", "warn", {
+      requestOrigin,
+    });
+  }
   assertOrThrow(requestOrigin === appOrigin(c), 403, "Cross-site write requests are not allowed.");
 }
 
 async function verifySignupTurnstile(c: Context<AppEnv>, token: string | null | undefined) {
   if (!turnstileConfigured(c)) {
+    if (!isLocalOrigin(c)) {
+      logSecurityEvent(c, "signup_turnstile_not_configured", "warn");
+    }
     assertOrThrow(isLocalOrigin(c), 503, "Signup bot protection is not configured.");
     return;
   }
 
   const normalizedToken = token?.trim();
+  if (!normalizedToken) {
+    logSecurityEvent(c, "signup_turnstile_missing", "warn");
+  }
   assertOrThrow(normalizedToken, 400, "Complete the signup verification challenge and try again.");
 
   const payload = new URLSearchParams();
@@ -633,6 +658,11 @@ async function verifySignupTurnstile(c: Context<AppEnv>, token: string | null | 
     "error-codes"?: string[];
     success?: boolean;
   };
+  if (!result.success) {
+    logSecurityEvent(c, "signup_turnstile_failed", "warn", {
+      errorCodes: result["error-codes"] ?? [],
+    });
+  }
   assertOrThrow(result.success, 403, "Complete the signup verification challenge and try again.");
 }
 
@@ -1184,6 +1214,7 @@ export function createApp() {
 
   app.post("/api/auth/signup", zValidator("json", authSchema), async (c) => {
     const { email, password, turnstileToken } = c.req.valid("json");
+    const normalizedEmail = email.toLowerCase();
     const limitedResponse = await enforceAuthRateLimit(c, "auth:signup", email);
     if (limitedResponse) {
       return limitedResponse;
@@ -1191,8 +1222,13 @@ export function createApp() {
     const existing = await firstRow<{ id: string }>(
       c.env.DB,
       "SELECT id FROM users WHERE email = ?",
-      email.toLowerCase(),
+      normalizedEmail,
     );
+    if (existing) {
+      logSecurityEvent(c, "signup_existing_email_rejected", "warn", {
+        email: maskEmailAddress(normalizedEmail),
+      });
+    }
     assertOrThrow(!existing, 409, "An account with this email already exists.");
     await verifySignupTurnstile(c, turnstileToken);
 
@@ -1204,10 +1240,10 @@ export function createApp() {
       `INSERT INTO users (
          id, email, password_hash, display_name, bio, home_area, avatar_url,
          is_profile_public, show_email_publicly, playing_level, email_verified_at, created_at, updated_at
-       )
+      )
        VALUES (?, ?, ?, ?, '', '', NULL, 0, 0, '', NULL, ?, ?)`,
       userId,
-      email.toLowerCase(),
+      normalizedEmail,
       passwordHash,
       email.split("@")[0],
       createdAt,
@@ -1216,14 +1252,19 @@ export function createApp() {
 
     const session = await createSession(c.env.DB, userId);
     writeSessionCookie(c, session.token, session.expiresAt);
-    const { devVerificationUrl } = await issueEmailVerificationToken(c, userId, email.toLowerCase());
+    const { devVerificationUrl } = await issueEmailVerificationToken(c, userId, normalizedEmail);
+    logSecurityEvent(c, "signup_succeeded", "info", {
+      email: maskEmailAddress(normalizedEmail),
+      newUserId: userId,
+      verificationRequired: true,
+    });
 
     return c.json({
       user: {
         avatarUrl: null,
         bio: "",
         displayName: email.split("@")[0],
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         emailVerified: false,
         homeArea: "",
         id: userId,
@@ -1238,6 +1279,7 @@ export function createApp() {
 
   app.post("/api/auth/login", zValidator("json", authSchema), async (c) => {
     const { email, password } = c.req.valid("json");
+    const normalizedEmail = email.toLowerCase();
     const limitedResponse = await enforceAuthRateLimit(c, "auth:login", email);
     if (limitedResponse) {
       return limitedResponse;
@@ -1260,15 +1302,38 @@ export function createApp() {
       `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly, account_status
        FROM users
        WHERE email = ?`,
-      email.toLowerCase(),
+      normalizedEmail,
     );
+    if (!row) {
+      logSecurityEvent(c, "login_failed_unknown_email", "warn", {
+        email: maskEmailAddress(normalizedEmail),
+      });
+    }
     assertOrThrow(row, 401, "Invalid email or password.");
     const validPassword = await verifyPassword(password, row.password_hash);
+    if (!validPassword) {
+      logSecurityEvent(c, "login_failed_bad_password", "warn", {
+        email: maskEmailAddress(normalizedEmail),
+        attemptedUserId: row.id,
+      });
+    }
     assertOrThrow(validPassword, 401, "Invalid email or password.");
+    if (row.account_status !== ACTIVE_ACCOUNT_STATUS) {
+      logSecurityEvent(c, "login_blocked_account_status", "warn", {
+        accountStatus: row.account_status,
+        attemptedUserId: row.id,
+        email: maskEmailAddress(normalizedEmail),
+      });
+    }
     assertOrThrow(row.account_status === ACTIVE_ACCOUNT_STATUS, 403, "This account is no longer available.");
 
     const session = await createSession(c.env.DB, row.id);
     writeSessionCookie(c, session.token, session.expiresAt);
+    logSecurityEvent(c, "login_succeeded", "info", {
+      email: maskEmailAddress(normalizedEmail),
+      loggedInUserId: row.id,
+      verificationRequired: !Boolean(row.email_verified_at),
+    });
 
     return c.json({
       user: mapViewerSummary(row),
@@ -1284,6 +1349,10 @@ export function createApp() {
     }
 
     const { devVerificationUrl } = await issueEmailVerificationToken(c, viewer.id, viewer.email);
+    logSecurityEvent(c, "email_verification_resent", "info", {
+      email: maskEmailAddress(viewer.email),
+      viewerId: viewer.id,
+    });
     return c.json({ ok: true, devVerificationUrl });
   });
 
@@ -1323,6 +1392,9 @@ export function createApp() {
       "DELETE FROM email_verification_tokens WHERE user_id = ? AND used_at IS NULL",
       verification.user_id,
     );
+    logSecurityEvent(c, "email_verified", "info", {
+      verifiedUserId: verification.user_id,
+    });
 
     return c.json({ ok: true });
   });
@@ -1343,6 +1415,10 @@ export function createApp() {
       const issued = await issuePasswordResetToken(c, row.id, row.email);
       devResetUrl = issued.devResetUrl;
     }
+    logSecurityEvent(c, "password_reset_requested", "info", {
+      accountFound: Boolean(row),
+      email: maskEmailAddress(normalizedEmail),
+    });
 
     return c.json({
       ok: true,
@@ -1394,6 +1470,9 @@ export function createApp() {
       );
       await revokeAllSessionsForUser(c.env.DB, resetRow.user_id);
       clearSessionCookie(c);
+      logSecurityEvent(c, "password_reset_completed", "info", {
+        resetUserId: resetRow.user_id,
+      });
 
       return c.json({ ok: true });
     },
@@ -1426,6 +1505,9 @@ export function createApp() {
         viewer.id,
       );
       await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
+      logSecurityEvent(c, "password_changed", "info", {
+        viewerId: viewer.id,
+      });
 
       return c.json({ ok: true });
     },
@@ -1459,6 +1541,10 @@ export function createApp() {
       assertOrThrow(!existingUser, 409, "An account with this email already exists.");
 
       const { devVerificationUrl } = await issueEmailChangeToken(c, viewer.id, normalizedEmail);
+      logSecurityEvent(c, "email_change_requested", "info", {
+        newEmail: maskEmailAddress(normalizedEmail),
+        viewerId: viewer.id,
+      });
       return c.json({ ok: true, devVerificationUrl });
     },
   );
@@ -1467,6 +1553,9 @@ export function createApp() {
     const viewer = await requireViewer(c);
     assertTrustedWriteOrigin(c);
     await revokeOtherSessionsForUser(c.env.DB, viewer.id, c.get("sessionId"));
+    logSecurityEvent(c, "other_sessions_revoked", "info", {
+      viewerId: viewer.id,
+    });
     return c.json({ ok: true });
   });
 
@@ -1517,14 +1606,22 @@ export function createApp() {
       changeRow.user_id,
     );
     await revokeOtherSessionsForUser(c.env.DB, changeRow.user_id, c.get("sessionId"));
+    logSecurityEvent(c, "email_change_completed", "info", {
+      changedUserId: changeRow.user_id,
+      newEmail: maskEmailAddress(changeRow.new_email),
+    });
 
     return c.json({ ok: true, email: changeRow.new_email });
   });
 
   app.post("/api/auth/logout", async (c) => {
+    const viewerId = c.get("viewer")?.id ?? null;
     assertTrustedWriteOrigin(c);
     await revokeSessionByToken(c.env.DB, readSessionCookie(c));
     clearSessionCookie(c);
+    logSecurityEvent(c, "logout", "info", {
+      viewerId,
+    });
     return c.json({ ok: true });
   });
 
@@ -1769,6 +1866,9 @@ export function createApp() {
     assertOrThrow(viewer.id === c.req.param("id"), 403, "You can only delete your own profile.");
     await requestAccountDeletion(c.env.DB, viewer.id);
     clearSessionCookie(c);
+    logSecurityEvent(c, "account_deletion_requested", "warn", {
+      viewerId: viewer.id,
+    });
     return c.json({ ok: true });
   });
 
@@ -1832,6 +1932,10 @@ export function createApp() {
       createdAt,
       createdAt,
     );
+    logSecurityEvent(c, "friend_request_created", "info", {
+      requesterUserId: viewer.id,
+      targetUserId: target.id,
+    });
 
     return c.json({ ok: true }, 201);
   });
@@ -2159,6 +2263,10 @@ export function createApp() {
         nowIso(),
         nowIso(),
       );
+      logSecurityEvent(c, "group_membership_requested", "info", {
+        groupId: group.id,
+        requesterUserId: viewer.id,
+      });
       return c.json({ ok: true }, 201);
     },
   );
@@ -2309,6 +2417,10 @@ export function createApp() {
       viewer.id,
       nowIso(),
     );
+    logSecurityEvent(c, "group_invite_link_created", "info", {
+      creatorUserId: viewer.id,
+      groupId: group.id,
+    });
     return c.json({ code }, 201);
   });
 

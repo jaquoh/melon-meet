@@ -120,6 +120,21 @@ npx wrangler secret put ALERT_WEBHOOK_URL --config wrangler.jsonc
 
 The default deployment config sets `ENVIRONMENT_NAME=production` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17). If you add staging later, give that environment its own value so alerts clearly show where failures came from.
 
+## Operational security logs
+
+The API also emits structured security-event logs for the launch-critical flows:
+
+- auth rate-limit blocks
+- write-action rate-limit blocks
+- blocked cross-site writes
+- Turnstile signup failures
+- signup and login success/failure
+- password reset and password change events
+- email verification and email change events
+- logout, session revocation, invite-link creation, membership requests, and account deletion requests
+
+These logs are written to the Worker log stream with request IDs, environment, path, user/session context, and masked email addresses where relevant.
+
 ## Deployment notes
 
 - Replace the placeholder `database_id` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:14) with your real D1 database ID before deploying.

@@ -80,7 +80,7 @@ Done means:
 Checklist:
 
 - [x] Add error monitoring and alerting.
-- [ ] Add operational/security logging.
+- [x] Add operational/security logging.
 - [ ] Define backup and restore process for D1.
 - [ ] Test restore once and document the result.
 - [ ] Separate local, staging, and production environments clearly.
@@ -180,7 +180,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add error monitoring and alerting.
+- [x] Add operational/security logging.
 
 Blocked by:
 

@@ -85,7 +85,7 @@ What is clearly not public-launch ready yet:
 
 ## Priority 1: Security Hardening Before Broad Announcement
 
-- [ ] Add production logging, error monitoring, and alerting.
+- [x] Add production logging, error monitoring, and alerting.
   Minimum:
   - Worker exceptions
   - failed auth spikes
