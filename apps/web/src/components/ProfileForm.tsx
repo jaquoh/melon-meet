@@ -93,6 +93,7 @@ export function ProfileForm({
           label={t("forms.publicProfile")}
           onChange={(checked) => onChange({ ...profile, isProfilePublic: checked })}
         />
+        <span className="field-hint">Public profiles can be opened by other users. Turn this off if you want your profile details to stay limited.</span>
       </div>
 
       <div className="field-full">
@@ -101,6 +102,7 @@ export function ProfileForm({
           label={t("forms.showEmailPublicly")}
           onChange={(checked) => onChange({ ...profile, showEmailPublicly: checked })}
         />
+        <span className="field-hint">Only enable this if you want other users to see your email address directly on your profile.</span>
       </div>
     </form>
   );

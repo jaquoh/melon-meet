@@ -223,6 +223,7 @@ export function MeetingForm({
               </option>
             ))}
           </select>
+          <span className="field-hint">A session follows the visibility of its group. Private-group sessions are not meant for broad public discovery.</span>
         </label>
       ) : null}
 

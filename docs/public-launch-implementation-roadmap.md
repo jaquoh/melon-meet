@@ -153,8 +153,8 @@ Checklist:
 
 - [ ] Build or finish the account settings area.
 - [x] Show verified-email state in the product.
-- [ ] Add clear privacy and visibility explanations.
-- [ ] Add destructive-action confirmations.
+- [x] Add clear privacy and visibility explanations.
+- [x] Add destructive-action confirmations.
 - [ ] Improve invite-link controls and clarity.
 - [ ] Define the notification email event matrix and copy rules.
 - [ ] Add admin alert emails for reported content.
@@ -185,7 +185,7 @@ Checklist:
   - group owners/admins: member left group
 - [x] Add a leave-group flow for non-owner members.
 - [ ] Add in-product safety disclaimers where they matter.
-- [ ] Add support/help contact visibility in the UI.
+- [x] Add support/help contact visibility in the UI.
 
 Reference:
 

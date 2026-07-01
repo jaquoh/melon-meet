@@ -40,7 +40,10 @@ Related files:
 
 - [ ] Build or finish the account settings surface for launch-critical account actions.
 - [x] Show verified-email state clearly in-product.
-- [ ] Add destructive-action confirmations for account deletion and other high-risk actions.
+- [x] Add destructive-action confirmations for account deletion and other high-risk actions.
+  Current scope: account deletion flow
+- [x] Add privacy and visibility explanations where users make public/private choices.
+- [x] Make support/help contact paths visible in the signed-in product, not only the legal pages.
 - [ ] Add in-product safety and visibility explanations where public/private choices matter.
 - [ ] Make support/help contact paths visible in the signed-in product, not only the legal pages.
 

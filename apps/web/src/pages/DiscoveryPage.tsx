@@ -1631,6 +1631,9 @@ export function DiscoveryPage({
                     Open verification link
                   </a>
                 ) : null}
+                <p className="muted-copy">
+                  Need help with account access or privacy questions? Contact <a href="mailto:hello@melonmeet.com">hello@melonmeet.com</a>.
+                </p>
               </div>
             </section>
 
@@ -1731,6 +1734,9 @@ export function DiscoveryPage({
                   <p className="muted-copy">
                     This removes access immediately, signs out all devices, and scrubs your profile and login identity now. Remaining cleanup finishes within 30 days.
                   </p>
+                  <p className="muted-copy">
+                    This cannot be undone in the product. Your groups, sessions, and related access will be cleaned up as part of the deletion process, and support should only be needed in exceptional cases.
+                  </p>
                   <label className="field-stack">
                     <span className="field-label">Type byebye to confirm</span>
                     <FormInput onChange={setDeleteConfirmation} placeholder="byebye" value={deleteConfirmation} />
@@ -1781,17 +1787,23 @@ export function DiscoveryPage({
               <>
                 <p className="detail-quote detail-quote--hero">{selectedProfileDetail.bio || t("profile.noBioYet")}</p>
                 <section className="info-grid">
-                  {selectedProfileDetail.homeArea ? (
-                    <div>
-                      <span className="panel-caption">{t("forms.homeArea")}</span>
-                      <strong>{selectedProfileDetail.homeArea}</strong>
-                    </div>
-                  ) : null}
-                  {selectedProfileDetail.email ? (
-                    <div>
-                      <span className="panel-caption">{t("landing.email")}</span>
-                      <strong>{selectedProfileDetail.email}</strong>
-                    </div>
+                {selectedProfileDetail.homeArea ? (
+                  <div>
+                    <span className="panel-caption">{t("forms.homeArea")}</span>
+                    <strong>{selectedProfileDetail.homeArea}</strong>
+                  </div>
+                ) : null}
+                {isOwnProfile ? (
+                  <div>
+                    <span className="panel-caption">Profile visibility</span>
+                    <strong>{selectedProfileDetail.isProfilePublic ? "Visible to other users" : "Limited profile visibility"}</strong>
+                  </div>
+                ) : null}
+                {selectedProfileDetail.email ? (
+                  <div>
+                    <span className="panel-caption">{t("landing.email")}</span>
+                    <strong>{selectedProfileDetail.email}</strong>
+                  </div>
                   ) : null}
                 </section>
                 {!isOwnProfile && viewer ? (

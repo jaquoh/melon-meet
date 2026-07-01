@@ -78,6 +78,9 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
           <option value="public">{formatVisibility("public")}</option>
           <option value="private">{formatVisibility("private")}</option>
         </select>
+        <span className="field-hint">
+          Public groups can be discovered by anyone in the app. Private groups stay out of public browsing and usually rely on direct membership or invite flow.
+        </span>
       </label>
 
       <label className="field-stack field-full">
@@ -93,6 +96,7 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.messengerUrl")}</span>
         <FormInput onChange={setMessengerUrl} placeholder="https://t.me/..." type="url" value={messengerUrl} />
+        <span className="field-hint">Only add a messenger link if you want members or viewers of this group to have an external contact path.</span>
       </label>
 
     </form>
