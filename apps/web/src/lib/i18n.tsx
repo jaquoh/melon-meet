@@ -302,7 +302,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
               {
                 title: "Base juridica",
                 body: [
-                  "El tratamiento se basa en tu consentimiento conforme al art. 6(1)(a) del RGPD cuando creas una cuenta y en la ejecucion de un contrato conforme al art. 6(1)(b) del RGPD para prestar el servicio.",
+                  "Tratamos los datos principales de la cuenta y de la comunidad cuando es necesario para prestar el servicio conforme al art. 6(1)(b) del RGPD.",
                   "El tratamiento relacionado con la seguridad tambien puede basarse en nuestro interes legitimo conforme al art. 6(1)(f) del RGPD para proteger el servicio y a sus usuarios.",
                 ],
               },
@@ -479,7 +479,7 @@ function buildInfoContent(localeLabel: string): TranslationDictionary {
             {
               title: "Legal Basis",
               body: [
-                "Processing is based on your consent under Art. 6(1)(a) GDPR when you create an account and on the performance of a contract under Art. 6(1)(b) GDPR to provide the service.",
+                "We process core account and community data where this is necessary to provide the service under Art. 6(1)(b) GDPR.",
                 "Security-related processing may also be based on our legitimate interest under Art. 6(1)(f) GDPR in protecting the service and its users.",
               ],
             },

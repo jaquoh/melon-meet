@@ -129,7 +129,7 @@ Checklist:
 - [x] Define the retention and deletion schedule.
 - [x] Define the user data request process.
 - [x] Document processors/subprocessors.
-- [ ] Decide analytics/cookie consent approach before adding analytics.
+- [x] Decide analytics/cookie consent approach before adding analytics.
 
 Reference:
 

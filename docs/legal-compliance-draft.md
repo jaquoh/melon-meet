@@ -50,6 +50,7 @@ Relevant local implementation points:
 - retention and deletion operations rule: [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
 - user data request handling rule: [user-data-request-process.md](/Users/jbot/IdeaProjects/melon-meet/docs/user-data-request-process.md)
 - processor/subprocessor inventory: [processor-subprocessor-inventory.md](/Users/jbot/IdeaProjects/melon-meet/docs/processor-subprocessor-inventory.md)
+- analytics and cookie-consent rule: [analytics-cookie-consent-decision.md](/Users/jbot/IdeaProjects/melon-meet/docs/analytics-cookie-consent-decision.md)
 - monitoring and alerts: [monitoring.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/monitoring.ts)
 - security logging: [security-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/security-log.ts)
 - audit logging: [audit-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/audit-log.ts)
@@ -200,6 +201,7 @@ Current safe position:
 - the service uses a strictly necessary authentication cookie for signed-in sessions
 - the frontend also stores theme and language preferences in browser storage
 - because there is no analytics or advertising stack today, do not add a cookie banner unless you later introduce non-essential storage/access
+- the launch decision is to keep non-essential analytics out of the first public beta rather than partially solving consent handling
 
 Important caution:
 

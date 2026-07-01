@@ -243,7 +243,7 @@ What is clearly not public-launch ready yet:
   - posts
   Why: it helps both GDPR posture and trust.
 
-- [ ] Decide cookie/consent requirements before adding analytics.
+- [x] Decide cookie/consent requirements before adding analytics.
   Rule:
   - strictly necessary auth/session cookies do not mean full CMP by default
   - non-essential analytics/marketing tools likely do

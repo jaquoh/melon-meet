@@ -67,6 +67,6 @@ This checklist is meant for the first public beta launch on Cloudflare.
 ## 5. Launch Operations
 
 - Set up a support inbox and use it in legal/support copy.
-- Decide whether to add analytics before launch; if yes, finish cookie/consent handling first.
+- Keep non-essential analytics out of the first public beta unless the consent/privacy approach is reopened and implemented properly first.
 - Prepare a short private beta invite list first, then expand once retention and stability look healthy.
 - Run the first launch as invite-only, then review support load, abuse rate, and failure rate before any broader public announcement.

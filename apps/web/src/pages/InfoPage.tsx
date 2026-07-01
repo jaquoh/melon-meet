@@ -156,7 +156,7 @@ export const PAGE_CONTENT = {
         body: [
           "Melon Meet uses a strictly necessary authentication cookie for signed-in sessions.",
           "The frontend also stores theme and language preferences in local browser storage.",
-          "Melon Meet does not currently use a separate analytics or advertising stack.",
+          "Melon Meet does not currently use a separate analytics or advertising stack, and the first public beta is intended to launch without non-essential tracking.",
           "Melon Meet does not use solely automated decision-making with legal or similarly significant effects within the meaning of Art. 22 GDPR. The service does use technical anti-bot and security measures such as Turnstile and rate limiting.",
         ],
         title: "Cookies, Local Storage, and Automated Checks",
