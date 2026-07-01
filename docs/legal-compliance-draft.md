@@ -49,6 +49,7 @@ Relevant local implementation points:
 - account lifecycle behavior: [account-lifecycle-spec.md](/Users/jbot/IdeaProjects/melon-meet/docs/account-lifecycle-spec.md)
 - retention and deletion operations rule: [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
 - user data request handling rule: [user-data-request-process.md](/Users/jbot/IdeaProjects/melon-meet/docs/user-data-request-process.md)
+- processor/subprocessor inventory: [processor-subprocessor-inventory.md](/Users/jbot/IdeaProjects/melon-meet/docs/processor-subprocessor-inventory.md)
 - monitoring and alerts: [monitoring.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/monitoring.ts)
 - security logging: [security-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/security-log.ts)
 - audit logging: [audit-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/audit-log.ts)
@@ -95,11 +96,14 @@ The public privacy text should clearly name at least these service providers:
   for application hosting, asset delivery, D1 database infrastructure, and Turnstile signup bot protection
 - `Resend`
   for transactional email delivery
+- `OpenFreeMap`
+  for the default external map style and tile delivery unless the operator overrides the map-style configuration
 
 Recommended simple wording:
 
 - Cloudflare processes infrastructure and security-related data on our behalf. For Turnstile, Cloudflare also processes technical signals used to distinguish human visitors from bots.
 - Resend processes recipient addresses and message content needed to deliver transactional emails such as verification, password reset, and email-change messages.
+- OpenFreeMap receives the browser requests needed to load the default external map style and tiles used by the map UI, unless Melon Meet is configured to use another map-style provider.
 
 Recommended transfer wording:
 
@@ -151,6 +155,7 @@ This is not polished marketing copy. It is the safest product-matching content d
 
 - Cloudflare for hosting, infrastructure, bot protection, and related security processing.
 - Resend for transactional email delivery.
+- OpenFreeMap for default external map style and tile delivery unless replaced by another configured provider.
 - Other users, but only to the extent your chosen profile, group, or session visibility makes content visible to them.
 
 ### 5. International transfers

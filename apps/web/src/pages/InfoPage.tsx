@@ -128,7 +128,7 @@ export const PAGE_CONTENT = {
       },
       {
         body: [
-          "Infrastructure and processors: Melon Meet uses Cloudflare for hosting, delivery, database infrastructure, and signup bot protection, and Resend for transactional email delivery.",
+          "Infrastructure and processors: Melon Meet uses Cloudflare for hosting, delivery, database infrastructure, and signup bot protection, Resend for transactional email delivery, and OpenFreeMap for the default external map style and tile delivery unless another map provider is configured.",
           "Other users may see profile, group, session, and post data to the extent that your settings and the product design make that content visible to them.",
           "Some processors may handle personal data outside the EU or EEA, including in the United States. Where this happens, we rely on the provider's contractual safeguards and applicable transfer mechanisms.",
         ],

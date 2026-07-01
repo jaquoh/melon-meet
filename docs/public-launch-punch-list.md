@@ -32,7 +32,7 @@ Related files:
   - intake path
   - response SLA
   - export/deletion handling steps
-- [ ] Document current processors/subprocessors and the data they handle.
+- [x] Document current processors/subprocessors and the data they handle.
 - [ ] Decide the analytics and cookie-consent approach before any non-essential tracking is added.
 
 ### 2. Finish the minimum launch trust UX

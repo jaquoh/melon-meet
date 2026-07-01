@@ -128,7 +128,7 @@ Checklist:
 - [x] Add versioned acceptance tracking for terms and privacy.
 - [x] Define the retention and deletion schedule.
 - [x] Define the user data request process.
-- [ ] Document processors/subprocessors.
+- [x] Document processors/subprocessors.
 - [ ] Decide analytics/cookie consent approach before adding analytics.
 
 Reference:

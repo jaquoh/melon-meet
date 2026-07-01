@@ -216,7 +216,7 @@ What is clearly not public-launch ready yet:
 - [ ] Add a clear age policy and enforce it in signup if you keep the 16+ rule.
   Why: the terms mention age 16+, but the product does not enforce or record it.
 
-- [ ] Document all processors/subprocessors and data flows.
+- [x] Document all processors/subprocessors and data flows.
   At minimum review:
   - Cloudflare Workers
   - Cloudflare D1
