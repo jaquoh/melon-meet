@@ -1634,6 +1634,9 @@ export function DiscoveryPage({
                 <p className="muted-copy">
                   Need help with account access or privacy questions? Contact <a href="mailto:hello@melonmeet.com">hello@melonmeet.com</a>.
                 </p>
+                <p className="muted-copy">
+                  Need to report a safety issue, harassment concern, or suspicious behaviour? Use the in-product report buttons first when possible so the moderation team gets the right context quickly.
+                </p>
               </div>
             </section>
 
@@ -1965,6 +1968,9 @@ export function DiscoveryPage({
         <span className="panel-caption">{t("discovery.availability")}</span>
         <strong>{t("status.openSpots", { count: selectedMeetingDetail.openSpots })}</strong>
         <span>{t("status.claimedCount", { claimed: selectedMeetingDetail.claimedSpots, capacity: selectedMeetingDetail.capacity })}</span>
+        <p className="muted-copy">
+          Claiming a spot tells the host you plan to attend. Double-check time, price, and location details, and coordinate any transport, payment, or safety questions directly with the organiser.
+        </p>
         {viewer ? (
           <div className="availability-callout__actions">
             {selectedMeetingDetail.viewerHasClaimed ? <span className="mini-chip mini-chip--success">{t("discovery.youAreAttending")}</span> : null}
@@ -2197,6 +2203,9 @@ export function DiscoveryPage({
           </button>
         ) : null}
       </div>
+      <p className="muted-copy">
+        Public groups are easier to discover; private groups are still run independently by their owners. Join or request access only when the format, location, and expectations feel clear to you.
+      </p>
       {leaveGroupMutation.isError ? (
         <p className="form-error">{leaveGroupMutation.error instanceof Error ? leaveGroupMutation.error.message : "Could not leave the group."}</p>
       ) : null}

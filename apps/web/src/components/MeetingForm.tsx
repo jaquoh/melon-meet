@@ -240,6 +240,7 @@ export function MeetingForm({
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.description")}</span>
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} value={description} />
+        <span className="field-hint">Set clear expectations about skill level, costs, equipment, and anything participants should know before joining.</span>
       </label>
 
       <label className="field-stack field-full">
@@ -306,6 +307,12 @@ export function MeetingForm({
         <span className="field-label">{t("forms.capacity")}</span>
         <FormInput min={2} onChange={setCapacity} required type="number" value={capacity} />
       </label>
+
+      <div className="field-full">
+        <p className="field-hint">
+          Hosts are responsible for describing the plan accurately and updating attendees if details change. Melon Meet coordinates discovery, but transport, safety, payments, and participation decisions stay with the group.
+        </p>
+      </div>
 
       <div className="field-stack">
         <span className="field-label">{t("forms.pricing")}</span>

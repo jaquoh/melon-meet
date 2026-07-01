@@ -184,7 +184,7 @@ Checklist:
   - group owners/admins: membership join request
   - group owners/admins: member left group
 - [x] Add a leave-group flow for non-owner members.
-- [ ] Add in-product safety disclaimers where they matter.
+- [x] Add in-product safety disclaimers where they matter.
 - [x] Add support/help contact visibility in the UI.
 
 Reference:
@@ -216,15 +216,16 @@ Use this section to keep the team aligned between sessions.
 
 Current phase:
 
-- [ ] Phase 5: Legal, Privacy, and Compliance Alignment
+- [ ] Phase 6: User Trust, Notifications, and Settings UX
 
 Current session target:
 
-- [x] Define the user data request process.
+- [x] Add in-product safety disclaimers where they matter.
 
 Blocked by:
 
-- [ ] Decide the analytics and cookie-consent approach before adding any non-essential tracking.
+- [ ] Finish the remaining launch-critical account settings polish.
+- [ ] Decide how much of the notification email matrix is required before the first invite-only cohort.
 - [ ] Choose the first invite-only cohort and launch owner rotation.
 
 ## Not In Scope For First Public Launch

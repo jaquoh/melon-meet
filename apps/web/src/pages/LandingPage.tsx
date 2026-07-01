@@ -281,6 +281,12 @@ export function LandingPage({
                     </p>
                   ) : null}
 
+                  {mode === "signup" ? (
+                    <p className="muted-copy">
+                      Melon Meet helps people coordinate sessions, but organisers, venues, and participants act independently. Check the session details, use your own judgment, and arrange transport, payments, and personal safety directly with the group.
+                    </p>
+                  ) : null}
+
                   <div className="form-actions form-actions--start">
                     <button
                       className="button-primary"

@@ -44,8 +44,7 @@ Related files:
   Current scope: account deletion flow
 - [x] Add privacy and visibility explanations where users make public/private choices.
 - [x] Make support/help contact paths visible in the signed-in product, not only the legal pages.
-- [ ] Add in-product safety and visibility explanations where public/private choices matter.
-- [ ] Make support/help contact paths visible in the signed-in product, not only the legal pages.
+- [x] Add in-product safety and responsibility explanations where sign-up, joining, and hosting decisions happen.
 
 ### 3. Ship the minimum notification layer
 
