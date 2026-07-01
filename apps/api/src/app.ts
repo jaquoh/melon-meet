@@ -702,13 +702,28 @@ function localDevLink(c: Context<AppEnv>, url: string) {
   return isLocalOrigin(c) ? url : null;
 }
 
+function buildAppUrl(c: Context<AppEnv>, path: string | null) {
+  return path ? `${appOrigin(c)}${path}` : appOrigin(c);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function parseEmailList(value: string | undefined) {
+  return (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
+}
+
 function parseEmailAllowlist(value: string | undefined) {
-  return new Set(
-    (value ?? "")
-      .split(",")
-      .map((entry) => entry.trim().toLowerCase())
-      .filter((entry) => entry.length > 0),
-  );
+  return new Set(parseEmailList(value));
 }
 
 function moderationRoleForEmail(env: AppEnv["Bindings"], email: string): ModerationRole | null {
@@ -798,7 +813,7 @@ async function recordPolicyAcceptances(
   );
 }
 
-async function sendAccountEmail(
+async function sendTransactionalEmail(
   c: Context<AppEnv>,
   {
     html,
@@ -809,7 +824,7 @@ async function sendAccountEmail(
     html: string;
     subject: string;
     text: string;
-    to: string;
+    to: string | string[];
   },
 ) {
   if (!c.env.RESEND_API_KEY) {
@@ -823,6 +838,109 @@ async function sendAccountEmail(
     text,
     to,
   });
+}
+
+async function sendReportCreatedEmails(
+  c: Context<AppEnv>,
+  {
+    note,
+    reason,
+    reporterDisplayName,
+    reporterEmail,
+    targetId,
+    targetType,
+  }: {
+    note: string | null;
+    reason: string;
+    reporterDisplayName: string;
+    reporterEmail: string;
+    targetId: string;
+    targetType: ReportTargetType;
+  },
+) {
+  const targetLabel = await resolveModerationReportTargetLabel(c.env.DB, targetType, targetId);
+  const targetUrl = buildAppUrl(c, reportTargetPath(targetType, targetId));
+  const normalizedReason = reason.replaceAll("_", " ");
+  const safeTargetLabel = escapeHtml(targetLabel);
+  const safeReason = escapeHtml(normalizedReason);
+  const safeTargetUrl = escapeHtml(targetUrl);
+  const moderationRecipients = [...new Set([
+    ...parseEmailList(c.env.MODERATION_REVIEWER_EMAILS),
+    ...parseEmailList(c.env.MODERATION_ADMIN_EMAILS),
+  ])];
+
+  await sendTransactionalEmail(c, {
+    html: `<p>Thanks for sending a report to Melon Meet.</p><p>We recorded your report about <strong>${safeTargetLabel}</strong> for <strong>${safeReason}</strong>.</p><p>Our moderation team will review it and follow up if there is anything else you need to know.</p><p>You can still revisit the related page here: <a href="${safeTargetUrl}">${safeTargetUrl}</a></p>`,
+    subject: "We received your Melon Meet report",
+    text: `Thanks for sending a report to Melon Meet.\n\nWe recorded your report about ${targetLabel} for ${normalizedReason}.\n\nOur moderation team will review it and follow up if there is anything else you need to know.\n\nRelated page: ${targetUrl}`,
+    to: reporterEmail,
+  });
+
+  if (moderationRecipients.length === 0) {
+    return;
+  }
+
+  await sendTransactionalEmail(c, {
+    html: `<p>A new Melon Meet report needs review.</p><p><strong>Target:</strong> ${safeTargetLabel}<br /><strong>Reason:</strong> ${safeReason}<br /><strong>Reporter:</strong> ${escapeHtml(reporterDisplayName)} (${escapeHtml(reporterEmail)})</p>${note ? `<p><strong>Reporter note:</strong> ${escapeHtml(note)}</p>` : ""}<p>Open the moderation queue to review the report.</p>`,
+    subject: `New Melon Meet report: ${targetLabel}`,
+    text: `A new Melon Meet report needs review.\n\nTarget: ${targetLabel}\nReason: ${normalizedReason}\nReporter: ${reporterDisplayName} (${reporterEmail})${note ? `\nReporter note: ${note}` : ""}\n\nOpen the moderation queue to review the report.`,
+    to: moderationRecipients,
+  });
+}
+
+async function sendReportReviewedEmail(
+  c: Context<AppEnv>,
+  {
+    reporterEmail,
+    resolution,
+    status,
+    targetId,
+    targetType,
+  }: {
+    reporterEmail: string;
+    resolution: string | null;
+    status: ModerationReportStatus;
+    targetId: string;
+    targetType: ReportTargetType;
+  },
+) {
+  const targetLabel = await resolveModerationReportTargetLabel(c.env.DB, targetType, targetId);
+  const safeTargetLabel = escapeHtml(targetLabel);
+  const reviewSummary =
+    status === "action_taken"
+      ? "We reviewed your report and took action based on the information available to us."
+      : "We reviewed your report and closed it without taking action based on the information available to us.";
+  await sendTransactionalEmail(c, {
+    html: `<p>Your Melon Meet report has been reviewed.</p><p>${escapeHtml(reviewSummary)}</p><p><strong>Reported item:</strong> ${safeTargetLabel}</p>${resolution ? `<p><strong>Outcome:</strong> ${escapeHtml(resolution)}</p>` : ""}<p>Thanks for taking the time to flag this.</p>`,
+    subject: "Your Melon Meet report was reviewed",
+    text: `Your Melon Meet report has been reviewed.\n\n${reviewSummary}\n\nReported item: ${targetLabel}${resolution ? `\nOutcome: ${resolution}` : ""}\n\nThanks for taking the time to flag this.`,
+    to: reporterEmail,
+  });
+}
+
+async function sendAccountSuspendedEmail(
+  c: Context<AppEnv>,
+  {
+    email,
+    resolution,
+  }: {
+    email: string;
+    resolution: string;
+  },
+) {
+  await sendTransactionalEmail(c, {
+    html: `<p>Your Melon Meet account has been suspended.</p><p>Your access has been removed while we respond to a moderation issue.</p><p><strong>Status:</strong> ${escapeHtml(resolution)}</p><p>If you think this is a mistake or need help, reply to this email or contact <a href="mailto:${escapeHtml(c.env.EMAIL_REPLY_TO_ADDRESS)}">${escapeHtml(c.env.EMAIL_REPLY_TO_ADDRESS)}</a>.</p>`,
+    subject: "Your Melon Meet account has been suspended",
+    text: `Your Melon Meet account has been suspended.\n\nYour access has been removed while we respond to a moderation issue.\n\nStatus: ${resolution}\n\nIf you think this is a mistake or need help, reply to this email or contact ${c.env.EMAIL_REPLY_TO_ADDRESS}.`,
+    to: email,
+  });
+}
+
+function shouldSendReportReviewedEmail(previousStatus: ModerationReportStatus, nextStatus: ModerationReportStatus) {
+  if (previousStatus === nextStatus) {
+    return false;
+  }
+  return nextStatus === "action_taken" || nextStatus === "closed_no_action";
 }
 
 async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string, email: string) {
@@ -849,7 +967,7 @@ async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string, e
 
   const verificationUrl = buildVerifyEmailUrl(c, token);
   console.info(`Email verification link for ${userId}: ${verificationUrl}`);
-  await sendAccountEmail(c, {
+  await sendTransactionalEmail(c, {
     html: `<p>Verify your email for Melon Meet.</p><p><a href="${verificationUrl}">Verify email</a></p><p>This link expires in 24 hours.</p>`,
     subject: "Verify your Melon Meet email",
     text: `Verify your email for Melon Meet.\n\nOpen this link: ${verificationUrl}\n\nThis link expires in 24 hours.`,
@@ -885,7 +1003,7 @@ async function issuePasswordResetToken(c: Context<AppEnv>, userId: string, email
 
   const resetUrl = buildResetPasswordUrl(c, token);
   console.info(`Password reset link for ${userId}: ${resetUrl}`);
-  await sendAccountEmail(c, {
+  await sendTransactionalEmail(c, {
     html: `<p>You requested a password reset for Melon Meet.</p><p><a href="${resetUrl}">Reset password</a></p><p>This link expires in 1 hour.</p>`,
     subject: "Reset your Melon Meet password",
     text: `You requested a password reset for Melon Meet.\n\nOpen this link: ${resetUrl}\n\nThis link expires in 1 hour.`,
@@ -922,7 +1040,7 @@ async function issueEmailChangeToken(c: Context<AppEnv>, userId: string, newEmai
 
   const verificationUrl = buildVerifyEmailChangeUrl(c, token);
   console.info(`Email change link for ${userId}: ${verificationUrl}`);
-  await sendAccountEmail(c, {
+  await sendTransactionalEmail(c, {
     html: `<p>Confirm your new email address for Melon Meet.</p><p><a href="${verificationUrl}">Confirm new email</a></p><p>This link expires in 24 hours.</p>`,
     subject: "Confirm your new Melon Meet email",
     text: `Confirm your new email address for Melon Meet.\n\nOpen this link: ${verificationUrl}\n\nThis link expires in 24 hours.`,
@@ -2076,6 +2194,14 @@ export function createApp() {
       targetId,
       targetType,
     });
+    await sendReportCreatedEmails(c, {
+      note: normalizeOptionalText(note ?? null),
+      reason,
+      reporterDisplayName: viewer.displayName,
+      reporterEmail: viewer.email,
+      targetId,
+      targetType,
+    });
     return c.json({ ok: true }, 201);
   });
 
@@ -2254,6 +2380,16 @@ export function createApp() {
       targetType: "moderation_report",
     });
 
+    if (shouldSendReportReviewedEmail(existing.status, updatedReport.status)) {
+      await sendReportReviewedEmail(c, {
+        reporterEmail: updatedReport.reporter_email,
+        resolution: updatedReport.resolution,
+        status: updatedReport.status,
+        targetId: updatedReport.target_id,
+        targetType: updatedReport.target_type,
+      });
+    }
+
     return c.json({
       report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),
     });
@@ -2365,6 +2501,28 @@ export function createApp() {
       targetId: report.target_id,
       targetType: report.target_type,
     });
+
+    await sendReportReviewedEmail(c, {
+      reporterEmail: updatedReport.reporter_email,
+      resolution: updatedReport.resolution,
+      status: updatedReport.status,
+      targetId: updatedReport.target_id,
+      targetType: updatedReport.target_type,
+    });
+
+    if (action === "suspend_user") {
+      const suspendedUser = await firstRow<{ email: string }>(
+        c.env.DB,
+        "SELECT email FROM users WHERE id = ?",
+        report.target_id,
+      );
+      if (suspendedUser) {
+        await sendAccountSuspendedEmail(c, {
+          email: suspendedUser.email,
+          resolution,
+        });
+      }
+    }
 
     return c.json({
       report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),

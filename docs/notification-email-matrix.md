@@ -1,10 +1,10 @@
 # Melon Meet Notification Email Matrix
 
-Last updated: 2026-05-11
+Last updated: 2026-07-01
 
 Purpose: define the minimum launch-safe notification email set without letting notifications turn into an unbounded product project.
 
-Status: planning document. This matrix defines what we should implement next; it does not mean every email below is already live.
+Status: partially implemented. Admin/operator report alerts plus the first moderation/account emails are now live; the rest of this matrix still defines what should come next.
 
 ## Guiding Rules
 

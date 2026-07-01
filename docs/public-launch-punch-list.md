@@ -48,8 +48,8 @@ Related files:
 
 ### 3. Ship the minimum notification layer
 
-- [ ] Send admin alert emails for reported content.
-- [ ] Send the minimum user account/moderation emails:
+- [x] Send admin alert emails for reported content.
+- [x] Send the minimum user account/moderation emails:
   - account suspended
   - report received
   - report reviewed

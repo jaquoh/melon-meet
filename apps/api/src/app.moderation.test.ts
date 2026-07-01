@@ -95,6 +95,13 @@ function createTestEnv(db: D1Database): AppBindings {
   };
 }
 
+function mockEmailDelivery() {
+  return vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    json: async () => ({ id: "email-test-id" }),
+    ok: true,
+  } as Response);
+}
+
 async function insertUser(
   db: D1Database,
   {
@@ -318,7 +325,11 @@ describe("moderation authorization", () => {
   it("allows admins to take enforcement actions and records the result", async () => {
     const db = new SqliteD1Database();
     db.applyMigrations();
-    const env = createTestEnv(db as unknown as D1Database);
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    mockEmailDelivery();
 
     await insertUser(env.DB, {
       displayName: "Reporter",
@@ -388,6 +399,169 @@ describe("moderation authorization", () => {
       action: "moderation_admin_action_taken",
       target_id: "user-target",
     });
+  });
+});
+
+describe("moderation notification emails", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("sends reporter confirmation and operator alert emails when a report is created", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Reporter",
+      email: "reporter@example.com",
+      id: "user-reporter",
+    });
+    await insertUser(env.DB, {
+      displayName: "Reported User",
+      email: "target@example.com",
+      id: "user-target",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-reporter");
+
+    const response = await requestJson("/api/reports", {
+      body: {
+        note: "This felt unsafe.",
+        reason: "safety_concern",
+        targetId: "user-target",
+        targetType: "profile",
+      },
+      cookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    const reporterEmailPayload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    const operatorEmailPayload = JSON.parse(String(fetchSpy.mock.calls[1]?.[1]?.body));
+
+    expect(reporterEmailPayload.to).toBe("reporter@example.com");
+    expect(reporterEmailPayload.subject).toBe("We received your Melon Meet report");
+    expect(reporterEmailPayload.text).toContain("Profile: Reported User");
+
+    expect(operatorEmailPayload.to).toEqual(["reviewer@example.com", "admin@example.com"]);
+    expect(operatorEmailPayload.subject).toContain("New Melon Meet report");
+    expect(operatorEmailPayload.text).toContain("Reporter: Reporter (reporter@example.com)");
+    expect(operatorEmailPayload.text).toContain("Reporter note: This felt unsafe.");
+  });
+
+  it("sends review and suspension emails when an admin suspends a reported user", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Reporter",
+      email: "reporter@example.com",
+      id: "user-reporter",
+    });
+    await insertUser(env.DB, {
+      displayName: "Reported User",
+      email: "target@example.com",
+      id: "user-target",
+    });
+    await insertUser(env.DB, {
+      displayName: "Admin",
+      email: "admin@example.com",
+      id: "user-admin",
+    });
+    await insertProfileReport(env.DB, {
+      id: "report-2",
+      reporterUserId: "user-reporter",
+      targetUserId: "user-target",
+    });
+    const adminCookie = await makeSessionCookie(env.DB, "user-admin");
+
+    const response = await requestJson("/api/moderation/reports/report-2/actions", {
+      body: {
+        action: "suspend_user",
+      },
+      cookie: adminCookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    const reporterEmailPayload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    const suspendedUserEmailPayload = JSON.parse(String(fetchSpy.mock.calls[1]?.[1]?.body));
+
+    expect(reporterEmailPayload.to).toBe("reporter@example.com");
+    expect(reporterEmailPayload.subject).toBe("Your Melon Meet report was reviewed");
+    expect(reporterEmailPayload.text).toContain("took action");
+
+    expect(suspendedUserEmailPayload.to).toBe("target@example.com");
+    expect(suspendedUserEmailPayload.subject).toBe("Your Melon Meet account has been suspended");
+    expect(suspendedUserEmailPayload.text).toContain("Admin suspended the reported user account.");
+  });
+
+  it("sends a reporter outcome email when a report is closed without action", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Reporter",
+      email: "reporter@example.com",
+      id: "user-reporter",
+    });
+    await insertUser(env.DB, {
+      displayName: "Reported User",
+      email: "target@example.com",
+      id: "user-target",
+    });
+    await insertUser(env.DB, {
+      displayName: "Support Reviewer",
+      email: "reviewer@example.com",
+      id: "user-reviewer",
+    });
+    await insertProfileReport(env.DB, {
+      id: "report-3",
+      reporterUserId: "user-reporter",
+      targetUserId: "user-target",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-reviewer");
+
+    const response = await requestJson("/api/moderation/reports/report-3", {
+      body: {
+        resolution: "We reviewed this report and could not verify a policy violation from the available information.",
+        status: "closed_no_action",
+      },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const reporterEmailPayload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(reporterEmailPayload.to).toBe("reporter@example.com");
+    expect(reporterEmailPayload.subject).toBe("Your Melon Meet report was reviewed");
+    expect(reporterEmailPayload.text).toContain("closed it without taking action");
+    expect(reporterEmailPayload.text).toContain("could not verify a policy violation");
   });
 });
 

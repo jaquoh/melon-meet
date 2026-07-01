@@ -156,9 +156,9 @@ Checklist:
 - [x] Add clear privacy and visibility explanations.
 - [x] Add destructive-action confirmations.
 - [ ] Improve invite-link controls and clarity.
-- [ ] Define the notification email event matrix and copy rules.
-- [ ] Add admin alert emails for reported content.
-- [ ] Add user moderation/account emails.
+- [x] Define the notification email event matrix and copy rules.
+- [x] Add admin alert emails for reported content.
+- [x] Add user moderation/account emails.
   Cover:
   - account suspended
   - user's profile was reported
@@ -220,7 +220,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add in-product safety disclaimers where they matter.
+- [x] Ship the first moderation notification emails.
 
 Blocked by:
 
