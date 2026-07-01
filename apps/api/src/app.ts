@@ -1611,7 +1611,7 @@ export function createApp() {
   );
 
   app.post("/api/auth/signup", zValidator("json", signupSchema), async (c) => {
-    const { acceptedPolicyVersions, email, password, turnstileToken } = c.req.valid("json");
+    const { acceptedAgeMinimum, acceptedPolicyVersions, email, password, turnstileToken } = c.req.valid("json");
     const normalizedEmail = email.toLowerCase();
     const limitedResponse = await enforceAuthRateLimit(c, "auth:signup", email);
     if (limitedResponse) {
@@ -1653,6 +1653,7 @@ export function createApp() {
     writeSessionCookie(c, session.token, session.expiresAt);
     const { devVerificationUrl } = await issueEmailVerificationToken(c, userId, normalizedEmail);
     logSecurityEvent(c, "signup_succeeded", "info", {
+      acceptedAgeMinimum,
       acceptedPolicyVersions,
       email: maskEmailAddress(normalizedEmail),
       newUserId: userId,

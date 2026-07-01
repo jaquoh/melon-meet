@@ -38,6 +38,7 @@ These are the facts the legal text should match today:
 - the app stores profile data, group data, session data, claims, posts, friend connections, reports, moderation notes, and audit/security records
 - the app supports moderation reports and admin enforcement actions
 - account deletion immediately removes access and starts a 30-day deletion-pending window
+- signup requires a self-attested 16+ age confirmation
 - no analytics stack is implemented right now
 - no marketing newsletter flow is implemented right now
 - email open/click tracking is not used in the current Resend integration
@@ -51,6 +52,7 @@ Relevant local implementation points:
 - user data request handling rule: [user-data-request-process.md](/Users/jbot/IdeaProjects/melon-meet/docs/user-data-request-process.md)
 - processor/subprocessor inventory: [processor-subprocessor-inventory.md](/Users/jbot/IdeaProjects/melon-meet/docs/processor-subprocessor-inventory.md)
 - analytics and cookie-consent rule: [analytics-cookie-consent-decision.md](/Users/jbot/IdeaProjects/melon-meet/docs/analytics-cookie-consent-decision.md)
+- age policy rule: [age-policy-decision.md](/Users/jbot/IdeaProjects/melon-meet/docs/age-policy-decision.md)
 - monitoring and alerts: [monitoring.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/monitoring.ts)
 - security logging: [security-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/security-log.ts)
 - audit logging: [audit-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/audit-log.ts)

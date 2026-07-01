@@ -112,6 +112,7 @@ export const policyAcceptanceVersionsSchema = z.object({
 });
 
 export const signupSchema = authSchema.extend({
+  acceptedAgeMinimum: z.literal(true),
   turnstileToken: z.string().trim().min(1).optional().nullable(),
   acceptedPolicyVersions: policyAcceptanceVersionsSchema,
 });

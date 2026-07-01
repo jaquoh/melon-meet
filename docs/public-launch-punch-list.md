@@ -34,11 +34,12 @@ Related files:
   - export/deletion handling steps
 - [x] Document current processors/subprocessors and the data they handle.
 - [x] Decide the analytics and cookie-consent approach before any non-essential tracking is added.
+- [x] Enforce the 16+ eligibility rule in signup without introducing date-of-birth collection.
 
 ### 2. Finish the minimum launch trust UX
 
 - [ ] Build or finish the account settings surface for launch-critical account actions.
-- [ ] Show verified-email state clearly in-product.
+- [x] Show verified-email state clearly in-product.
 - [ ] Add destructive-action confirmations for account deletion and other high-risk actions.
 - [ ] Add in-product safety and visibility explanations where public/private choices matter.
 - [ ] Make support/help contact paths visible in the signed-in product, not only the legal pages.

@@ -138,10 +138,12 @@ export function signUp(
   email: string,
   password: string,
   acceptedPolicyVersions: PolicyAcceptanceVersions,
+  acceptedAgeMinimum: boolean,
   turnstileToken?: string | null,
 ) {
   return request<AuthResponse>("/api/auth/signup", {
     body: JSON.stringify({
+      acceptedAgeMinimum,
       acceptedPolicyVersions,
       email,
       password,

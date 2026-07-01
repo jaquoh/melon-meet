@@ -181,6 +181,7 @@ export const PAGE_CONTENT = {
           "You must provide accurate account information and keep it up to date.",
           "You are responsible for maintaining the confidentiality of your password and for activity that happens through your account.",
           "You must be at least 16 years old to create an account.",
+          "Signup requires you to confirm that you meet this minimum age requirement.",
           "We may require email verification before full participation features are available.",
         ],
         title: "User Accounts",

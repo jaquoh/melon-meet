@@ -130,6 +130,7 @@ Checklist:
 - [x] Define the user data request process.
 - [x] Document processors/subprocessors.
 - [x] Decide analytics/cookie consent approach before adding analytics.
+- [x] Define and enforce the 16+ signup age policy.
 
 Reference:
 
@@ -151,7 +152,7 @@ Done means:
 Checklist:
 
 - [ ] Build or finish the account settings area.
-- [ ] Show verified-email state in the product.
+- [x] Show verified-email state in the product.
 - [ ] Add clear privacy and visibility explanations.
 - [ ] Add destructive-action confirmations.
 - [ ] Improve invite-link controls and clarity.

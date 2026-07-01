@@ -213,7 +213,7 @@ What is clearly not public-launch ready yet:
   - account id
   Why: public services should be able to prove which policy version was accepted.
 
-- [ ] Add a clear age policy and enforce it in signup if you keep the 16+ rule.
+- [x] Add a clear age policy and enforce it in signup if you keep the 16+ rule.
   Why: the terms mention age 16+, but the product does not enforce or record it.
 
 - [x] Document all processors/subprocessors and data flows.

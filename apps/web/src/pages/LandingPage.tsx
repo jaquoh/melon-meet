@@ -31,6 +31,7 @@ export function LandingPage({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedSignupTerms, setAcceptedSignupTerms] = useState(false);
+  const [acceptedSignupAgeMinimum, setAcceptedSignupAgeMinimum] = useState(false);
   const [signupTurnstileToken, setSignupTurnstileToken] = useState<string | null>(null);
   const [signupGuardMessage, setSignupGuardMessage] = useState("");
   const [signupTurnstileRenderNonce, setSignupTurnstileRenderNonce] = useState(0);
@@ -78,7 +79,13 @@ export function LandingPage({
     mutationFn: async () =>
       mode === "login"
         ? logIn(email, password)
-        : signUp(email, password, policyVersions as NonNullable<typeof policyVersions>, signupTurnstileToken),
+        : signUp(
+            email,
+            password,
+            policyVersions as NonNullable<typeof policyVersions>,
+            acceptedSignupAgeMinimum,
+            signupTurnstileToken,
+          ),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setSignupGuardMessage("");
@@ -183,6 +190,10 @@ export function LandingPage({
                     if (mode === "signup" && !acceptedSignupTerms) {
                       return;
                     }
+                    if (mode === "signup" && !acceptedSignupAgeMinimum) {
+                      setSignupGuardMessage("Confirm that you are at least 16 years old before creating your account.");
+                      return;
+                    }
                     if (mode === "signup" && !policyVersions) {
                       setSignupGuardMessage("Could not load the current privacy and terms versions. Please reload and try again.");
                       return;
@@ -219,25 +230,36 @@ export function LandingPage({
                   ) : null}
 
                   {mode === "signup" ? (
-                    <div className="auth-consent-row">
-                      <input
-                        checked={acceptedSignupTerms}
-                        id="signup-legal-consent"
-                        onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
-                        type="checkbox"
-                      />
-                      <label htmlFor="signup-legal-consent">
-                        {t("landing.consentPrefix")}{" "}
-                        <Link state={infoLinkState} to="/privacy">
-                          {t("info.pages.privacy.title")}
-                        </Link>{" "}
-                        {t("landing.consentMiddle")}{" "}
-                        <Link state={infoLinkState} to="/terms">
-                          {t("info.pages.terms.title")}
-                        </Link>
-                        .
-                      </label>
-                    </div>
+                    <>
+                      <div className="auth-consent-row">
+                        <input
+                          checked={acceptedSignupAgeMinimum}
+                          id="signup-age-consent"
+                          onChange={(event) => setAcceptedSignupAgeMinimum(event.target.checked)}
+                          type="checkbox"
+                        />
+                        <label htmlFor="signup-age-consent">I confirm that I am at least 16 years old.</label>
+                      </div>
+                      <div className="auth-consent-row">
+                        <input
+                          checked={acceptedSignupTerms}
+                          id="signup-legal-consent"
+                          onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
+                          type="checkbox"
+                        />
+                        <label htmlFor="signup-legal-consent">
+                          {t("landing.consentPrefix")}{" "}
+                          <Link state={infoLinkState} to="/privacy">
+                            {t("info.pages.privacy.title")}
+                          </Link>{" "}
+                          {t("landing.consentMiddle")}{" "}
+                          <Link state={infoLinkState} to="/terms">
+                            {t("info.pages.terms.title")}
+                          </Link>
+                          .
+                        </label>
+                      </div>
+                    </>
                   ) : null}
 
                   {mode === "signup" && turnstileSiteKey ? (
@@ -262,7 +284,7 @@ export function LandingPage({
                   <div className="form-actions form-actions--start">
                     <button
                       className="button-primary"
-                      disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !policyVersions))}
+                      disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !acceptedSignupAgeMinimum || !policyVersions))}
                     >
                       {authMutation.isPending ? t("common.working") : mode === "login" ? t("common.signIn") : t("landing.createAccount")}
                     </button>

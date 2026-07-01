@@ -213,5 +213,6 @@ For the planned notification rollout, use [notification-email-matrix.md](/Users/
 - If you want a custom map style, define `VITE_MAP_STYLE_URL` and `VITE_MAP_STYLE_URL_DARK` for the frontend build. The default style uses OpenFreeMap so local and production deploys work without a tile API key.
 - Work through the launch checklist in [docs/go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md).
 - Use [docs/public-launch-punch-list.md](/Users/jbot/IdeaProjects/melon-meet/docs/public-launch-punch-list.md) for the current launch-blocking short list.
+- Use [docs/dev-and-deploy-commands.md](/Users/jbot/IdeaProjects/melon-meet/docs/dev-and-deploy-commands.md) for the quick local-start and deploy command list.
 - Use [docs/venue-content-plan.md](/Users/jbot/IdeaProjects/melon-meet/docs/venue-content-plan.md) when expanding real venue data or adding user venue suggestions.
 - Use [docs/transit-overlay.md](/Users/jbot/IdeaProjects/melon-meet/docs/transit-overlay.md) to generate the optional Berlin U-Bahn/S-Bahn overlay for local testing.

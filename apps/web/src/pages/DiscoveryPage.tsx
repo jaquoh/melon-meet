@@ -56,6 +56,7 @@ import {
   getVenue,
   deleteProfile,
   logOutOtherSessions,
+  resendVerificationEmail,
   updateProfile,
   updateGroup,
   updateMeeting,
@@ -256,6 +257,7 @@ export function DiscoveryPage({
   const [changeEmailStatus, setChangeEmailStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [changePasswordStatus, setChangePasswordStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [deleteAccountStatus, setDeleteAccountStatus] = useState<{ kind: "error"; message: string } | null>(null);
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [sessionStatus, setSessionStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
@@ -754,6 +756,7 @@ export function DiscoveryPage({
     setChangeEmailStatus(null);
     setChangePasswordStatus(null);
     setDeleteAccountStatus(null);
+    setEmailVerificationStatus(null);
     setDeleteConfirmation("");
     setSessionStatus(null);
   }
@@ -971,6 +974,23 @@ export function DiscoveryPage({
     },
     onError: (error: Error) => {
       setChangeEmailStatus({
+        kind: "error",
+        message: error.message,
+      });
+    },
+  });
+
+  const resendVerificationEmailMutation = useMutation({
+    mutationFn: resendVerificationEmail,
+    onSuccess: (response) => {
+      setEmailVerificationStatus({
+        devVerificationUrl: response.devVerificationUrl ?? null,
+        kind: "success",
+        message: "A new verification email has been prepared.",
+      });
+    },
+    onError: (error: Error) => {
+      setEmailVerificationStatus({
         kind: "error",
         message: error.message,
       });
@@ -1525,6 +1545,11 @@ export function DiscoveryPage({
           <div className="info-tags">
             <span className="mini-chip">{selectedProfileDetail.isProfilePublic ? t("common.public") : t("common.private")}</span>
             <span className="mini-chip">{formatPlayingLevelTag(selectedProfileDetail.playingLevel)}</span>
+            {isOwnProfile ? (
+              <span className={`mini-chip ${selectedProfileDetail.emailVerified ? "mini-chip--success" : "mini-chip--muted"}`.trim()}>
+                {selectedProfileDetail.emailVerified ? "Email verified" : "Email unverified"}
+              </span>
+            ) : null}
             {selectedProfileMemberships.length > 0 ? <span className="mini-chip">{`${selectedProfileMemberships.length} ${t("common.groups").toLowerCase()}`}</span> : null}
             {selectedProfileAttending.length > 0 ? <span className="mini-chip">{`${selectedProfileAttending.length} ${t("discovery.attending")}`}</span> : null}
           </div>
@@ -1560,6 +1585,55 @@ export function DiscoveryPage({
           ) : null
         ) : managingAccount && isOwnProfile ? (
           <div className="account-sections-stack">
+            <section className="account-section is-open">
+              <div className="account-section__trigger">
+                <span className="account-section__headline">
+                  <Mail size={16} strokeWidth={2} />
+                  <span>Email verification</span>
+                </span>
+                <span className={`mini-chip ${selectedProfileDetail.emailVerified ? "mini-chip--success" : "mini-chip--muted"}`.trim()}>
+                  {selectedProfileDetail.emailVerified ? "Verified" : "Unverified"}
+                </span>
+              </div>
+              <div className="account-section__panel">
+                <p className="panel-caption">Account status</p>
+                <p className="muted-copy">
+                  {selectedProfileDetail.emailVerified
+                    ? "Your email is verified and this account can participate normally."
+                    : "Verify your email to unlock groups, sessions, claims, and posts."}
+                </p>
+                {!selectedProfileDetail.emailVerified ? (
+                  <div className="form-actions">
+                    <button
+                      className="button-secondary"
+                      disabled={resendVerificationEmailMutation.isPending}
+                      onClick={async () => {
+                        setEmailVerificationStatus(null);
+                        await resendVerificationEmailMutation.mutateAsync();
+                      }}
+                      type="button"
+                    >
+                      <Mail size={14} strokeWidth={2} />
+                      {resendVerificationEmailMutation.isPending ? "Sending" : "Resend verification email"}
+                    </button>
+                  </div>
+                ) : null}
+                {emailVerificationStatus ? (
+                  <p
+                    className="empty-state"
+                    style={emailVerificationStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                  >
+                    {emailVerificationStatus.message}
+                  </p>
+                ) : null}
+                {emailVerificationStatus?.devVerificationUrl ? (
+                  <a className="muted-copy" href={emailVerificationStatus.devVerificationUrl}>
+                    Open verification link
+                  </a>
+                ) : null}
+              </div>
+            </section>
+
             <section className={`account-section ${changingEmail ? "is-open" : ""}`.trim()}>
               <button aria-expanded={changingEmail} className="account-section__trigger" onClick={toggleEmailSection} type="button">
                 <span className="account-section__headline">

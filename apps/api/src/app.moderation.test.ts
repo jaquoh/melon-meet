@@ -406,6 +406,7 @@ describe("signup policy acceptance tracking", () => {
     const response = await requestJson("/api/auth/signup", {
       baseUrl: LOCAL_BASE_URL,
       body: {
+        acceptedAgeMinimum: true,
         acceptedPolicyVersions: CURRENT_POLICY_VERSIONS,
         email: "fresh@example.com",
         password: "melonmelon",

@@ -72,6 +72,7 @@ describe("public URL validation", () => {
   it("requires the current policy versions on signup", () => {
     expect(
       signupSchema.safeParse({
+        acceptedAgeMinimum: true,
         acceptedPolicyVersions: {
           privacy: CURRENT_POLICY_VERSIONS.privacy,
           terms: CURRENT_POLICY_VERSIONS.terms,
@@ -84,8 +85,22 @@ describe("public URL validation", () => {
 
     expect(
       signupSchema.safeParse({
+        acceptedAgeMinimum: true,
         acceptedPolicyVersions: {
           privacy: "2026-04-25",
+          terms: CURRENT_POLICY_VERSIONS.terms,
+        },
+        email: "hello@example.com",
+        password: "melonmelon",
+        turnstileToken: null,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      signupSchema.safeParse({
+        acceptedAgeMinimum: false,
+        acceptedPolicyVersions: {
+          privacy: CURRENT_POLICY_VERSIONS.privacy,
           terms: CURRENT_POLICY_VERSIONS.terms,
         },
         email: "hello@example.com",

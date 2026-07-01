@@ -15,6 +15,7 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedSignupTerms, setAcceptedSignupTerms] = useState(false);
+  const [acceptedSignupAgeMinimum, setAcceptedSignupAgeMinimum] = useState(false);
   const [signupTurnstileToken, setSignupTurnstileToken] = useState<string | null>(null);
   const [signupGuardMessage, setSignupGuardMessage] = useState("");
   const [signupTurnstileRenderNonce, setSignupTurnstileRenderNonce] = useState(0);
@@ -30,7 +31,13 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
     mutationFn: async () =>
       mode === "login"
         ? logIn(email, password)
-        : signUp(email, password, policyVersions as NonNullable<typeof policyVersions>, signupTurnstileToken),
+        : signUp(
+            email,
+            password,
+            policyVersions as NonNullable<typeof policyVersions>,
+            acceptedSignupAgeMinimum,
+            signupTurnstileToken,
+          ),
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setSignupGuardMessage("");
@@ -150,6 +157,10 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
               if (mode === "signup" && !acceptedSignupTerms) {
                 return;
               }
+              if (mode === "signup" && !acceptedSignupAgeMinimum) {
+                setSignupGuardMessage("Confirm that you are at least 16 years old before creating your account.");
+                return;
+              }
               if (mode === "signup" && !policyVersions) {
                 setSignupGuardMessage("Could not load the current privacy and terms versions. Please reload and try again.");
                 return;
@@ -179,17 +190,28 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             ) : null}
 
             {mode === "signup" ? (
-              <div className="auth-consent-row">
-                <input
-                  checked={acceptedSignupTerms}
-                  id="signup-legal-consent-auth"
-                  onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
-                  type="checkbox"
-                />
-                <label htmlFor="signup-legal-consent-auth">
-                  I agree to the <Link to="/privacy">Privacy Policy</Link> and <Link to="/terms">Terms of Service</Link>.
-                </label>
-              </div>
+              <>
+                <div className="auth-consent-row">
+                  <input
+                    checked={acceptedSignupAgeMinimum}
+                    id="signup-age-consent-auth"
+                    onChange={(event) => setAcceptedSignupAgeMinimum(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <label htmlFor="signup-age-consent-auth">I confirm that I am at least 16 years old.</label>
+                </div>
+                <div className="auth-consent-row">
+                  <input
+                    checked={acceptedSignupTerms}
+                    id="signup-legal-consent-auth"
+                    onChange={(event) => setAcceptedSignupTerms(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <label htmlFor="signup-legal-consent-auth">
+                    I agree to the <Link to="/privacy">Privacy Policy</Link> and <Link to="/terms">Terms of Service</Link>.
+                  </label>
+                </div>
+              </>
             ) : null}
 
             {mode === "signup" && turnstileSiteKey ? (
@@ -218,7 +240,10 @@ export function AuthPage({ viewer }: { viewer: ViewerSummary | null }) {
             </p>
 
             <div className="form-actions form-actions--start">
-              <button className="button-primary" disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !policyVersions))}>
+              <button
+                className="button-primary"
+                disabled={authMutation.isPending || (mode === "signup" && (!acceptedSignupTerms || !acceptedSignupAgeMinimum || !policyVersions))}
+              >
                 {authMutation.isPending ? "Working" : mode === "login" ? "Log in" : "Create account"}
               </button>
             </div>
