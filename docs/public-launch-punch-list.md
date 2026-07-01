@@ -26,7 +26,7 @@ Related files:
 
 ### 1. Finalize legal and compliance operations
 
-- [ ] Lock the retention and deletion schedule that matches the account lifecycle and privacy copy.
+- [x] Lock the retention and deletion schedule that matches the account lifecycle and privacy copy.
 - [ ] Define the user data request process:
   - owner
   - intake path

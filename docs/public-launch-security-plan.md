@@ -202,7 +202,7 @@ What is clearly not public-launch ready yet:
 
 - [x] Make the privacy policy match actual system behavior closely enough for launch planning.
   Remaining follow-up:
-  - finalize retention periods as an explicit schedule
+  - keep the retention schedule in [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md) aligned with implementation
   - keep processor/subprocessor details current
   - revisit if analytics is introduced
 

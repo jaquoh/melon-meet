@@ -21,7 +21,7 @@ This draft keeps the rule set simple:
 - use contract performance for core account/community features
 - use legitimate interests for security, moderation, and abuse prevention
 - mention consent only where consent is genuinely the right basis
-- avoid promising fixed retention periods that are not implemented
+- avoid promising fixed retention periods that are not implemented or not anchored in [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
 
 ## Product facts from the repo
 
@@ -47,6 +47,7 @@ Relevant local implementation points:
 - session cookie handling: [auth.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/auth.ts)
 - transactional email sending: [email.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/email.ts)
 - account lifecycle behavior: [account-lifecycle-spec.md](/Users/jbot/IdeaProjects/melon-meet/docs/account-lifecycle-spec.md)
+- retention and deletion operations rule: [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
 - monitoring and alerts: [monitoring.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/monitoring.ts)
 - security logging: [security-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/security-log.ts)
 - audit logging: [audit-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/audit-log.ts)
@@ -161,9 +162,9 @@ This is not polished marketing copy. It is the safest product-matching content d
 Keep this simple and true:
 
 - active account and community data: kept while the account is active and as long as needed to operate the service
-- verification and reset tokens: short-lived and deleted or invalidated after use or expiry
-- session records: retained while the session remains active or until revoked/expired
-- moderation, audit, and security records: retained for as long as reasonably needed to investigate abuse, enforce platform rules, secure the service, and meet legal obligations
+- verification and email-change tokens: expire after 24 hours; password reset tokens expire after 1 hour; all are deleted or invalidated after use, expiry, or account deletion request
+- session records: valid for up to 30 days unless revoked sooner
+- moderation, audit, and security records: retained under the launch operations schedule in [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
 - deletion requests: access is removed immediately and the account enters a deletion-pending state; personal data is deleted or anonymized within 30 days under the current lifecycle model
 
 ### 7. Rights
@@ -255,4 +256,3 @@ Do not publish text that says:
 3. Tighten the impressum wording.
 4. Add versioned acceptance tracking before relying operationally on the signup checkbox.
 5. Add a separate processor/subprocessor page if the public privacy page starts getting too dense.
-

@@ -137,8 +137,8 @@ export const PAGE_CONTENT = {
       {
         body: [
           "Account and community data is retained while your account is active and as long as needed to operate the service.",
-          "Verification, reset, and email-change tokens are short-lived and are deleted or invalidated after use or expiry.",
-          "Session records are retained while they remain active or until they are revoked or expire.",
+          "Email verification and email-change tokens expire after 24 hours. Password reset tokens expire after 1 hour. These tokens are deleted or invalidated after use, expiry, or account deletion request.",
+          "Signed-in sessions remain active for up to 30 days unless you log out or a security-sensitive action revokes them sooner.",
           "Moderation, audit, and security records are retained for as long as reasonably needed to investigate abuse, enforce platform rules, secure the service, and meet legal obligations.",
           "If you delete your account, access is removed immediately and your account enters a deletion-pending state. Personal data is then deleted or anonymised within 30 days under the current account lifecycle model unless longer retention is legally required.",
         ],

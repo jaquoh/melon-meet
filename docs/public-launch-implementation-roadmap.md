@@ -126,7 +126,7 @@ Checklist:
 - [x] Align privacy policy with actual data handling.
 - [x] Align terms with real product behavior and safety positioning.
 - [x] Add versioned acceptance tracking for terms and privacy.
-- [ ] Define the retention and deletion schedule.
+- [x] Define the retention and deletion schedule.
 - [ ] Define the user data request process.
 - [ ] Document processors/subprocessors.
 - [ ] Decide analytics/cookie consent approach before adding analytics.
@@ -219,11 +219,10 @@ Current phase:
 
 Current session target:
 
-- [ ] Finish the launch-blocking legal and operations gaps.
+- [x] Define the retention and deletion schedule.
 
 Blocked by:
 
-- [ ] Finalize the retention/deletion schedule that legal copy and operations will follow.
 - [ ] Define who owns and responds to user data requests and support inbox traffic.
 - [ ] Decide the analytics and cookie-consent approach before adding any non-essential tracking.
 - [ ] Choose the first invite-only cohort and launch owner rotation.

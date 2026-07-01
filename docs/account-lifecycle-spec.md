@@ -332,6 +332,8 @@ The legal pages and support copy must match these decisions:
 - deletion removes access immediately
 - deletion/anonymization completes within the published retention window
 
+The concrete launch retention timings and deletion handling rules live in [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md).
+
 ## Decisions Locked For Now
 
 - Email is the primary identity key.
