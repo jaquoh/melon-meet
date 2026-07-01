@@ -225,7 +225,7 @@ What is clearly not public-launch ready yet:
   - monitoring provider
   - image hosting if added
 
-- [ ] Put a data subject request process in place.
+- [x] Put a data subject request process in place.
   Support:
   - data access request
   - correction request

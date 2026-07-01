@@ -147,7 +147,7 @@ export const PAGE_CONTENT = {
       {
         body: [
           "You have the right to request access, rectification, erasure, restriction of processing, objection, and data portability where applicable.",
-          "To exercise these rights, contact hello@melonmeet.com.",
+          "To exercise these rights, contact hello@melonmeet.com. We handle requests through a verified support process and aim to respond within the legally applicable timeframe.",
           "You also have the right to lodge a complaint with the Berliner Beauftragte fuer Datenschutz und Informationsfreiheit, Alt-Moabit 59-61, 10555 Berlin, Germany, mailbox@datenschutz-berlin.de.",
         ],
         title: "Your Rights",

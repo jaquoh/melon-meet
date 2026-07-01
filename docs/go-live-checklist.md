@@ -29,6 +29,7 @@ This checklist is meant for the first public beta launch on Cloudflare.
 ## 2. Product Readiness
 
 - Review privacy, terms, and impressum copy against the actual retention, support, and processor model.
+- Confirm the support inbox owner and user data request process are ready before invite-only launch.
 - Make sure support/help contact paths are visible in-product as well as on the legal pages.
 - Confirm there is no production-facing demo or sample-account messaging you do not want public users to see.
 - Seed or curate a small set of real venues and starter groups for the first cohort.

@@ -48,6 +48,7 @@ Relevant local implementation points:
 - transactional email sending: [email.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/email.ts)
 - account lifecycle behavior: [account-lifecycle-spec.md](/Users/jbot/IdeaProjects/melon-meet/docs/account-lifecycle-spec.md)
 - retention and deletion operations rule: [retention-deletion-schedule.md](/Users/jbot/IdeaProjects/melon-meet/docs/retention-deletion-schedule.md)
+- user data request handling rule: [user-data-request-process.md](/Users/jbot/IdeaProjects/melon-meet/docs/user-data-request-process.md)
 - monitoring and alerts: [monitoring.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/monitoring.ts)
 - security logging: [security-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/security-log.ts)
 - audit logging: [audit-log.ts](/Users/jbot/IdeaProjects/melon-meet/apps/api/src/lib/audit-log.ts)
@@ -182,6 +183,10 @@ List at least:
 Suggested authority line for the Berlin-based operator:
 
 - You also have the right to lodge a complaint with the Berliner Beauftragte für Datenschutz und Informationsfreiheit, Alt-Moabit 59-61, 10555 Berlin, Germany, `mailbox@datenschutz-berlin.de`.
+
+Operational note:
+
+- user data requests should route through `hello@melonmeet.com` and follow the handling process in [user-data-request-process.md](/Users/jbot/IdeaProjects/melon-meet/docs/user-data-request-process.md)
 
 ### 8. Cookies / device storage
 
