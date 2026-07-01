@@ -1,6 +1,6 @@
 # Melon Meet Public Launch Implementation Roadmap
 
-Last updated: 2026-05-09
+Last updated: 2026-07-01
 
 Purpose: convert the public launch checklist into a focused execution plan that we can work through over multiple sessions without losing direction.
 
@@ -14,6 +14,7 @@ How to use this file:
 Related file:
 
 - [public-launch-security-plan.md](/Users/jbot/IdeaProjects/melon-meet/docs/public-launch-security-plan.md)
+- [public-launch-punch-list.md](/Users/jbot/IdeaProjects/melon-meet/docs/public-launch-punch-list.md)
 
 ## Working Rules
 
@@ -214,17 +215,18 @@ Use this section to keep the team aligned between sessions.
 
 Current phase:
 
-- [ ] Phase 4: Moderation and Admin Controls
+- [ ] Phase 5: Legal, Privacy, and Compliance Alignment
 
 Current session target:
 
-- [x] Add audit logging for sensitive actions.
+- [ ] Finish the launch-blocking legal and operations gaps.
 
 Blocked by:
 
-- [ ] Choose email provider and delivery approach.
-- [ ] Choose deletion model: immediate anonymization vs delayed purge window.
-- [ ] Choose CSRF strategy: token-based vs strict origin validation.
+- [ ] Finalize the retention/deletion schedule that legal copy and operations will follow.
+- [ ] Define who owns and responds to user data requests and support inbox traffic.
+- [ ] Decide the analytics and cookie-consent approach before adding any non-essential tracking.
+- [ ] Choose the first invite-only cohort and launch owner rotation.
 
 ## Not In Scope For First Public Launch
 

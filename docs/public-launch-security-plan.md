@@ -1,6 +1,6 @@
 # Melon Meet Public Launch Security and Readiness Plan
 
-Last updated: 2026-05-09
+Last updated: 2026-07-01
 
 Purpose: turn the current private-beta style app into something safe enough to publish publicly, with real account creation, real group/session management, and a clear path to operate it responsibly.
 
@@ -11,38 +11,38 @@ Important note: this is a product/security/operations plan based on the current 
 What already exists in the app today:
 
 - Email/password signup and login exist.
+- Email verification, password reset, password change, email change, account deletion flow, and other-session revocation exist.
 - Passwords are hashed with PBKDF2 and sessions use `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
-- Basic auth rate limiting exists for signup and login.
+- Route-level rate limiting, origin checks for authenticated writes, Turnstile signup defense, and anti-spam controls exist.
 - Basic security headers exist: `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Permissions-Policy`.
 - Public/private groups, invite links, sessions, claims, and profile visibility already exist.
-- Privacy, terms, and impressum pages exist in the UI.
+- Reporting flows, an operator moderation queue, moderation admin actions, and audit logging exist.
+- Error monitoring hooks, security-event logs, a D1 backup/restore runbook, environment separation, deploy runbooks, and deployed smoke scripts exist.
+- Privacy, terms, and impressum pages exist in the UI and policy acceptance tracking exists at signup.
 
 What is clearly not public-launch ready yet:
 
-- No email verification, password reset, password change, email change, or session management.
-- No reporting/moderation/admin tooling.
-- No general abuse protection beyond auth rate limiting.
-- No monitoring, alerting, audit trail, backup/restore process, or incident response process.
-- Legal copy is still placeholder-level and does not fully match current product behavior.
-- Account deletion and data retention behavior are not aligned with the privacy text.
-- External image and messenger URLs are user-controlled with little trust/safety control.
-- There is no staged deployment/security review workflow documented for production.
+- The retention and deletion schedule still needs to be finalized as an operations rule, not just a product model.
+- The user data request process and processor/subprocessor inventory are not fully documented.
+- The account/settings and trust UX is still incomplete for public beta.
+- Launch-safe notification coverage is still incomplete.
+- Staging and production rollout still need to be executed and reviewed with a small invite-only cohort.
 
 ## Priority 0: Must Fix Before Public Signup
 
-- [ ] Add email verification before an account becomes fully active.
+- [x] Add email verification before an account becomes fully active.
   Why: prevents throwaway/fake accounts, reduces abuse, and is required for reliable account recovery.
 
-- [ ] Add forgot-password and secure password reset by email with single-use, short-lived tokens.
+- [x] Add forgot-password and secure password reset by email with single-use, short-lived tokens.
   Why: public users will get locked out quickly without this.
 
-- [ ] Add change-password flow for logged-in users.
+- [x] Add change-password flow for logged-in users.
   Why: public launch without password rotation is not acceptable.
 
-- [ ] Add change-email flow with verification of the new address.
+- [x] Add change-email flow with verification of the new address.
   Why: email is the account identifier and must be manageable safely.
 
-- [ ] Add account deletion that matches the privacy policy.
+- [x] Add account deletion that matches the privacy policy.
   Required behavior:
   - soft-delete first
   - revoke all active sessions immediately
@@ -50,7 +50,7 @@ What is clearly not public-launch ready yet:
   - document retention window
   Why: current code hard-deletes immediately while the privacy page says deletion/anonymization happens within 30 days.
 
-- [ ] Add per-route abuse protection beyond login/signup.
+- [x] Add per-route abuse protection beyond login/signup.
   Minimum coverage:
   - group creation
   - meeting creation/editing
@@ -60,7 +60,7 @@ What is clearly not public-launch ready yet:
   - friend requests
   Why: otherwise the app is easy to spam once someone has one account.
 
-- [ ] Add CSRF protection or strict origin checking for all state-changing authenticated requests.
+- [x] Add CSRF protection or strict origin checking for all state-changing authenticated requests.
   Minimum acceptable options:
   - CSRF token pattern, or
   - server-side `Origin` / `Referer` validation for same-site writes
@@ -72,10 +72,10 @@ What is clearly not public-launch ready yet:
   - tighter IP/device/email heuristics
   Why: public signup will get scripted abuse.
 
-- [ ] Remove demo account messaging and all public demo credentials from production UX.
+- [x] Remove demo account messaging and all public demo credentials from production UX.
   Why: it undermines trust and invites accidental misuse in a live environment.
 
-- [ ] Replace placeholder legal and support details everywhere.
+- [x] Replace placeholder legal and support details everywhere.
   Must include:
   - real support email
   - real controller/contact details
@@ -130,7 +130,7 @@ What is clearly not public-launch ready yet:
 - [x] Add content length, posting frequency, and duplicate-content controls.
   Why: this reduces spam and low-effort abuse even from verified accounts.
 
-- [ ] Add moderation/reporting for profiles, groups, sessions, posts, and private-group invite abuse.
+- [x] Add moderation/reporting for profiles, groups, sessions, posts, and private-group invite abuse.
   Minimum workflow:
   - report action in UI
   - admin queue
@@ -138,13 +138,13 @@ What is clearly not public-launch ready yet:
   - hide/suspend/remove actions
   - user notice templates
 
-  Implemented so far:
+  Implemented:
   - report submission for profiles, groups, sessions, posts, and private-group invite abuse
   - operator queue with assignment, internal notes, and status transitions
 
   Baseline policy is now defined in [minimum-moderation-model.md](/Users/jbot/IdeaProjects/melon-meet/docs/minimum-moderation-model.md).
 
-- [ ] Add admin/operator capabilities.
+- [x] Add admin/operator capabilities.
   Minimum:
   - suspend user
   - disable group
@@ -152,7 +152,7 @@ What is clearly not public-launch ready yet:
   - revoke invite links
   - remove posts
 
-  Implemented so far:
+  Implemented:
   - suspend reported user accounts
   - archive reported groups
   - cancel or archive reported sessions
@@ -200,15 +200,13 @@ What is clearly not public-launch ready yet:
 
 ## Priority 2: Trust, Privacy, and Compliance Work
 
-- [ ] Make the privacy policy match actual system behavior exactly.
-  Fix mismatches around:
-  - deletion timing
-  - logged metadata
-  - analytics usage
-  - third-party processors
-  - retention periods
+- [x] Make the privacy policy match actual system behavior closely enough for launch planning.
+  Remaining follow-up:
+  - finalize retention periods as an explicit schedule
+  - keep processor/subprocessor details current
+  - revisit if analytics is introduced
 
-- [ ] Add versioned acceptance tracking for Terms and Privacy.
+- [x] Add versioned acceptance tracking for Terms and Privacy.
   Store:
   - accepted policy version
   - timestamp
