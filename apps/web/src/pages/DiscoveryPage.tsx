@@ -41,6 +41,7 @@ import { ProfileForm } from "../components/ProfileForm";
 import type { ProfileFormValues } from "../components/ProfileForm";
 import { ReportAction } from "../components/ReportAction";
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import { VenueAdminPanel } from "../components/VenueAdminPanel";
 import {
   claimMeeting,
   createGroupPost,
@@ -256,6 +257,7 @@ export function DiscoveryPage({
   const [managingAccount, setManagingAccount] = useState(false);
   const [reviewingModeration, setReviewingModeration] = useState(false);
   const [reviewingLaunchDashboard, setReviewingLaunchDashboard] = useState(false);
+  const [reviewingVenueAdmin, setReviewingVenueAdmin] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
@@ -799,6 +801,10 @@ export function DiscoveryPage({
 
   function closeLaunchDashboard() {
     setReviewingLaunchDashboard(false);
+  }
+
+  function closeVenueAdmin() {
+    setReviewingVenueAdmin(false);
   }
 
   function closeProfileEdit() {
@@ -2005,6 +2011,15 @@ export function DiscoveryPage({
               </button>
             </div>
           </div>
+        ) : reviewingVenueAdmin && isOwnProfile && viewer?.moderationRole === "admin" ? (
+          <div className="account-sections-stack">
+            <VenueAdminPanel />
+            <div className="subtle-action-row">
+              <button className="button-secondary account-sections-stack__manage" onClick={closeVenueAdmin} type="button">
+                Back to profile
+              </button>
+            </div>
+          </div>
         ) : reviewingLaunchDashboard && isOwnProfile && viewer?.moderationRole ? (
           <div className="account-sections-stack">
             <LaunchDashboardPanel viewer={viewer} />
@@ -2113,6 +2128,7 @@ export function DiscoveryPage({
                           closeProfileEdit();
                           closeManageAccount();
                           closeLaunchDashboard();
+                          closeVenueAdmin();
                           setReviewingModeration(true);
                         }}
                         type="button"
@@ -2128,12 +2144,29 @@ export function DiscoveryPage({
                             closeProfileEdit();
                             closeManageAccount();
                             closeModerationReview();
+                            closeVenueAdmin();
                             setReviewingLaunchDashboard(true);
                           }}
                           type="button"
                         >
                           <BarChart3 size={14} strokeWidth={2} />
                           <span>Launch Dashboard</span>
+                        </button>
+                      ) : null}
+                      {viewer?.moderationRole === "admin" ? (
+                        <button
+                          className="button-secondary account-sections-stack__manage"
+                          onClick={() => {
+                            closeProfileEdit();
+                            closeManageAccount();
+                            closeModerationReview();
+                            closeLaunchDashboard();
+                            setReviewingVenueAdmin(true);
+                          }}
+                          type="button"
+                        >
+                          <MapPin size={14} strokeWidth={2} />
+                          <span>Manage Venues</span>
                         </button>
                       ) : null}
                     </div>

@@ -1,4 +1,5 @@
 import type {
+  AdminVenueSummary,
   NotificationPreferences,
   PolicyAcceptanceVersions,
   FriendSummary,
@@ -15,6 +16,8 @@ import type {
   ReportTargetType,
   ViewerSummary,
   VenueSummary,
+  VenueCreateInput,
+  VenueUpdateInput,
 } from "../../../../packages/shared/src";
 
 export interface MeResponse {
@@ -312,6 +315,31 @@ export function executeModerationAction(reportId: string, action: ModerationActi
 
 export function getLaunchDashboard() {
   return request<LaunchDashboardResponse>("/api/admin/launch-dashboard");
+}
+
+export function getAdminVenues() {
+  return request<{ venues: AdminVenueSummary[] }>("/api/admin/venues");
+}
+
+export function createAdminVenue(payload: VenueCreateInput) {
+  return request<{ venue: AdminVenueSummary }>("/api/admin/venues", {
+    body: JSON.stringify(payload),
+    method: "POST",
+  });
+}
+
+export function updateAdminVenue(venueId: string, payload: VenueUpdateInput) {
+  return request<{ venue: AdminVenueSummary }>(`/api/admin/venues/${venueId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH",
+  });
+}
+
+export function setAdminVenueArchived(venueId: string, archived: boolean) {
+  return request<{ venue: AdminVenueSummary }>(`/api/admin/venues/${venueId}/archive`, {
+    body: JSON.stringify({ archived }),
+    method: "PATCH",
+  });
 }
 
 export function bootstrapSmokeAccount(email: string, displayName?: string) {
