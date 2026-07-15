@@ -1692,6 +1692,18 @@ export function DiscoveryPage({
                     </div>
                     <div className="stack-sm">
                       <FilterCheckbox
+                        checked={activeNotificationPreferences.groupArchivedEmails}
+                        label="Group archived emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            groupArchivedEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For group members when a group is archived and no longer active.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
                         checked={activeNotificationPreferences.groupNewSessionEmails}
                         label="New group session emails"
                         onChange={(checked) =>
@@ -1725,6 +1737,18 @@ export function DiscoveryPage({
                           }))}
                       />
                       <span className="field-hint">For owners and admins when a member leaves a group.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionPinboardEmails}
+                        label="Session pinboard update emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionPinboardEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For attendees when someone posts a new update on a joined session.</span>
                     </div>
                     <div className="stack-sm">
                       <FilterCheckbox

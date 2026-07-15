@@ -4,7 +4,7 @@ Last updated: 2026-07-01
 
 Purpose: define the minimum launch-safe notification email set without letting notifications turn into an unbounded product project.
 
-Status: partially implemented. Admin/operator report alerts, the first moderation/account emails, membership-request emails, member-left emails, session-cancelled attendee emails, session-owner claim/release emails, and user-managed notification switches for those live optional categories are now live; the rest of this matrix still defines what should come next.
+Status: partially implemented. Admin/operator report alerts, the first moderation/account emails, membership-request emails, member-left emails, group-member lifecycle emails, session attendee/owner lifecycle emails, and user-managed notification switches for those live optional categories are now live; the rest of this matrix still defines what should come next.
 
 ## Guiding Rules
 
@@ -139,7 +139,9 @@ Current live scope:
 - new session series added to group: group-member email
 - session changed: attendee email
 - session cancelled: attendee email
+- session pinboard update: attendee email
 - session spot claimed: owner email
 - session became full: owner email
 - session spot released: owner email
+- group archived: group-member email
 - notification settings: user-manageable switches for the live optional notification categories

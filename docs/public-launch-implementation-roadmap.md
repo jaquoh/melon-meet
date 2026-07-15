@@ -175,12 +175,12 @@ Checklist:
   - [x] session owner: spot released
   - [x] session attendees: session changed
   - [x] session attendees: session cancelled
-  - session attendees: session pinboard update
+  - [x] session attendees: session pinboard update
 - [ ] Add group lifecycle emails.
   Cover:
   - [x] group members: new session added
   - [x] group members: new session series added
-  - group members: group deleted or archived
+  - [x] group members: group deleted or archived
   - [x] group owners/admins: membership join request
   - [x] group owners/admins: member left group
 - [x] Add a leave-group flow for non-owner members.
@@ -220,7 +220,7 @@ Current phase:
 
 Current session target:
 
-- [x] Add notification settings plus session-owner lifecycle emails.
+- [x] Add pinboard and group archive notification coverage.
 
 Blocked by:
 

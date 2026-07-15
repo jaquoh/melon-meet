@@ -61,9 +61,11 @@ Related files:
   - new session series added to group
   - session changed
   - session cancelled
+  - session pinboard update
   - session owner: spot claimed
   - session owner: session became full
   - session owner: spot released
+  - group archived
 - [x] Add account-level notification email switches for live optional notification categories.
 
 ### 4. Prepare the real launch environment

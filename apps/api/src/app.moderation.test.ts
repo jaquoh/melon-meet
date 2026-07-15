@@ -118,9 +118,11 @@ async function insertUser(
       groupMemberLeaveEmails: boolean;
       groupMembershipRequestEmails: boolean;
       groupNewSessionEmails: boolean;
+      groupArchivedEmails: boolean;
       moderationAndAccountEmails: boolean;
       sessionCancellationEmails: boolean;
       sessionChangeEmails: boolean;
+      sessionPinboardEmails: boolean;
       sessionSpotClaimEmails: boolean;
       sessionSpotFilledEmails: boolean;
       sessionSpotReleaseEmails: boolean;
@@ -137,13 +139,15 @@ async function insertUser(
        notification_group_membership_request_emails,
        notification_group_member_leave_emails,
        notification_group_new_session_emails,
+       notification_group_archived_emails,
        notification_session_cancellation_emails,
        notification_session_change_emails,
+       notification_session_pinboard_emails,
        notification_session_spot_claim_emails,
        notification_session_spot_release_emails,
        notification_session_spot_filled_emails,
        deletion_requested_at, deleted_at
-     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
   )
     .bind(
       id,
@@ -158,8 +162,10 @@ async function insertUser(
       notificationPreferences?.groupMembershipRequestEmails === false ? 0 : 1,
       notificationPreferences?.groupMemberLeaveEmails === false ? 0 : 1,
       notificationPreferences?.groupNewSessionEmails === false ? 0 : 1,
+      notificationPreferences?.groupArchivedEmails === false ? 0 : 1,
       notificationPreferences?.sessionCancellationEmails === false ? 0 : 1,
       notificationPreferences?.sessionChangeEmails === false ? 0 : 1,
+      notificationPreferences?.sessionPinboardEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotClaimEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotReleaseEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotFilledEmails === false ? 0 : 1,
@@ -814,12 +820,14 @@ describe("group and session notification emails", () => {
 
     const response = await requestJson("/api/me/notification-preferences", {
       body: {
+        groupArchivedEmails: false,
         groupNewSessionEmails: true,
         groupMemberLeaveEmails: false,
         groupMembershipRequestEmails: true,
         moderationAndAccountEmails: false,
         sessionCancellationEmails: true,
         sessionChangeEmails: true,
+        sessionPinboardEmails: false,
         sessionSpotClaimEmails: false,
         sessionSpotFilledEmails: false,
         sessionSpotReleaseEmails: true,
@@ -833,10 +841,12 @@ describe("group and session notification emails", () => {
     await expect(response.json()).resolves.toMatchObject({
       viewer: {
         notificationPreferences: {
+          groupArchivedEmails: false,
           groupNewSessionEmails: true,
           groupMemberLeaveEmails: false,
           moderationAndAccountEmails: false,
           sessionChangeEmails: true,
+          sessionPinboardEmails: false,
           sessionSpotClaimEmails: false,
           sessionSpotFilledEmails: false,
         },
@@ -852,9 +862,11 @@ describe("group and session notification emails", () => {
       env.DB,
       `SELECT
          notification_group_member_leave_emails,
+         notification_group_archived_emails,
          notification_group_new_session_emails,
          notification_moderation_and_account_emails,
          notification_session_change_emails,
+         notification_session_pinboard_emails,
          notification_session_spot_claim_emails,
          notification_session_spot_filled_emails
        FROM users
@@ -864,9 +876,11 @@ describe("group and session notification emails", () => {
 
     expect(row).toMatchObject({
       notification_group_member_leave_emails: 0,
+      notification_group_archived_emails: 0,
       notification_group_new_session_emails: 1,
       notification_moderation_and_account_emails: 0,
       notification_session_change_emails: 1,
+      notification_session_pinboard_emails: 0,
       notification_session_spot_claim_emails: 0,
       notification_session_spot_filled_emails: 0,
     });
@@ -1166,6 +1180,98 @@ describe("group member and attendee update emails", () => {
     expect(payload.to).toEqual(["attendee-on@example.com"]);
     expect(payload.subject).toBe("Updated: Updated Session");
     expect(payload.text).toContain("A Melon Meet session you joined has changed.");
+  });
+
+  it("emails opted-in attendees when a new session pinboard update is posted", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Author", email: "author@example.com", id: "user-author" });
+    await insertUser(env.DB, {
+      displayName: "Attendee On",
+      email: "attendee-on@example.com",
+      id: "user-attendee-on",
+      notificationPreferences: { sessionPinboardEmails: true },
+    });
+    await insertUser(env.DB, {
+      displayName: "Attendee Off",
+      email: "attendee-off@example.com",
+      id: "user-attendee-off",
+      notificationPreferences: { sessionPinboardEmails: false },
+    });
+    await insertGroup(env.DB, { id: "group-10", name: "Pinboard Crew", ownerUserId: "user-author", slug: "pinboard-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-10", role: "owner", userId: "user-author" });
+    await insertMeeting(env.DB, { groupId: "group-10", id: "meeting-6", ownerUserId: "user-author", title: "Pinboard Session" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-6", userId: "user-attendee-on" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-6", userId: "user-attendee-off" });
+    const cookie = await makeSessionCookie(env.DB, "user-author");
+
+    const response = await requestJson("/api/meetings/meeting-6/posts", {
+      body: {
+        content: "Court 2 is confirmed. Bring light layers.",
+      },
+      cookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["attendee-on@example.com"]);
+    expect(payload.subject).toBe("New update in Pinboard Session");
+    expect(payload.text).toContain("new update on a Melon Meet session");
+  });
+
+  it("emails opted-in members when a group is archived", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, {
+      displayName: "Member On",
+      email: "member-on@example.com",
+      id: "user-member-on",
+      notificationPreferences: { groupArchivedEmails: true },
+    });
+    await insertUser(env.DB, {
+      displayName: "Member Off",
+      email: "member-off@example.com",
+      id: "user-member-off",
+      notificationPreferences: { groupArchivedEmails: false },
+    });
+    const groupId = "33333333-3333-4333-8333-333333333333";
+    await insertGroup(env.DB, { id: groupId, name: "Archive Crew", ownerUserId: "user-owner", slug: "archive-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId, role: "owner", userId: "user-owner" });
+    await insertGroupMember(env.DB, { groupId, role: "member", userId: "user-member-on" });
+    await insertGroupMember(env.DB, { groupId, role: "member", userId: "user-member-off" });
+    const cookie = await makeSessionCookie(env.DB, "user-owner");
+
+    const response = await requestJson(`/api/groups/${groupId}`, {
+      cookie,
+      env,
+      method: "DELETE",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["member-on@example.com"]);
+    expect(payload.subject).toBe("Archived: Archive Crew");
+    expect(payload.text).toContain("no longer active");
   });
 });
 

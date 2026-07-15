@@ -151,9 +151,11 @@ type ViewerRow = {
   notification_group_member_leave_emails?: number | boolean;
   notification_group_membership_request_emails?: number | boolean;
   notification_group_new_session_emails?: number | boolean;
+  notification_group_archived_emails?: number | boolean;
   notification_moderation_and_account_emails?: number | boolean;
   notification_session_cancellation_emails?: number | boolean;
   notification_session_change_emails?: number | boolean;
+  notification_session_pinboard_emails?: number | boolean;
   notification_session_spot_claim_emails?: number | boolean;
   notification_session_spot_filled_emails?: number | boolean;
   notification_session_spot_release_emails?: number | boolean;
@@ -609,12 +611,14 @@ async function executeModerationAction(
 
 function mapNotificationPreferences(row: ViewerRow): NotificationPreferences {
   return {
+    groupArchivedEmails: Boolean(row.notification_group_archived_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupArchivedEmails),
     groupNewSessionEmails: Boolean(row.notification_group_new_session_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupNewSessionEmails),
     groupMemberLeaveEmails: Boolean(row.notification_group_member_leave_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMemberLeaveEmails),
     groupMembershipRequestEmails: Boolean(row.notification_group_membership_request_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMembershipRequestEmails),
     moderationAndAccountEmails: Boolean(row.notification_moderation_and_account_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.moderationAndAccountEmails),
     sessionCancellationEmails: Boolean(row.notification_session_cancellation_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionCancellationEmails),
     sessionChangeEmails: Boolean(row.notification_session_change_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionChangeEmails),
+    sessionPinboardEmails: Boolean(row.notification_session_pinboard_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionPinboardEmails),
     sessionSpotClaimEmails: Boolean(row.notification_session_spot_claim_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotClaimEmails),
     sessionSpotFilledEmails: Boolean(row.notification_session_spot_filled_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotFilledEmails),
     sessionSpotReleaseEmails: Boolean(row.notification_session_spot_release_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotReleaseEmails),
@@ -1020,6 +1024,7 @@ async function listMeetingAttendeeRecipients(db: D1Database, meetingId: string, 
     id: string;
     notification_session_cancellation_emails: number;
     notification_session_change_emails: number;
+    notification_session_pinboard_emails: number;
   }>(
     db,
     `SELECT
@@ -1027,7 +1032,8 @@ async function listMeetingAttendeeRecipients(db: D1Database, meetingId: string, 
        u.email,
        u.display_name,
        u.notification_session_cancellation_emails,
-       u.notification_session_change_emails
+       u.notification_session_change_emails,
+       u.notification_session_pinboard_emails
      FROM meeting_claims mc
      JOIN users u ON u.id = mc.user_id
      WHERE mc.meeting_id = ?
@@ -1044,6 +1050,7 @@ async function listGroupMemberRecipients(db: D1Database, groupId: string, exclud
     display_name: string;
     email: string;
     id: string;
+    notification_group_archived_emails: number;
     notification_group_new_session_emails: number;
   }>(
     db,
@@ -1051,6 +1058,7 @@ async function listGroupMemberRecipients(db: D1Database, groupId: string, exclud
        u.id,
        u.email,
        u.display_name,
+       u.notification_group_archived_emails,
        u.notification_group_new_session_emails
      FROM app_group_members gm
      JOIN users u ON u.id = gm.user_id
@@ -1371,6 +1379,67 @@ async function sendGroupNewMeetingNotificationEmail(
     html,
     subject,
     text,
+    to: recipients.map((recipient) => recipient.email),
+  });
+}
+
+async function sendGroupArchivedNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    actorId,
+    groupId,
+  }: {
+    actorId: string;
+    groupId: string;
+  },
+) {
+  const group = await getGroupRecord(c.env.DB, groupId);
+  const recipients = (await listGroupMemberRecipients(c.env.DB, groupId, actorId))
+    .filter((recipient) => Boolean(recipient.notification_group_archived_emails));
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const groupUrl = buildAppUrl(c, `/groups/${groupId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>A Melon Meet group you belonged to is no longer active.</p><p><strong>Group:</strong> ${escapeHtml(group.name)}</p><p>Open the group here: <a href="${escapeHtml(groupUrl)}">${escapeHtml(groupUrl)}</a></p>`,
+    subject: `Archived: ${group.name}`,
+    text: `A Melon Meet group you belonged to is no longer active.\n\nGroup: ${group.name}\n\nOpen the group here: ${groupUrl}`,
+    to: recipients.map((recipient) => recipient.email),
+  });
+}
+
+async function sendMeetingPinboardUpdateNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    actorId,
+    meetingId,
+  }: {
+    actorId: string;
+    meetingId: string;
+  },
+) {
+  const meeting = await firstRow<{ group_name: string; id: string; location_name: string; starts_at: string; title: string }>(
+    c.env.DB,
+    `SELECT m.id, m.title, m.starts_at, m.location_name, g.name AS group_name
+     FROM meetings m
+     JOIN app_groups g ON g.id = m.group_id
+     WHERE m.id = ?`,
+    meetingId,
+  );
+  assertOrThrow(meeting, 404, "Meeting not found.");
+
+  const recipients = (await listMeetingAttendeeRecipients(c.env.DB, meetingId, actorId))
+    .filter((recipient) => Boolean(recipient.notification_session_pinboard_emails));
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const meetingUrl = buildAppUrl(c, `/sessions/${meetingId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>There is a new update on a Melon Meet session you joined.</p><p><strong>Session:</strong> ${escapeHtml(meeting.title)}<br /><strong>Group:</strong> ${escapeHtml(meeting.group_name)}<br /><strong>Starts:</strong> ${escapeHtml(meeting.starts_at)}<br /><strong>Location:</strong> ${escapeHtml(meeting.location_name)}</p><p>Open the session here: <a href="${escapeHtml(meetingUrl)}">${escapeHtml(meetingUrl)}</a></p>`,
+    subject: `New update in ${meeting.title}`,
+    text: `There is a new update on a Melon Meet session you joined.\n\nSession: ${meeting.title}\nGroup: ${meeting.group_name}\nStarts: ${meeting.starts_at}\nLocation: ${meeting.location_name}\n\nOpen the session here: ${meetingUrl}`,
     to: recipients.map((recipient) => recipient.email),
   });
 }
@@ -2250,9 +2319,11 @@ export function createApp() {
       notification_group_member_leave_emails: number;
       notification_group_membership_request_emails: number;
       notification_group_new_session_emails: number;
+      notification_group_archived_emails: number;
       notification_moderation_and_account_emails: number;
       notification_session_cancellation_emails: number;
       notification_session_change_emails: number;
+      notification_session_pinboard_emails: number;
       notification_session_spot_claim_emails: number;
       notification_session_spot_filled_emails: number;
       notification_session_spot_release_emails: number;
@@ -2266,8 +2337,10 @@ export function createApp() {
               notification_group_membership_request_emails,
               notification_group_member_leave_emails,
               notification_group_new_session_emails,
+              notification_group_archived_emails,
               notification_session_cancellation_emails,
               notification_session_change_emails,
+              notification_session_pinboard_emails,
               notification_session_spot_claim_emails,
               notification_session_spot_release_emails,
               notification_session_spot_filled_emails
@@ -3065,8 +3138,10 @@ export function createApp() {
               notification_group_membership_request_emails,
               notification_group_member_leave_emails,
               notification_group_new_session_emails,
+              notification_group_archived_emails,
               notification_session_cancellation_emails,
               notification_session_change_emails,
+              notification_session_pinboard_emails,
               notification_session_spot_claim_emails,
               notification_session_spot_release_emails,
               notification_session_spot_filled_emails
@@ -3245,8 +3320,10 @@ export function createApp() {
            notification_group_membership_request_emails = ?,
            notification_group_member_leave_emails = ?,
            notification_group_new_session_emails = ?,
+           notification_group_archived_emails = ?,
            notification_session_cancellation_emails = ?,
            notification_session_change_emails = ?,
+           notification_session_pinboard_emails = ?,
            notification_session_spot_claim_emails = ?,
            notification_session_spot_release_emails = ?,
            notification_session_spot_filled_emails = ?,
@@ -3256,8 +3333,10 @@ export function createApp() {
       input.groupMembershipRequestEmails ? 1 : 0,
       input.groupMemberLeaveEmails ? 1 : 0,
       input.groupNewSessionEmails ? 1 : 0,
+      input.groupArchivedEmails ? 1 : 0,
       input.sessionCancellationEmails ? 1 : 0,
       input.sessionChangeEmails ? 1 : 0,
+      input.sessionPinboardEmails ? 1 : 0,
       input.sessionSpotClaimEmails ? 1 : 0,
       input.sessionSpotReleaseEmails ? 1 : 0,
       input.sessionSpotFilledEmails ? 1 : 0,
@@ -3615,6 +3694,10 @@ export function createApp() {
     assertTrustedWriteOrigin(c);
     const { group, viewerRole } = await assertCanAccessGroup(c.env.DB, c.req.param("id"), viewer.id);
     assertOrThrow(viewerRole === "owner" || viewerRole === "admin", 403, "Only group owners or admins can archive the group.");
+    await sendGroupArchivedNotificationEmail(c, {
+      actorId: viewer.id,
+      groupId: group.id,
+    });
     await runStatement(
       c.env.DB,
       "UPDATE app_groups SET archived_at = ?, updated_at = ? WHERE id = ?",
@@ -4729,6 +4812,10 @@ export function createApp() {
       content,
       nowIso(),
     );
+    await sendMeetingPinboardUpdateNotificationEmail(c, {
+      actorId: viewer.id,
+      meetingId: c.req.param("id"),
+    });
     return c.json({ ok: true }, 201);
   });
 
