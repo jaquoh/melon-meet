@@ -1536,3 +1536,127 @@ describe("local dev trusted origins", () => {
     });
   });
 });
+
+const venueAdminPayload = {
+  accessType: "bookable",
+  address: "Teststraße 1, 10115 Berlin",
+  amenities: ["showers", "changing rooms"],
+  bookingUrl: "https://booking.example.com/courts",
+  courtCountTotal: 3,
+  description: "A well maintained beach volleyball venue in central Berlin.",
+  duplicateNotes: null,
+  environment: "indoor_outdoor",
+  facts: {
+    areaNotes: ["Near the station"],
+    equipment: ["fixed nets"],
+    parkInspectorScore: 4.5,
+    playerLevel: "All levels",
+    surface: "Sand",
+  },
+  googleMapsUrl: "https://maps.example.com/test-venue",
+  heroImageUrl: null,
+  imageGallery: [],
+  indoorCourtCount: 1,
+  latitude: 52.52,
+  longitude: 13.405,
+  name: "Test Venue",
+  openingHoursText: "Daily 09:00-22:00",
+  outdoorCourtCount: 2,
+  pricing: "paid",
+  researchedAt: "2026-07-15T10:00:00.000Z",
+  seasonalityText: "Open year-round.",
+  sourceUrl: "https://example.com/test-venue",
+  sourceUrls: ["https://example.com/test-venue"],
+  websiteUrl: "https://example.com",
+};
+
+describe("venue administration", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("rejects venue management access for regular signed-in users", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+    await insertUser(env.DB, {
+      displayName: "Regular User",
+      email: "member@example.com",
+      id: "user-regular-venue",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-regular-venue");
+
+    const response = await requestJson("/api/admin/venues", { cookie, env });
+
+    expect(response.status).toBe(403);
+  });
+
+  it("lets admins create, edit, archive, and restore venues with an audit trail", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+    await insertUser(env.DB, {
+      displayName: "Venue Admin",
+      email: "admin@example.com",
+      id: "user-venue-admin",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-venue-admin");
+
+    const createResponse = await requestJson("/api/admin/venues", {
+      body: { ...venueAdminPayload, id: "venue-test-courts" },
+      cookie,
+      env,
+      method: "POST",
+    });
+    expect(createResponse.status).toBe(201);
+    await expect(createResponse.json()).resolves.toMatchObject({
+      venue: { id: "venue-test-courts", isArchived: false, name: "Test Venue" },
+    });
+
+    const updateResponse = await requestJson("/api/admin/venues/venue-test-courts", {
+      body: { ...venueAdminPayload, name: "Updated Test Venue" },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(updateResponse.status).toBe(200);
+    await expect(updateResponse.json()).resolves.toMatchObject({
+      venue: { id: "venue-test-courts", name: "Updated Test Venue" },
+    });
+
+    const archiveResponse = await requestJson("/api/admin/venues/venue-test-courts/archive", {
+      body: { archived: true },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(archiveResponse.status).toBe(200);
+
+    const publicResponse = await requestJson("/api/venues", { env });
+    await expect(publicResponse.json()).resolves.toEqual({ venues: [] });
+
+    const adminResponse = await requestJson("/api/admin/venues", { cookie, env });
+    await expect(adminResponse.json()).resolves.toMatchObject({
+      venues: [{ id: "venue-test-courts", isArchived: true }],
+    });
+
+    const restoreResponse = await requestJson("/api/admin/venues/venue-test-courts/archive", {
+      body: { archived: false },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(restoreResponse.status).toBe(200);
+
+    const actions = await env.DB.prepare(
+      `SELECT action FROM audit_log_events
+       WHERE target_type = 'venue' AND target_id = ?
+       ORDER BY created_at ASC`,
+    ).bind("venue-test-courts").all<{ action: string }>();
+    expect(actions.results?.map((event) => event.action).sort()).toEqual(
+      ["venue_created", "venue_updated", "venue_archived", "venue_restored"].sort(),
+    );
+  });
+});

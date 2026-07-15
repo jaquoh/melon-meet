@@ -180,6 +180,10 @@ export const venueCreateSchema = z.intersection(
   }),
 );
 
+export const venueArchiveSchema = z.object({
+  archived: z.boolean(),
+});
+
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -513,6 +517,12 @@ export interface VenueSummary {
   }>;
   duplicateNotes: string | null;
   researchedAt: string | null;
+}
+
+export interface AdminVenueSummary extends VenueSummary {
+  archivedAt: string | null;
+  isArchived: boolean;
+  updatedAt: string | null;
 }
 
 export interface GroupPost {

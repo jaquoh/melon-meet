@@ -25,6 +25,10 @@ import {
   roleUpdateSchema,
   smokeAccountBootstrapSchema,
   signupSchema,
+  venueArchiveSchema,
+  venueCreateSchema,
+  venueUpdateSchema,
+  type AdminVenueSummary,
   type MeetingSummary,
   type ModerationRole,
   type ModerationActionType,
@@ -32,6 +36,7 @@ import {
   type NotificationPreferences,
   type ReportTargetType,
   type VenueSummary,
+  type VenueUpdateInput,
   type ViewerSummary,
 } from "../../../packages/shared/src";
 import {
@@ -171,6 +176,7 @@ type HeroImageRow = {
 type VenueRow = {
   access_type: VenueSummary["accessType"];
   address: string;
+  archived_at?: string | null;
   amenities_json: string | null;
   booking_url: string | null;
   court_count_total: number | null;
@@ -193,6 +199,7 @@ type VenueRow = {
   seasonality_text: string | null;
   source_url: string | null;
   source_urls_json: string | null;
+  updated_at?: string | null;
   website_url: string | null;
 };
 
@@ -310,6 +317,48 @@ function mapVenueSummary(venue: VenueRow): VenueSummary {
     sourceUrls: parseJsonArray(venue.source_urls_json).filter((entry): entry is string => typeof entry === "string"),
     websiteUrl: venue.website_url,
   };
+}
+
+function mapAdminVenueSummary(venue: VenueRow): AdminVenueSummary {
+  return {
+    ...mapVenueSummary(venue),
+    archivedAt: venue.archived_at ?? null,
+    isArchived: Boolean(venue.archived_at),
+    updatedAt: venue.updated_at ?? null,
+  };
+}
+
+const venueSelectColumns = `id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text,
+  hero_image_url, website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
+  seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at, updated_at, archived_at`;
+
+function venueWriteValues(input: VenueUpdateInput) {
+  return [
+    input.name,
+    input.address,
+    input.description,
+    input.pricing,
+    input.latitude,
+    input.longitude,
+    input.sourceUrl,
+    input.bookingUrl,
+    input.openingHoursText,
+    input.heroImageUrl,
+    input.websiteUrl,
+    input.googleMapsUrl,
+    input.courtCountTotal,
+    input.indoorCourtCount,
+    input.outdoorCourtCount,
+    input.accessType,
+    input.environment,
+    input.seasonalityText,
+    JSON.stringify(input.facts),
+    JSON.stringify(input.amenities),
+    JSON.stringify(input.imageGallery),
+    JSON.stringify(input.sourceUrls),
+    input.duplicateNotes,
+    input.researchedAt,
+  ];
 }
 
 function normalizeOptionalText(value: string | null | undefined) {
@@ -4397,13 +4446,120 @@ export function createApp() {
     return c.json({ ok: true }, 201);
   });
 
+  app.get("/api/admin/venues", async (c) => {
+    await requireModerationViewer(c, "admin");
+    const venues = await allRows<VenueRow>(
+      c.env.DB,
+      `SELECT ${venueSelectColumns}
+       FROM venues
+       ORDER BY archived_at IS NOT NULL ASC, name ASC`,
+    );
+    return c.json({ venues: venues.map(mapAdminVenueSummary) });
+  });
+
+  app.post("/api/admin/venues", zValidator("json", venueCreateSchema), async (c) => {
+    const viewer = await requireModerationViewer(c, "admin");
+    assertTrustedWriteOrigin(c);
+    const input = c.req.valid("json");
+    const existing = await firstRow<{ id: string }>(c.env.DB, "SELECT id FROM venues WHERE id = ?", input.id);
+    assertOrThrow(!existing, 409, "A venue with this id already exists.");
+    const timestamp = nowIso();
+
+    await runStatement(
+      c.env.DB,
+      `INSERT INTO venues (
+         id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text,
+         hero_image_url, website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count,
+         access_type, environment, seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json,
+         duplicate_notes, researched_at, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      input.id,
+      ...venueWriteValues(input),
+      timestamp,
+      timestamp,
+    );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "venue_created",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: `Created venue ${input.name}.`,
+      targetId: input.id,
+      targetType: "venue",
+    });
+    const venue = await firstRow<VenueRow>(c.env.DB, `SELECT ${venueSelectColumns} FROM venues WHERE id = ?`, input.id);
+    assertOrThrow(venue, 500, "Could not load the created venue.");
+    return c.json({ venue: mapAdminVenueSummary(venue) }, 201);
+  });
+
+  app.patch("/api/admin/venues/:id", zValidator("json", venueUpdateSchema), async (c) => {
+    const viewer = await requireModerationViewer(c, "admin");
+    assertTrustedWriteOrigin(c);
+    const venueId = c.req.param("id");
+    const input = c.req.valid("json");
+    const existing = await firstRow<{ id: string }>(c.env.DB, "SELECT id FROM venues WHERE id = ?", venueId);
+    assertOrThrow(existing, 404, "Venue not found.");
+
+    await runStatement(
+      c.env.DB,
+      `UPDATE venues SET
+         name = ?, address = ?, description = ?, pricing = ?, latitude = ?, longitude = ?, source_url = ?, booking_url = ?,
+         opening_hours_text = ?, hero_image_url = ?, website_url = ?, google_maps_url = ?, court_count_total = ?,
+         indoor_court_count = ?, outdoor_court_count = ?, access_type = ?, environment = ?, seasonality_text = ?,
+         facts_json = ?, amenities_json = ?, image_gallery_json = ?, source_urls_json = ?, duplicate_notes = ?, researched_at = ?,
+         updated_at = ?
+       WHERE id = ?`,
+      ...venueWriteValues(input),
+      nowIso(),
+      venueId,
+    );
+    await writeAuditLogEvent(c.env.DB, {
+      action: "venue_updated",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: `Updated venue ${input.name}.`,
+      targetId: venueId,
+      targetType: "venue",
+    });
+    const venue = await firstRow<VenueRow>(c.env.DB, `SELECT ${venueSelectColumns} FROM venues WHERE id = ?`, venueId);
+    assertOrThrow(venue, 500, "Could not load the updated venue.");
+    return c.json({ venue: mapAdminVenueSummary(venue) });
+  });
+
+  app.patch("/api/admin/venues/:id/archive", zValidator("json", venueArchiveSchema), async (c) => {
+    const viewer = await requireModerationViewer(c, "admin");
+    assertTrustedWriteOrigin(c);
+    const venueId = c.req.param("id");
+    const { archived } = c.req.valid("json");
+    const existing = await firstRow<{ id: string; name: string }>(c.env.DB, "SELECT id, name FROM venues WHERE id = ?", venueId);
+    assertOrThrow(existing, 404, "Venue not found.");
+    const timestamp = nowIso();
+
+    await runStatement(
+      c.env.DB,
+      "UPDATE venues SET archived_at = ?, updated_at = ? WHERE id = ?",
+      archived ? timestamp : null,
+      timestamp,
+      venueId,
+    );
+    await writeAuditLogEvent(c.env.DB, {
+      action: archived ? "venue_archived" : "venue_restored",
+      actorUserId: viewer.id,
+      metadata: { requestId: c.get("requestId") },
+      summary: `${archived ? "Archived" : "Restored"} venue ${existing.name}.`,
+      targetId: venueId,
+      targetType: "venue",
+    });
+    const venue = await firstRow<VenueRow>(c.env.DB, `SELECT ${venueSelectColumns} FROM venues WHERE id = ?`, venueId);
+    assertOrThrow(venue, 500, "Could not load the venue.");
+    return c.json({ venue: mapAdminVenueSummary(venue) });
+  });
+
   app.get("/api/venues", async (c) => {
     const venues = await allRows<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
-              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
-              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
+      `SELECT ${venueSelectColumns}
        FROM venues
+       WHERE archived_at IS NULL
        ORDER BY name ASC`,
     );
     return c.json({
@@ -4417,11 +4573,9 @@ export function createApp() {
 
     const venue = await firstRow<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
-              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
-              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
+      `SELECT ${venueSelectColumns}
        FROM venues
-       WHERE id = ?`,
+       WHERE id = ? AND archived_at IS NULL`,
       c.req.param("id"),
     );
     assertOrThrow(venue, 404, "Venue not found.");
@@ -4443,11 +4597,10 @@ export function createApp() {
 
     const venues = await allRows<VenueRow>(
       c.env.DB,
-      `SELECT id, name, address, description, pricing, latitude, longitude, source_url, booking_url, opening_hours_text, hero_image_url,
-              website_url, google_maps_url, court_count_total, indoor_court_count, outdoor_court_count, access_type, environment,
-              seasonality_text, facts_json, amenities_json, image_gallery_json, source_urls_json, duplicate_notes, researched_at
+      `SELECT ${venueSelectColumns}
        FROM venues
-       WHERE longitude BETWEEN ? AND ?
+       WHERE archived_at IS NULL
+         AND longitude BETWEEN ? AND ?
          AND latitude BETWEEN ? AND ?
          AND (? = 'all' OR pricing = ?)
        ORDER BY name ASC`,
