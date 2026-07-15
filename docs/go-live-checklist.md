@@ -4,6 +4,8 @@ Last updated: 2026-07-15
 
 This checklist is meant for the first public beta launch on Cloudflare.
 
+For the actual small-cohort rollout procedure, use [invite-only-cohort-launch-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/invite-only-cohort-launch-runbook.md).
+
 ## 1. Platform Setup
 
 - Verify the staging and production Cloudflare D1 databases exist and still match the IDs configured in `/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc`.

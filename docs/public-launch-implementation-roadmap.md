@@ -203,9 +203,12 @@ Done means:
 
 Checklist:
 
-- [ ] Run end-to-end smoke tests in staging.
+- [x] Run end-to-end smoke tests in staging.
 - [ ] Run end-to-end smoke tests in production.
-- [ ] Fix blockers found in smoke testing.
+  Current state:
+  - [x] anonymous production smoke passed
+  - [ ] authenticated production smoke still needs production smoke credentials
+- [x] Fix blockers found in smoke testing.
 - [ ] Launch first to a small invite-only cohort.
 - [ ] Review support load, abuse rate, and failure rate.
 - [ ] Decide if the app is ready for a broader public announcement.
@@ -216,14 +219,15 @@ Use this section to keep the team aligned between sessions.
 
 Current phase:
 
-- [ ] Phase 6: User Trust, Notifications, and Settings UX
+- [ ] Phase 7: Launch Readiness and Controlled Rollout
 
 Current session target:
 
-- [x] Complete private-group invite generation and invite-accept flow.
+- [x] Complete staging and production release paths plus the cohort-launch runbook.
 
 Blocked by:
 
+- [ ] Configure authenticated production smoke credentials.
 - [ ] Decide whether first-beta invite links need expiry, limited-use, or attribution before the first cohort.
 - [ ] Decide how much of the notification email matrix is required before the first invite-only cohort.
 - [ ] Choose the first invite-only cohort and launch owner rotation.

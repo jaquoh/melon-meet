@@ -15,6 +15,7 @@ Related files:
 - [public-launch-implementation-roadmap.md](/Users/jbot/IdeaProjects/melon-meet/docs/public-launch-implementation-roadmap.md)
 - [go-live-checklist.md](/Users/jbot/IdeaProjects/melon-meet/docs/go-live-checklist.md)
 - [public-launch-security-plan.md](/Users/jbot/IdeaProjects/melon-meet/docs/public-launch-security-plan.md)
+- [invite-only-cohort-launch-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/invite-only-cohort-launch-runbook.md)
 
 ## Current Status
 
@@ -104,6 +105,7 @@ Related files:
   - anonymous production smoke checks passed on 2026-07-15
   - authenticated production smoke is still pending until `SMOKE_EMAIL_PRODUCTION` / `SMOKE_PASSWORD_PRODUCTION` are configured
 - [ ] Launch to a small invite-only cohort first.
+- Launch guidance now lives in [invite-only-cohort-launch-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/invite-only-cohort-launch-runbook.md).
 - [ ] Review support load, abuse rate, and failure rate before any broader public announcement.
 
 ## Beyond First Public Beta
