@@ -99,7 +99,10 @@ Related files:
 - [x] Run `npm run smoke:staging`.
 - [x] Fix staging blockers before touching production.
   - staging now has migrations applied, a live deploy, moderation allowlists, and passing anonymous plus authenticated smoke checks
-- [ ] Run the production deploy path and `npm run smoke:production`.
+- [x] Run the production deploy path and `npm run smoke:production`.
+  - production deployed at `https://melon-meet.jacobspostfach.workers.dev`
+  - anonymous production smoke checks passed on 2026-07-15
+  - authenticated production smoke is still pending until `SMOKE_EMAIL_PRODUCTION` / `SMOKE_PASSWORD_PRODUCTION` are configured
 - [ ] Launch to a small invite-only cohort first.
 - [ ] Review support load, abuse rate, and failure rate before any broader public announcement.
 
