@@ -173,13 +173,13 @@ Checklist:
   - [x] session owner: spot claimed
   - [x] session owner: spot claimed and session became full
   - [x] session owner: spot released
-  - session attendees: session changed
+  - [x] session attendees: session changed
   - [x] session attendees: session cancelled
   - session attendees: session pinboard update
 - [ ] Add group lifecycle emails.
   Cover:
-  - group members: new session added
-  - group members: new session series added
+  - [x] group members: new session added
+  - [x] group members: new session series added
   - group members: group deleted or archived
   - [x] group owners/admins: membership join request
   - [x] group owners/admins: member left group

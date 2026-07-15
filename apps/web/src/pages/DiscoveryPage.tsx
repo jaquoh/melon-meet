@@ -1692,6 +1692,18 @@ export function DiscoveryPage({
                     </div>
                     <div className="stack-sm">
                       <FilterCheckbox
+                        checked={activeNotificationPreferences.groupNewSessionEmails}
+                        label="New group session emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            groupNewSessionEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For group members when a new session or session series is added.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
                         checked={activeNotificationPreferences.groupMembershipRequestEmails}
                         label="Group membership request alerts"
                         onChange={(checked) =>
@@ -1713,6 +1725,18 @@ export function DiscoveryPage({
                           }))}
                       />
                       <span className="field-hint">For owners and admins when a member leaves a group.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionChangeEmails}
+                        label="Session update emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionChangeEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For attendees when a joined session changes in a meaningful way.</span>
                     </div>
                     <div className="stack-sm">
                       <FilterCheckbox

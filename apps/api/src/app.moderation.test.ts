@@ -117,8 +117,10 @@ async function insertUser(
     notificationPreferences?: Partial<{
       groupMemberLeaveEmails: boolean;
       groupMembershipRequestEmails: boolean;
+      groupNewSessionEmails: boolean;
       moderationAndAccountEmails: boolean;
       sessionCancellationEmails: boolean;
+      sessionChangeEmails: boolean;
       sessionSpotClaimEmails: boolean;
       sessionSpotFilledEmails: boolean;
       sessionSpotReleaseEmails: boolean;
@@ -134,12 +136,14 @@ async function insertUser(
        notification_moderation_and_account_emails,
        notification_group_membership_request_emails,
        notification_group_member_leave_emails,
+       notification_group_new_session_emails,
        notification_session_cancellation_emails,
+       notification_session_change_emails,
        notification_session_spot_claim_emails,
        notification_session_spot_release_emails,
        notification_session_spot_filled_emails,
        deletion_requested_at, deleted_at
-     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
   )
     .bind(
       id,
@@ -153,7 +157,9 @@ async function insertUser(
       notificationPreferences?.moderationAndAccountEmails === false ? 0 : 1,
       notificationPreferences?.groupMembershipRequestEmails === false ? 0 : 1,
       notificationPreferences?.groupMemberLeaveEmails === false ? 0 : 1,
+      notificationPreferences?.groupNewSessionEmails === false ? 0 : 1,
       notificationPreferences?.sessionCancellationEmails === false ? 0 : 1,
+      notificationPreferences?.sessionChangeEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotClaimEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotReleaseEmails === false ? 0 : 1,
       notificationPreferences?.sessionSpotFilledEmails === false ? 0 : 1,
@@ -808,10 +814,12 @@ describe("group and session notification emails", () => {
 
     const response = await requestJson("/api/me/notification-preferences", {
       body: {
+        groupNewSessionEmails: true,
         groupMemberLeaveEmails: false,
         groupMembershipRequestEmails: true,
         moderationAndAccountEmails: false,
         sessionCancellationEmails: true,
+        sessionChangeEmails: true,
         sessionSpotClaimEmails: false,
         sessionSpotFilledEmails: false,
         sessionSpotReleaseEmails: true,
@@ -825,8 +833,10 @@ describe("group and session notification emails", () => {
     await expect(response.json()).resolves.toMatchObject({
       viewer: {
         notificationPreferences: {
+          groupNewSessionEmails: true,
           groupMemberLeaveEmails: false,
           moderationAndAccountEmails: false,
+          sessionChangeEmails: true,
           sessionSpotClaimEmails: false,
           sessionSpotFilledEmails: false,
         },
@@ -842,7 +852,9 @@ describe("group and session notification emails", () => {
       env.DB,
       `SELECT
          notification_group_member_leave_emails,
+         notification_group_new_session_emails,
          notification_moderation_and_account_emails,
+         notification_session_change_emails,
          notification_session_spot_claim_emails,
          notification_session_spot_filled_emails
        FROM users
@@ -852,7 +864,9 @@ describe("group and session notification emails", () => {
 
     expect(row).toMatchObject({
       notification_group_member_leave_emails: 0,
+      notification_group_new_session_emails: 1,
       notification_moderation_and_account_emails: 0,
+      notification_session_change_emails: 1,
       notification_session_spot_claim_emails: 0,
       notification_session_spot_filled_emails: 0,
     });
@@ -983,6 +997,175 @@ describe("session owner notification emails", () => {
     expect(payload.to).toBe("owner@example.com");
     expect(payload.subject).toBe("Spot released for Midday Rally");
     expect(payload.text).toContain("Releaser released their spot");
+  });
+});
+
+describe("group member and attendee update emails", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("emails opted-in group members when a new session is added", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, {
+      displayName: "Member On",
+      email: "member-on@example.com",
+      id: "user-member-on",
+      notificationPreferences: { groupNewSessionEmails: true },
+    });
+    await insertUser(env.DB, {
+      displayName: "Member Off",
+      email: "member-off@example.com",
+      id: "user-member-off",
+      notificationPreferences: { groupNewSessionEmails: false },
+    });
+    const groupId = "11111111-1111-4111-8111-111111111111";
+    await insertGroup(env.DB, { id: groupId, name: "Riverside Crew", ownerUserId: "user-owner", slug: "riverside-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId, role: "owner", userId: "user-owner" });
+    await insertGroupMember(env.DB, { groupId, role: "member", userId: "user-member-on" });
+    await insertGroupMember(env.DB, { groupId, role: "member", userId: "user-member-off" });
+    const cookie = await makeSessionCookie(env.DB, "user-owner");
+
+    const response = await requestJson("/api/meetings", {
+      body: {
+        activityLabel: "Beach volleyball",
+        capacity: 12,
+        costPerPerson: null,
+        description: "Open training",
+        endsAt: "2026-08-02T20:00:00.000Z",
+        groupId,
+        heroImageUrl: null,
+        latitude: 52.52,
+        locationAddress: "River Street 4",
+        locationName: "River Courts",
+        longitude: 13.405,
+        pricing: "free",
+        recurrence: { type: "once" },
+        shortName: "river",
+        startsAt: "2026-08-02T18:00:00.000Z",
+        title: "Sunday Riverside Rally",
+        venueId: null,
+      },
+      cookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["member-on@example.com"]);
+    expect(payload.subject).toBe("New session in Riverside Crew");
+    expect(payload.text).toContain("Sunday Riverside Rally");
+  });
+
+  it("emails opted-in group members when a new session series is added", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, { displayName: "Member", email: "member@example.com", id: "user-member" });
+    const groupId = "22222222-2222-4222-8222-222222222222";
+    await insertGroup(env.DB, { id: groupId, name: "Tuesday League", ownerUserId: "user-owner", slug: "tuesday-league", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId, role: "owner", userId: "user-owner" });
+    await insertGroupMember(env.DB, { groupId, role: "member", userId: "user-member" });
+    const cookie = await makeSessionCookie(env.DB, "user-owner");
+
+    const response = await requestJson("/api/meetings", {
+      body: {
+        activityLabel: "Beach volleyball",
+        capacity: 12,
+        costPerPerson: null,
+        description: "Weekly ladder",
+        endsAt: "2026-08-04T20:00:00.000Z",
+        groupId,
+        heroImageUrl: null,
+        latitude: 52.52,
+        locationAddress: "League Street 7",
+        locationName: "League Courts",
+        longitude: 13.405,
+        pricing: "free",
+        recurrence: { type: "weekly", timezone: "Europe/Berlin", untilDate: "2026-09-01" },
+        shortName: "league",
+        startsAt: "2026-08-04T18:00:00.000Z",
+        title: "Tuesday League Series",
+        venueId: null,
+      },
+      cookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["member@example.com"]);
+    expect(payload.subject).toBe("New session series in Tuesday League");
+    expect(payload.text).toContain("Tuesday League Series");
+  });
+
+  it("emails only opted-in attendees when a joined session changes meaningfully", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, {
+      displayName: "Attendee On",
+      email: "attendee-on@example.com",
+      id: "user-attendee-on",
+      notificationPreferences: { sessionChangeEmails: true },
+    });
+    await insertUser(env.DB, {
+      displayName: "Attendee Off",
+      email: "attendee-off@example.com",
+      id: "user-attendee-off",
+      notificationPreferences: { sessionChangeEmails: false },
+    });
+    await insertGroup(env.DB, { id: "group-9", name: "Shift Crew", ownerUserId: "user-owner", slug: "shift-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-9", role: "owner", userId: "user-owner" });
+    await insertMeeting(env.DB, { groupId: "group-9", id: "meeting-5", ownerUserId: "user-owner", title: "Original Session" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-5", userId: "user-attendee-on" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-5", userId: "user-attendee-off" });
+    const cookie = await makeSessionCookie(env.DB, "user-owner");
+
+    const response = await requestJson("/api/meetings/meeting-5", {
+      body: {
+        title: "Updated Session",
+      },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["attendee-on@example.com"]);
+    expect(payload.subject).toBe("Updated: Updated Session");
+    expect(payload.text).toContain("A Melon Meet session you joined has changed.");
   });
 });
 

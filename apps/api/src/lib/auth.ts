@@ -193,7 +193,9 @@ export async function resolveSessionViewer(
     notification_moderation_and_account_emails: number;
     notification_group_membership_request_emails: number;
     notification_group_member_leave_emails: number;
+    notification_group_new_session_emails: number;
     notification_session_cancellation_emails: number;
+    notification_session_change_emails: number;
     notification_session_spot_claim_emails: number;
     notification_session_spot_release_emails: number;
     notification_session_spot_filled_emails: number;
@@ -215,7 +217,9 @@ export async function resolveSessionViewer(
        users.notification_moderation_and_account_emails,
        users.notification_group_membership_request_emails,
        users.notification_group_member_leave_emails,
+       users.notification_group_new_session_emails,
        users.notification_session_cancellation_emails,
+       users.notification_session_change_emails,
        users.notification_session_spot_claim_emails,
        users.notification_session_spot_release_emails,
        users.notification_session_spot_filled_emails
@@ -244,10 +248,12 @@ export async function resolveSessionViewer(
       id: row.id,
       moderationRole: null,
       notificationPreferences: {
+        groupNewSessionEmails: Boolean(row.notification_group_new_session_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupNewSessionEmails),
         groupMemberLeaveEmails: Boolean(row.notification_group_member_leave_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMemberLeaveEmails),
         groupMembershipRequestEmails: Boolean(row.notification_group_membership_request_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMembershipRequestEmails),
         moderationAndAccountEmails: Boolean(row.notification_moderation_and_account_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.moderationAndAccountEmails),
         sessionCancellationEmails: Boolean(row.notification_session_cancellation_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionCancellationEmails),
+        sessionChangeEmails: Boolean(row.notification_session_change_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionChangeEmails),
         sessionSpotClaimEmails: Boolean(row.notification_session_spot_claim_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotClaimEmails),
         sessionSpotFilledEmails: Boolean(row.notification_session_spot_filled_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotFilledEmails),
         sessionSpotReleaseEmails: Boolean(row.notification_session_spot_release_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotReleaseEmails),

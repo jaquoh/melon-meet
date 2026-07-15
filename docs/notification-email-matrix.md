@@ -135,6 +135,9 @@ Current live scope:
 - account suspended: suspended-user email
 - membership join request: owner/admin email
 - member left group: owner/admin email
+- new session added to group: group-member email
+- new session series added to group: group-member email
+- session changed: attendee email
 - session cancelled: attendee email
 - session spot claimed: owner email
 - session became full: owner email

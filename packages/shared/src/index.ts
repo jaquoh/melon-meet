@@ -40,10 +40,12 @@ export const moderationActionTypeSchema = z.enum([
   "revoke_group_invite_links",
 ]);
 export const notificationPreferencesSchema = z.object({
+  groupNewSessionEmails: z.boolean().default(true),
   groupMemberLeaveEmails: z.boolean().default(true),
   groupMembershipRequestEmails: z.boolean().default(true),
   moderationAndAccountEmails: z.boolean().default(true),
   sessionCancellationEmails: z.boolean().default(true),
+  sessionChangeEmails: z.boolean().default(true),
   sessionSpotClaimEmails: z.boolean().default(true),
   sessionSpotFilledEmails: z.boolean().default(true),
   sessionSpotReleaseEmails: z.boolean().default(true),

@@ -57,6 +57,9 @@ Related files:
   Current scope live:
   - membership join request
   - member left group
+  - new session added to group
+  - new session series added to group
+  - session changed
   - session cancelled
   - session owner: spot claimed
   - session owner: session became full
