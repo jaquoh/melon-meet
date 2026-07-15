@@ -1,14 +1,12 @@
 # Melon Meet Go-Live Checklist
 
-Last updated: 2026-07-01
+Last updated: 2026-07-15
 
 This checklist is meant for the first public beta launch on Cloudflare.
 
 ## 1. Platform Setup
 
-- Create the staging Cloudflare D1 database.
-- Create the production Cloudflare D1 database.
-- Replace the staging and production database placeholders in `/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc`.
+- Verify the staging and production Cloudflare D1 databases exist and still match the IDs configured in `/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc`.
 - Review `/Users/jbot/IdeaProjects/melon-meet/docs/environment-separation.md`.
 - Review `/Users/jbot/IdeaProjects/melon-meet/docs/production-deploy-runbook.md`.
 - Configure required Wrangler secrets and vars for the target environments:
@@ -17,6 +15,9 @@ This checklist is meant for the first public beta launch on Cloudflare.
   - `TURNSTILE_SITE_KEY`
   - `ALERT_WEBHOOK_URL` if used
   - moderation operator allowlists
+- Confirm Cloudflare auth is available for non-interactive remote commands:
+  - `CLOUDFLARE_API_TOKEN` in CI or other headless environments
+  - or an interactive Wrangler login on a local operator machine
 - Apply staging migrations with `npm run db:migrate:staging`.
 - Seed staging with `npm run db:seed:staging`.
 - Deploy staging with `npm run deploy:staging`.

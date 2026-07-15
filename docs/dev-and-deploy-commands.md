@@ -1,6 +1,6 @@
 # Melon Meet Dev and Deploy Commands
 
-Last updated: 2026-07-01
+Last updated: 2026-07-15
 
 Purpose: keep the everyday local-start and deploy commands in one place for returning to the project quickly.
 
@@ -68,6 +68,7 @@ Before first staging deploy:
   - `TURNSTILE_SECRET_KEY`
   - `ALERT_WEBHOOK_URL` if used
 - configure staging vars such as `TURNSTILE_SITE_KEY`
+- set staging moderation allowlists in `MODERATION_ADMIN_EMAILS` and `MODERATION_REVIEWER_EMAILS`
 
 Example secret commands:
 
@@ -110,6 +111,7 @@ Before first production deploy:
   - `TURNSTILE_SECRET_KEY`
   - `ALERT_WEBHOOK_URL` if used
 - configure production vars such as `TURNSTILE_SITE_KEY`
+- make sure Wrangler auth is available for headless remote commands through `CLOUDFLARE_API_TOKEN` when not using an interactive local shell
 
 Example secret commands:
 

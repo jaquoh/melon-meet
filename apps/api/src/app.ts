@@ -3369,7 +3369,7 @@ export function createApp() {
     logSecurityEvent(c, "account_deletion_requested", "warn", {
       viewerId: viewer.id,
     });
-    return c.json({ groupId: invite.group_id, ok: true });
+    return c.json({ ok: true });
   });
 
   app.post("/api/friends/requests", zValidator("json", friendRequestSchema), async (c) => {
@@ -3765,7 +3765,7 @@ export function createApp() {
       groupId: group.id,
       memberDisplayName: viewer.displayName,
       memberId: viewer.id,
-      role: viewerRole,
+      role: viewerRole as GroupRole,
     });
     return c.json({ ok: true });
   });
@@ -4570,7 +4570,7 @@ export function createApp() {
 
     const meaningfulChange = isMeaningfulMeetingChange(meetingRow, {
       capacity: input.capacity ?? meetingRow.capacity,
-      costPerPerson: input.costPerPerson === undefined ? meetingRow.cost_per_person : input.costPerPerson,
+      cost_per_person: input.costPerPerson === undefined ? meetingRow.cost_per_person : input.costPerPerson,
       description: input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
       endsAt: nextEndsAt,
       locationAddress: input.locationAddress ?? meetingRow.location_address,

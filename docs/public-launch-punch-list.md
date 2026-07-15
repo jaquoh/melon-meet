@@ -81,6 +81,11 @@ Related files:
 ### 4. Prepare the real launch environment
 
 - [ ] Verify staging and production Cloudflare resources, Wrangler config, and required secrets.
+- Current repo audit on 2026-07-15:
+  - production and staging D1 IDs are present in `wrangler.jsonc`
+  - production moderation allowlists are set
+  - staging moderation allowlists are still empty
+  - remote Wrangler commands still need working Cloudflare auth, such as `CLOUDFLARE_API_TOKEN` in non-interactive runs
 - [ ] Configure moderation operator allowlists, support inbox ownership, and smoke-test credentials.
 - [ ] Curate the initial venue/group/session dataset for the first cohort.
 - [ ] Decide whether any local/demo messaging still appears in production-facing copy and remove it if so.

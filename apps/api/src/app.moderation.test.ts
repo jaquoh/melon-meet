@@ -302,7 +302,7 @@ async function requestJson(
     body?: Record<string, unknown>;
     cookie?: string;
     env: AppBindings;
-    method?: "GET" | "PATCH" | "POST";
+    method?: "DELETE" | "GET" | "PATCH" | "POST";
     origin?: string;
   },
 ) {
