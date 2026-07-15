@@ -84,19 +84,21 @@ Related files:
 - Current repo audit on 2026-07-15:
   - production and staging D1 IDs are present in `wrangler.jsonc`
   - production moderation allowlists are set
-  - staging moderation allowlists are still empty
+  - staging moderation allowlists are now set to `jacob@melonmeet.com`
   - remote Wrangler commands still need working Cloudflare auth, such as `CLOUDFLARE_API_TOKEN` in non-interactive runs
 - [ ] Configure moderation operator allowlists, support inbox ownership, and smoke-test credentials.
+  - staging now has a working authenticated smoke path using the seeded demo account
 - [ ] Curate the initial venue/group/session dataset for the first cohort.
 - [x] Decide whether any local/demo messaging still appears in production-facing copy and remove it if so.
   - app audit on 2026-07-15 found no public demo-account messaging left in production UX; only dev-conditional reset/verify shortcuts remained, and those labels were softened
 
 ### 5. Run the rollout sequence
 
-- [ ] Run `npm run quality:gate:staging`.
-- [ ] Run `npm run deploy:staging`.
-- [ ] Run `npm run smoke:staging`.
-- [ ] Fix staging blockers before touching production.
+- [x] Run `npm run quality:gate:staging`.
+- [x] Run `npm run deploy:staging`.
+- [x] Run `npm run smoke:staging`.
+- [x] Fix staging blockers before touching production.
+  - staging now has migrations applied, a live deploy, moderation allowlists, and passing anonymous plus authenticated smoke checks
 - [ ] Run the production deploy path and `npm run smoke:production`.
 - [ ] Launch to a small invite-only cohort first.
 - [ ] Review support load, abuse rate, and failure rate before any broader public announcement.
