@@ -174,15 +174,15 @@ Checklist:
   - session owner: spot claimed and session became full
   - session owner: spot released
   - session attendees: session changed
-  - session attendees: session cancelled
+  - [x] session attendees: session cancelled
   - session attendees: session pinboard update
 - [ ] Add group lifecycle emails.
   Cover:
   - group members: new session added
   - group members: new session series added
   - group members: group deleted or archived
-  - group owners/admins: membership join request
-  - group owners/admins: member left group
+  - [x] group owners/admins: membership join request
+  - [x] group owners/admins: member left group
 - [x] Add a leave-group flow for non-owner members.
 - [x] Add in-product safety disclaimers where they matter.
 - [x] Add support/help contact visibility in the UI.
@@ -220,7 +220,7 @@ Current phase:
 
 Current session target:
 
-- [x] Ship the first moderation notification emails.
+- [x] Ship the first group and session lifecycle notification emails.
 
 Blocked by:
 

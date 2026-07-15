@@ -4,7 +4,7 @@ Last updated: 2026-07-01
 
 Purpose: define the minimum launch-safe notification email set without letting notifications turn into an unbounded product project.
 
-Status: partially implemented. Admin/operator report alerts plus the first moderation/account emails are now live; the rest of this matrix still defines what should come next.
+Status: partially implemented. Admin/operator report alerts, the first moderation/account emails, membership-request emails, member-left emails, and session-cancelled attendee emails are now live; the rest of this matrix still defines what should come next.
 
 ## Guiding Rules
 
@@ -127,3 +127,12 @@ This matrix depends on:
 3. Session cancellation and attendee change emails
 4. Membership request and member-left emails
 5. Group/session creation and pinboard update emails
+
+Current live scope:
+
+- report created: reporter confirmation plus operator alert
+- report reviewed: reporter result email
+- account suspended: suspended-user email
+- membership join request: owner/admin email
+- member left group: owner/admin email
+- session cancelled: attendee email

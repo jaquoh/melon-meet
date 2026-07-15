@@ -54,6 +54,10 @@ Related files:
   - report received
   - report reviewed
 - [ ] Send the minimum session/group lifecycle emails that reduce operational confusion during beta.
+  Current scope live:
+  - membership join request
+  - member left group
+  - session cancelled
 
 ### 4. Prepare the real launch environment
 

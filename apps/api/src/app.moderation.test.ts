@@ -150,6 +150,94 @@ async function insertProfileReport(
     .run();
 }
 
+async function insertGroup(
+  db: D1Database,
+  {
+    id,
+    name,
+    ownerUserId,
+    slug,
+    visibility = "public",
+  }: {
+    id: string;
+    name: string;
+    ownerUserId: string;
+    slug: string;
+    visibility?: "public" | "private";
+  },
+) {
+  await db.prepare(
+    `INSERT INTO app_groups (
+       id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, created_at, updated_at
+     ) VALUES (?, ?, ?, ?, 'Test group description', ?, 'Beach volleyball', NULL, NULL, ?, ?)`,
+  )
+    .bind(id, ownerUserId, name, slug, visibility, FIXED_NOW, FIXED_NOW)
+    .run();
+}
+
+async function insertGroupMember(
+  db: D1Database,
+  {
+    groupId,
+    role,
+    userId,
+  }: {
+    groupId: string;
+    role: "owner" | "admin" | "member";
+    userId: string;
+  },
+) {
+  await db.prepare(
+    `INSERT INTO app_group_members (id, group_id, user_id, role, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  )
+    .bind(crypto.randomUUID(), groupId, userId, role, FIXED_NOW)
+    .run();
+}
+
+async function insertMeeting(
+  db: D1Database,
+  {
+    groupId,
+    id,
+    ownerUserId,
+    title,
+  }: {
+    groupId: string;
+    id: string;
+    ownerUserId: string;
+    title: string;
+  },
+) {
+  await db.prepare(
+    `INSERT INTO meetings (
+       id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, venue_id,
+       location_name, location_address, latitude, longitude, pricing, cost_per_person, capacity, starts_at, ends_at,
+       occurrence_date, status, created_at, updated_at, archived_at
+     ) VALUES (?, ?, ?, NULL, 'sunset', ?, 'Bring a ball', 'Beach volleyball', NULL, NULL, 'Beach Court', 'Sand Street 1', 52.52, 13.405, 'free', NULL, 12, '2026-08-01T18:00:00.000Z', '2026-08-01T20:00:00.000Z', '2026-08-01', 'active', ?, ?, NULL)`,
+  )
+    .bind(id, groupId, ownerUserId, title, FIXED_NOW, FIXED_NOW)
+    .run();
+}
+
+async function insertMeetingClaim(
+  db: D1Database,
+  {
+    meetingId,
+    userId,
+  }: {
+    meetingId: string;
+    userId: string;
+  },
+) {
+  await db.prepare(
+    `INSERT INTO meeting_claims (id, meeting_id, user_id, created_at)
+     VALUES (?, ?, ?, ?)`,
+  )
+    .bind(crypto.randomUUID(), meetingId, userId, FIXED_NOW)
+    .run();
+}
+
 async function makeSessionCookie(db: D1Database, userId: string) {
   const session = await createSession(db, userId);
   return `${SESSION_COOKIE_NAME}=${session.token}`;
@@ -562,6 +650,119 @@ describe("moderation notification emails", () => {
     expect(reporterEmailPayload.subject).toBe("Your Melon Meet report was reviewed");
     expect(reporterEmailPayload.text).toContain("closed it without taking action");
     expect(reporterEmailPayload.text).toContain("could not verify a policy violation");
+  });
+});
+
+describe("group and session notification emails", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("emails group owners and admins when a membership request is created", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, { displayName: "Admin", email: "admin2@example.com", id: "user-admin2" });
+    await insertUser(env.DB, { displayName: "Requester", email: "requester@example.com", id: "user-requester" });
+    await insertGroup(env.DB, { id: "group-1", name: "Sunset Crew", ownerUserId: "user-owner", slug: "sunset-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-1", role: "owner", userId: "user-owner" });
+    await insertGroupMember(env.DB, { groupId: "group-1", role: "admin", userId: "user-admin2" });
+    const cookie = await makeSessionCookie(env.DB, "user-requester");
+
+    const response = await requestJson("/api/groups/group-1/membership-requests", {
+      body: { note: "I can help organize weekday games." },
+      cookie,
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["owner@example.com", "admin2@example.com"]);
+    expect(payload.subject).toBe("New membership request for Sunset Crew");
+    expect(payload.text).toContain("Requester: Requester (requester@example.com)");
+    expect(payload.text).toContain("Note: I can help organize weekday games.");
+  });
+
+  it("emails remaining owners and admins when a member leaves a group", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, { displayName: "Admin", email: "admin2@example.com", id: "user-admin2" });
+    await insertUser(env.DB, { displayName: "Member", email: "member@example.com", id: "user-member" });
+    await insertGroup(env.DB, { id: "group-2", name: "Morning Crew", ownerUserId: "user-owner", slug: "morning-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-2", role: "owner", userId: "user-owner" });
+    await insertGroupMember(env.DB, { groupId: "group-2", role: "admin", userId: "user-admin2" });
+    await insertGroupMember(env.DB, { groupId: "group-2", role: "member", userId: "user-member" });
+    const cookie = await makeSessionCookie(env.DB, "user-member");
+
+    const response = await requestJson("/api/groups/group-2/membership", {
+      cookie,
+      env,
+      method: "DELETE",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["owner@example.com", "admin2@example.com"]);
+    expect(payload.subject).toBe("Member left Morning Crew");
+    expect(payload.text).toContain("Previous role: member");
+  });
+
+  it("emails attendees other than the actor when a session is cancelled", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, { displayName: "Attendee One", email: "one@example.com", id: "user-one" });
+    await insertUser(env.DB, { displayName: "Attendee Two", email: "two@example.com", id: "user-two" });
+    await insertGroup(env.DB, { id: "group-3", name: "City Nights", ownerUserId: "user-owner", slug: "city-nights", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-3", role: "owner", userId: "user-owner" });
+    await insertMeeting(env.DB, { groupId: "group-3", id: "meeting-1", ownerUserId: "user-owner", title: "Thursday Sunset Rally" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-1", userId: "user-owner" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-1", userId: "user-one" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-1", userId: "user-two" });
+    const cookie = await makeSessionCookie(env.DB, "user-owner");
+
+    const response = await requestJson("/api/meetings/meeting-1/cancel", {
+      cookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toEqual(["one@example.com", "two@example.com"]);
+    expect(payload.subject).toBe("Cancelled: Thursday Sunset Rally");
+    expect(payload.text).toContain("Session: Thursday Sunset Rally");
+    expect(payload.text).toContain("Location: Beach Court");
   });
 });
 

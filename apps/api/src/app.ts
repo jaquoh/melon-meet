@@ -943,6 +943,131 @@ function shouldSendReportReviewedEmail(previousStatus: ModerationReportStatus, n
   return nextStatus === "action_taken" || nextStatus === "closed_no_action";
 }
 
+async function listGroupOwnerAdminRecipients(db: D1Database, groupId: string, excludeUserId?: string) {
+  return allRows<{ display_name: string; email: string; id: string; role: GroupRole }>(
+    db,
+    `SELECT u.id, u.email, u.display_name, gm.role
+     FROM app_group_members gm
+     JOIN users u ON u.id = gm.user_id
+     WHERE gm.group_id = ?
+       AND gm.role IN ('owner', 'admin')
+       AND (? IS NULL OR u.id != ?)
+     ORDER BY CASE gm.role WHEN 'owner' THEN 1 ELSE 2 END, u.display_name`,
+    groupId,
+    excludeUserId ?? null,
+    excludeUserId ?? null,
+  );
+}
+
+async function listMeetingAttendeeRecipients(db: D1Database, meetingId: string, excludeUserId?: string) {
+  return allRows<{ display_name: string; email: string; id: string }>(
+    db,
+    `SELECT u.id, u.email, u.display_name
+     FROM meeting_claims mc
+     JOIN users u ON u.id = mc.user_id
+     WHERE mc.meeting_id = ?
+       AND (? IS NULL OR u.id != ?)
+     ORDER BY u.display_name`,
+    meetingId,
+    excludeUserId ?? null,
+    excludeUserId ?? null,
+  );
+}
+
+async function sendMembershipRequestNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    groupId,
+    note,
+    requesterDisplayName,
+    requesterEmail,
+    requesterId,
+  }: {
+    groupId: string;
+    note: string | null;
+    requesterDisplayName: string;
+    requesterEmail: string;
+    requesterId: string;
+  },
+) {
+  const group = await getGroupRecord(c.env.DB, groupId);
+  const recipients = await listGroupOwnerAdminRecipients(c.env.DB, groupId, requesterId);
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const groupUrl = buildAppUrl(c, `/groups/${groupId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>A new membership request is waiting in Melon Meet.</p><p><strong>Group:</strong> ${escapeHtml(group.name)}<br /><strong>Requester:</strong> ${escapeHtml(requesterDisplayName)} (${escapeHtml(requesterEmail)})</p>${note ? `<p><strong>Note:</strong> ${escapeHtml(note)}</p>` : ""}<p>Review the group here: <a href="${escapeHtml(groupUrl)}">${escapeHtml(groupUrl)}</a></p>`,
+    subject: `New membership request for ${group.name}`,
+    text: `A new membership request is waiting in Melon Meet.\n\nGroup: ${group.name}\nRequester: ${requesterDisplayName} (${requesterEmail})${note ? `\nNote: ${note}` : ""}\n\nReview the group here: ${groupUrl}`,
+    to: recipients.map((recipient) => recipient.email),
+  });
+}
+
+async function sendGroupMemberLeftNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    groupId,
+    memberDisplayName,
+    memberId,
+    role,
+  }: {
+    groupId: string;
+    memberDisplayName: string;
+    memberId: string;
+    role: GroupRole;
+  },
+) {
+  const group = await getGroupRecord(c.env.DB, groupId);
+  const recipients = await listGroupOwnerAdminRecipients(c.env.DB, groupId, memberId);
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const groupUrl = buildAppUrl(c, `/groups/${groupId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>A member left one of your Melon Meet groups.</p><p><strong>Group:</strong> ${escapeHtml(group.name)}<br /><strong>Member:</strong> ${escapeHtml(memberDisplayName)}<br /><strong>Previous role:</strong> ${escapeHtml(role)}</p><p>Open the group here: <a href="${escapeHtml(groupUrl)}">${escapeHtml(groupUrl)}</a></p>`,
+    subject: `${memberDisplayName} left ${group.name}`,
+    text: `A member left one of your Melon Meet groups.\n\nGroup: ${group.name}\nMember: ${memberDisplayName}\nPrevious role: ${role}\n\nOpen the group here: ${groupUrl}`,
+    to: recipients.map((recipient) => recipient.email),
+  });
+}
+
+async function sendMeetingCancelledNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    actorId,
+    meetingId,
+  }: {
+    actorId: string;
+    meetingId: string;
+  },
+) {
+  const meeting = await firstRow<{ group_name: string; id: string; location_name: string; starts_at: string; title: string }>(
+    c.env.DB,
+    `SELECT m.id, m.title, m.starts_at, m.location_name, g.name AS group_name
+     FROM meetings m
+     JOIN app_groups g ON g.id = m.group_id
+     WHERE m.id = ?`,
+    meetingId,
+  );
+  assertOrThrow(meeting, 404, "Meeting not found.");
+
+  const recipients = await listMeetingAttendeeRecipients(c.env.DB, meetingId, actorId);
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const meetingUrl = buildAppUrl(c, `/sessions/${meetingId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>A Melon Meet session you joined has been cancelled.</p><p><strong>Session:</strong> ${escapeHtml(meeting.title)}<br /><strong>Group:</strong> ${escapeHtml(meeting.group_name)}<br /><strong>Starts:</strong> ${escapeHtml(meeting.starts_at)}<br /><strong>Location:</strong> ${escapeHtml(meeting.location_name)}</p><p>Open the session here: <a href="${escapeHtml(meetingUrl)}">${escapeHtml(meetingUrl)}</a></p>`,
+    subject: `Cancelled: ${meeting.title}`,
+    text: `A Melon Meet session you joined has been cancelled.\n\nSession: ${meeting.title}\nGroup: ${meeting.group_name}\nStarts: ${meeting.starts_at}\nLocation: ${meeting.location_name}\n\nOpen the session here: ${meetingUrl}`,
+    to: recipients.map((recipient) => recipient.email),
+  });
+}
+
 async function issueEmailVerificationToken(c: Context<AppEnv>, userId: string, email: string) {
   const token = generateOpaqueToken();
   const tokenHash = await hashOpaqueToken(token);
@@ -3169,6 +3294,12 @@ export function createApp() {
       memberUserId: viewer.id,
       role: viewerRole,
     });
+    await sendGroupMemberLeftNotificationEmail(c, {
+      groupId: group.id,
+      memberDisplayName: viewer.displayName,
+      memberId: viewer.id,
+      role: viewerRole,
+    });
     return c.json({ ok: true });
   });
 
@@ -3217,6 +3348,13 @@ export function createApp() {
       logSecurityEvent(c, "group_membership_requested", "info", {
         groupId: group.id,
         requesterUserId: viewer.id,
+      });
+      await sendMembershipRequestNotificationEmail(c, {
+        groupId: group.id,
+        note: normalizeOptionalText(c.req.valid("json").note ?? null),
+        requesterDisplayName: viewer.displayName,
+        requesterEmail: viewer.email,
+        requesterId: viewer.id,
       });
       return c.json({ ok: true }, 201);
     },
@@ -4051,6 +4189,10 @@ export function createApp() {
       summary: "Session was cancelled.",
       targetId: c.req.param("id"),
       targetType: "meeting",
+    });
+    await sendMeetingCancelledNotificationEmail(c, {
+      actorId: viewer.id,
+      meetingId: c.req.param("id"),
     });
     return c.json({ ok: true });
   });
