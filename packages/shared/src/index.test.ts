@@ -7,7 +7,78 @@ import {
   profileUpdateSchema,
   publicHttpsUrlSchema,
   signupSchema,
+  venueCreateSchema,
+  venueUpdateSchema,
 } from "./index";
+
+const validVenueInput = {
+  accessType: "bookable" as const,
+  address: "Teststraße 1, 10115 Berlin",
+  amenities: ["showers", "changing rooms"],
+  bookingUrl: "https://booking.example.com/courts",
+  courtCountTotal: 3,
+  description: "A well maintained beach volleyball venue in central Berlin.",
+  duplicateNotes: null,
+  environment: "indoor_outdoor" as const,
+  facts: {
+    areaNotes: ["Near the station"],
+    equipment: ["fixed nets"],
+    parkInspectorScore: 4.5,
+    playerLevel: "All levels",
+    surface: "Sand",
+  },
+  googleMapsUrl: "https://maps.example.com/test-venue",
+  heroImageUrl: null,
+  imageGallery: [],
+  indoorCourtCount: 1,
+  latitude: 52.52,
+  longitude: 13.405,
+  name: "Test Venue",
+  openingHoursText: "Daily 09:00-22:00",
+  outdoorCourtCount: 2,
+  pricing: "paid" as const,
+  researchedAt: "2026-07-15T10:00:00.000Z",
+  seasonalityText: "Open year-round.",
+  sourceUrl: "https://example.com/test-venue",
+  sourceUrls: ["https://example.com/test-venue"],
+  websiteUrl: "https://example.com",
+};
+
+describe("venue content validation", () => {
+  it("accepts a complete curated venue and normalizes its id", () => {
+    const venue = venueCreateSchema.parse({
+      ...validVenueInput,
+      id: "  venue-test-courts  ",
+    });
+
+    expect(venue.id).toBe("venue-test-courts");
+    expect(venue.courtCountTotal).toBe(3);
+  });
+
+  it("rejects court totals that do not match indoor and outdoor counts", () => {
+    const result = venueUpdateSchema.safeParse({
+      ...validVenueInput,
+      courtCountTotal: 4,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects private or non-https venue URLs", () => {
+    expect(
+      venueUpdateSchema.safeParse({
+        ...validVenueInput,
+        bookingUrl: "http://example.com/book",
+      }).success,
+    ).toBe(false);
+    expect(
+      venueUpdateSchema.safeParse({
+        ...validVenueInput,
+        websiteUrl: "https://192.168.1.5/venue",
+      }).success,
+    ).toBe(false);
+  });
+});
 
 describe("public URL validation", () => {
   it("normalizes public https URLs and removes fragments", () => {

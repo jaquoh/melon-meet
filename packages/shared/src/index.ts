@@ -115,6 +115,70 @@ export const publicHttpsUrlSchema = z.string().trim().min(1).transform((value, c
 });
 
 const optionalPublicHttpsUrlSchema = publicHttpsUrlSchema.optional().or(z.literal("")).nullable();
+const nullablePublicHttpsUrlSchema = publicHttpsUrlSchema.or(z.literal("").transform(() => null)).nullable();
+
+const venueFactsSchema = z.object({
+  areaNotes: z.array(z.string().trim().min(1).max(240)).max(30),
+  equipment: z.array(z.string().trim().min(1).max(120)).max(30),
+  parkInspectorScore: z.number().min(0).max(5).nullable(),
+  playerLevel: z.string().trim().max(120).nullable(),
+  surface: z.string().trim().max(120).nullable(),
+});
+
+const venueImageSchema = z.object({
+  credit: z.string().trim().min(1).max(240),
+  license: z.string().trim().min(1).max(120),
+  rightsStatus: z.enum(["usable", "requires_permission"]),
+  sourceUrl: publicHttpsUrlSchema,
+  url: publicHttpsUrlSchema,
+});
+
+export const venueUpdateSchema = z
+  .object({
+    accessType: z.enum(["public", "bookable", "membership", "entry_fee", "mixed"]),
+    address: z.string().trim().min(2).max(240),
+    amenities: z.array(z.string().trim().min(1).max(120)).max(50),
+    bookingUrl: nullablePublicHttpsUrlSchema,
+    courtCountTotal: z.number().int().min(0).max(100).nullable(),
+    description: z.string().trim().min(10).max(3000),
+    duplicateNotes: z.string().trim().max(2000).nullable(),
+    environment: z.enum(["indoor", "outdoor", "indoor_outdoor"]),
+    facts: venueFactsSchema,
+    googleMapsUrl: nullablePublicHttpsUrlSchema,
+    heroImageUrl: nullablePublicHttpsUrlSchema,
+    imageGallery: z.array(venueImageSchema).max(30),
+    indoorCourtCount: z.number().int().min(0).max(100),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    name: z.string().trim().min(2).max(120),
+    openingHoursText: z.string().trim().max(500).nullable(),
+    outdoorCourtCount: z.number().int().min(0).max(100),
+    pricing: pricingSchema,
+    researchedAt: z.string().datetime().nullable(),
+    seasonalityText: z.string().trim().max(1000).nullable(),
+    sourceUrl: nullablePublicHttpsUrlSchema,
+    sourceUrls: z.array(publicHttpsUrlSchema).max(50),
+    websiteUrl: nullablePublicHttpsUrlSchema,
+  })
+  .superRefine((venue, ctx) => {
+    if (
+      venue.courtCountTotal !== null &&
+      venue.courtCountTotal !== venue.indoorCourtCount + venue.outdoorCourtCount
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Total courts must equal indoor plus outdoor courts.",
+        path: ["courtCountTotal"],
+      });
+    }
+  });
+
+export const venueCreateSchema = z.intersection(
+  venueUpdateSchema,
+  z.object({
+    id: z.string().trim().regex(/^venue-[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use an id like venue-beach-courts."),
+  }),
+);
 
 export const authSchema = z.object({
   email: z.string().email(),
@@ -318,6 +382,8 @@ export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 export type ModerationReportUpdateInput = z.infer<typeof moderationReportUpdateSchema>;
 export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
 export type SmokeAccountBootstrapInput = z.infer<typeof smokeAccountBootstrapSchema>;
+export type VenueCreateInput = z.infer<typeof venueCreateSchema>;
+export type VenueUpdateInput = z.infer<typeof venueUpdateSchema>;
 export type ModerationActionType = z.infer<typeof moderationActionTypeSchema>;
 export type ModerationRole = z.infer<typeof moderationRoleSchema>;
 export type ModerationReportStatus = z.infer<typeof moderationReportStatusSchema>;
