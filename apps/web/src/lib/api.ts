@@ -325,7 +325,7 @@ export function createInviteLink(groupId: string) {
 }
 
 export function acceptInviteCode(code: string) {
-  return request<{ ok: true }>(`/api/groups/invite-links/${code}/accept`, { method: "POST" });
+  return request<{ groupId: string; ok: true }>(`/api/groups/invite-links/${code}/accept`, { method: "POST" });
 }
 
 export function updateMemberRole(

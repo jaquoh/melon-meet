@@ -1273,6 +1273,47 @@ describe("group member and attendee update emails", () => {
     expect(payload.subject).toBe("Archived: Archive Crew");
     expect(payload.text).toContain("no longer active");
   });
+
+  it("accepts a private invite link and returns the joined group id", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, { displayName: "Owner", email: "owner@example.com", id: "user-owner" });
+    await insertUser(env.DB, { displayName: "Invitee", email: "invitee@example.com", id: "user-invitee" });
+    await insertGroup(env.DB, { id: "group-invite", name: "Invite Crew", ownerUserId: "user-owner", slug: "invite-crew", visibility: "private" });
+    await insertGroupMember(env.DB, { groupId: "group-invite", role: "owner", userId: "user-owner" });
+    await env.DB.prepare(
+      `INSERT INTO group_invite_links (id, group_id, code, created_by_user_id, expires_at, created_at)
+       VALUES (?, ?, ?, ?, NULL, ?)`,
+    )
+      .bind("invite-link-1", "group-invite", "melon-secret", "user-owner", FIXED_NOW)
+      .run();
+    const cookie = await makeSessionCookie(env.DB, "user-invitee");
+
+    const response = await requestJson("/api/groups/invite-links/melon-secret/accept", {
+      cookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      groupId: "group-invite",
+      ok: true,
+    });
+
+    const membership = await firstRow<{ role: string }>(
+      env.DB,
+      `SELECT role
+       FROM app_group_members
+       WHERE group_id = ? AND user_id = ?`,
+      "group-invite",
+      "user-invitee",
+    );
+    expect(membership?.role).toBe("member");
+  });
 });
 
 describe("signup policy acceptance tracking", () => {

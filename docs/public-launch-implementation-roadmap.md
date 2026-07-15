@@ -1,6 +1,6 @@
 # Melon Meet Public Launch Implementation Roadmap
 
-Last updated: 2026-07-01
+Last updated: 2026-07-15
 
 Purpose: convert the public launch checklist into a focused execution plan that we can work through over multiple sessions without losing direction.
 
@@ -155,7 +155,7 @@ Checklist:
 - [x] Show verified-email state in the product.
 - [x] Add clear privacy and visibility explanations.
 - [x] Add destructive-action confirmations.
-- [ ] Improve invite-link controls and clarity.
+- [x] Improve invite-link controls and clarity.
 - [x] Define the notification email event matrix and copy rules.
 - [x] Add admin alert emails for reported content.
 - [x] Add user moderation/account emails.
@@ -220,11 +220,11 @@ Current phase:
 
 Current session target:
 
-- [x] Add pinboard and group archive notification coverage.
+- [x] Complete private-group invite generation and invite-accept flow.
 
 Blocked by:
 
-- [ ] Finish the remaining launch-critical account settings polish.
+- [ ] Decide whether first-beta invite links need expiry, limited-use, or attribution before the first cohort.
 - [ ] Decide how much of the notification email matrix is required before the first invite-only cohort.
 - [ ] Choose the first invite-only cohort and launch owner rotation.
 

@@ -1,10 +1,10 @@
 # Melon Meet Notification Email Matrix
 
-Last updated: 2026-07-01
+Last updated: 2026-07-15
 
 Purpose: define the minimum launch-safe notification email set without letting notifications turn into an unbounded product project.
 
-Status: partially implemented. Admin/operator report alerts, the first moderation/account emails, membership-request emails, member-left emails, group-member lifecycle emails, session attendee/owner lifecycle emails, and user-managed notification switches for those live optional categories are now live; the rest of this matrix still defines what should come next.
+Status: mostly implemented for the minimum launch-safe categories. Admin/operator report alerts, the first moderation/account emails, group/member lifecycle emails, session attendee/owner lifecycle emails, user-managed notification switches for those live optional categories, and the first private-group invite flow are now live; the remaining work is mainly intentionally deferred moderation target-owner acknowledgments plus any future invite-link lifecycle mails if we add stronger invite controls.
 
 ## Guiding Rules
 
@@ -145,3 +145,4 @@ Current live scope:
 - session spot released: owner email
 - group archived: group-member email
 - notification settings: user-manageable switches for the live optional notification categories
+- remaining notification gaps for beta decision: target-owner acknowledgment emails for reported content, plus any future invite-link lifecycle mails if we add stronger invite controls

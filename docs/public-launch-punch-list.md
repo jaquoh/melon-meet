@@ -1,6 +1,6 @@
 # Melon Meet Public Launch Punch List
 
-Last updated: 2026-07-01
+Last updated: 2026-07-15
 
 Purpose: keep the next launch steps short, current, and execution-focused.
 
@@ -67,6 +67,16 @@ Related files:
   - session owner: spot released
   - group archived
 - [x] Add account-level notification email switches for live optional notification categories.
+  Current scope live:
+  - moderation/account result emails
+  - group membership request emails
+  - group member leave emails
+  - group archived emails
+  - group new session emails
+  - session changed emails
+  - session cancelled emails
+  - session pinboard update emails
+  - session owner spot claim/full/release emails
 
 ### 4. Prepare the real launch environment
 

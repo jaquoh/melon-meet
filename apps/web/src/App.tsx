@@ -11,6 +11,7 @@ import { DiscoveryPage } from "./pages/DiscoveryPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { InfoPage } from "./pages/InfoPage";
 import { LandingPage } from "./pages/LandingPage";
+import { InviteAcceptPage } from "./pages/InviteAcceptPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailChangePage } from "./pages/VerifyEmailChangePage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
@@ -86,6 +87,7 @@ function AppShell() {
       <Route path="/reset-password" element={<ResetPasswordPage theme={theme} toggleTheme={toggleTheme} />} />
       <Route path="/verify-email-change" element={<VerifyEmailChangePage theme={theme} toggleTheme={toggleTheme} />} />
       <Route path="/verify-email" element={<VerifyEmailPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
+      <Route path="/join/:code" element={<InviteAcceptPage theme={theme} toggleTheme={toggleTheme} viewer={viewer} />} />
       <Route
         path="/map"
         element={

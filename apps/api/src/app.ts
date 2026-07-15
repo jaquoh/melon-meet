@@ -3369,7 +3369,7 @@ export function createApp() {
     logSecurityEvent(c, "account_deletion_requested", "warn", {
       viewerId: viewer.id,
     });
-    return c.json({ ok: true });
+    return c.json({ groupId: invite.group_id, ok: true });
   });
 
   app.post("/api/friends/requests", zValidator("json", friendRequestSchema), async (c) => {
@@ -4013,7 +4013,7 @@ export function createApp() {
       viewer.id,
       nowIso(),
     );
-    return c.json({ ok: true });
+    return c.json({ groupId: invite.group_id, ok: true });
   });
 
   app.patch("/api/groups/:id/members/:userId", zValidator("json", roleUpdateSchema), async (c) => {

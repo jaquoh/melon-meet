@@ -4408,6 +4408,38 @@ img {
   gap: 0.95rem;
 }
 
+.invite-link-panel,
+.invite-link-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.invite-link-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--panel-muted) 84%, transparent);
+}
+
+.invite-link-card__meta {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.invite-link-card__url {
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--panel) 78%, var(--accent-soft));
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 .account-sections-stack__signout {
   width: 100%;
   justify-content: center;

@@ -42,6 +42,7 @@ import { WorkspaceShell } from "../components/WorkspaceShell";
 import {
   claimMeeting,
   createGroupPost,
+  createInviteLink,
   changePassword,
   requestEmailChange,
   createMeeting,
@@ -262,6 +263,7 @@ export function DiscoveryPage({
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [sessionStatus, setSessionStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [notificationPreferencesStatus, setNotificationPreferencesStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
+  const [inviteLinkStatus, setInviteLinkStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [notificationPreferencesDraft, setNotificationPreferencesDraft] = useState<NotificationPreferences | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
@@ -339,6 +341,23 @@ export function DiscoveryPage({
       await queryClient.invalidateQueries({ queryKey: ["map"] });
       navigateToWorkspacePath("/groups", {
         selectedGroupId: null,
+      });
+    },
+  });
+
+  const createInviteLinkMutation = useMutation({
+    mutationFn: (groupId: string) => createInviteLink(groupId),
+    onSuccess: async () => {
+      setInviteLinkStatus({
+        kind: "success",
+        message: "A fresh invite link is ready to copy and share.",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["group", selectedGroupId] });
+    },
+    onError: (error: Error) => {
+      setInviteLinkStatus({
+        kind: "error",
+        message: error.message,
       });
     },
   });
@@ -1163,6 +1182,12 @@ export function DiscoveryPage({
   const createdSessionsHeading = isOwnProfile ? t("profile.ownCreatedSessions") : t("profile.createdSessions");
   const activeProfileDraft = profileDraft ?? (selectedProfileDetail ? createProfileDraft(selectedProfileDetail) : null);
   const activeNotificationPreferences = notificationPreferencesDraft ?? selectedProfileDetail?.notificationPreferences ?? null;
+  const ownerInviteLinks = selectedGroupDetailQuery.data?.inviteLinks ?? [];
+  const groupInviteLandingBaseUrl = typeof window === "undefined" ? "" : window.location.origin;
+  const groupInviteShareLinks = ownerInviteLinks.map((inviteLink) => ({
+    ...inviteLink,
+    href: `${groupInviteLandingBaseUrl}/join/${inviteLink.code}`,
+  }));
   const selectedTitle =
     selectedMeetingDetail?.title ??
     selectedMeetingCluster?.title ??
@@ -2413,6 +2438,52 @@ export function DiscoveryPage({
       {viewer ? <ReportAction targetId={selectedGroupDetail.id} targetLabel="group" targetType="group" /> : null}
       {viewer && selectedGroupDetail.visibility === "private" ? (
         <ReportAction buttonLabel="Report invite abuse" targetId={selectedGroupDetail.id} targetLabel="private invite abuse" targetType="invite_abuse" />
+      ) : null}
+      {selectedGroupDetail.viewerRole === "owner" && selectedGroupDetail.visibility === "private" ? (
+        <section className="detail-card invite-link-panel">
+          <div className="detail-card__eyebrow">
+            <KeyRound size={14} strokeWidth={2} />
+            <span className="panel-caption">Private group invites</span>
+          </div>
+          <h3>Share a direct join link</h3>
+          <p className="muted-copy">
+            Invite links let verified people join this private group directly. Each new link stays reusable until support revokes it, and creating another one is rate-limited for a few minutes.
+          </p>
+          <div className="subtle-action-row">
+            <button
+              className="button-secondary button-inline"
+              disabled={createInviteLinkMutation.isPending}
+              onClick={() => {
+                setInviteLinkStatus(null);
+                createInviteLinkMutation.mutate(selectedGroupDetail.id);
+              }}
+              type="button"
+            >
+              <KeyRound size={14} strokeWidth={2} />
+              <span>{createInviteLinkMutation.isPending ? "Creating..." : "Create invite link"}</span>
+            </button>
+          </div>
+          {inviteLinkStatus ? <p className={inviteLinkStatus.kind === "error" ? "form-error" : "form-success"}>{inviteLinkStatus.message}</p> : null}
+          {groupInviteShareLinks.length > 0 ? (
+            <div className="invite-link-list">
+              {groupInviteShareLinks.map((inviteLink, index) => (
+                <div className="invite-link-card" key={inviteLink.id}>
+                  <div className="invite-link-card__meta">
+                    <strong>{index === 0 ? "Latest invite link" : `Invite link ${index + 1}`}</strong>
+                    <span className="panel-caption">Created {formatDateTimeWithWeekdayShort(inviteLink.created_at)}</span>
+                  </div>
+                  <p className="invite-link-card__url">{inviteLink.href}</p>
+                  <div className="subtle-action-row">
+                    <CopyTextButton label="Copy invite link" value={inviteLink.href} />
+                    <CopyTextButton label="Copy invite code" value={inviteLink.code} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted-copy">No invite links yet. Create one when you are ready to bring someone in.</p>
+          )}
+        </section>
       ) : null}
       {selectedGroupDetailQuery.data ? (
         <PostBoard
