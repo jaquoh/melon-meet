@@ -107,8 +107,8 @@ npm run smoke:production
 
 ## Minimum Setup Before Public Launch
 
-1. Create a dedicated staging D1 database.
-2. Replace the staging database placeholder in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31).
+1. Verify the dedicated staging D1 database still matches the checked-in staging ID in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31).
+2. Review staging-specific vars and allowlists in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31).
 3. Configure staging secrets:
    - `RESEND_API_KEY`
    - `TURNSTILE_SECRET_KEY`

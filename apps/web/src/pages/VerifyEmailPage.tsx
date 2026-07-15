@@ -147,7 +147,7 @@ export function VerifyEmailPage({
 
           {devVerificationUrl ? (
             <div className="stack-sm">
-              <p className="eyebrow">Local development</p>
+              <p className="eyebrow">Development shortcut</p>
               <a className="muted-copy" href={devVerificationUrl}>
                 Open verification link
               </a>

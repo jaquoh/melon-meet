@@ -125,7 +125,7 @@ Configure the optional alert webhook as a Wrangler secret:
 npx wrangler secret put ALERT_WEBHOOK_URL --config wrangler.jsonc
 ```
 
-The default deployment config sets `ENVIRONMENT_NAME=production` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17). If you add staging later, give that environment its own value so alerts clearly show where failures came from.
+The default deployment config sets `ENVIRONMENT_NAME=production` in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17), and the checked-in staging environment sets its own `ENVIRONMENT_NAME=staging` value so alerts stay attributable.
 
 ## Operational security logs
 

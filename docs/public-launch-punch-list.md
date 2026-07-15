@@ -88,7 +88,8 @@ Related files:
   - remote Wrangler commands still need working Cloudflare auth, such as `CLOUDFLARE_API_TOKEN` in non-interactive runs
 - [ ] Configure moderation operator allowlists, support inbox ownership, and smoke-test credentials.
 - [ ] Curate the initial venue/group/session dataset for the first cohort.
-- [ ] Decide whether any local/demo messaging still appears in production-facing copy and remove it if so.
+- [x] Decide whether any local/demo messaging still appears in production-facing copy and remove it if so.
+  - app audit on 2026-07-15 found no public demo-account messaging left in production UX; only dev-conditional reset/verify shortcuts remained, and those labels were softened
 
 ### 5. Run the rollout sequence
 

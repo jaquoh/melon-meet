@@ -83,7 +83,7 @@ export function ForgotPasswordPage({
           <>
             <div className="launch-flow-divider" />
             <div className="stack-sm">
-              <p className="eyebrow">Local development</p>
+              <p className="eyebrow">Development shortcut</p>
               <a className="muted-copy" href={devResetUrl}>
                 Open reset-password link
               </a>
