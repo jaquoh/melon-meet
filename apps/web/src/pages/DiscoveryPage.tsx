@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  BarChart3,
   CalendarRange,
   ChevronDown,
   Compass,
@@ -32,6 +33,7 @@ import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
 import { FormInput } from "../components/FormInput";
 import { GroupForm } from "../components/GroupForm";
+import { LaunchDashboardPanel } from "../components/LaunchDashboardPanel";
 import { MeetingForm } from "../components/MeetingForm";
 import { ModerationQueuePanel } from "../components/ModerationQueuePanel";
 import { PostBoard } from "../components/PostBoard";
@@ -253,6 +255,7 @@ export function DiscoveryPage({
   const [editingProfile, setEditingProfile] = useState(false);
   const [managingAccount, setManagingAccount] = useState(false);
   const [reviewingModeration, setReviewingModeration] = useState(false);
+  const [reviewingLaunchDashboard, setReviewingLaunchDashboard] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
@@ -792,6 +795,10 @@ export function DiscoveryPage({
 
   function closeModerationReview() {
     setReviewingModeration(false);
+  }
+
+  function closeLaunchDashboard() {
+    setReviewingLaunchDashboard(false);
   }
 
   function closeProfileEdit() {
@@ -1998,6 +2005,15 @@ export function DiscoveryPage({
               </button>
             </div>
           </div>
+        ) : reviewingLaunchDashboard && isOwnProfile && viewer?.moderationRole ? (
+          <div className="account-sections-stack">
+            <LaunchDashboardPanel viewer={viewer} />
+            <div className="subtle-action-row">
+              <button className="button-secondary account-sections-stack__manage" onClick={closeLaunchDashboard} type="button">
+                Back to profile
+              </button>
+            </div>
+          </div>
         ) : reviewingModeration && isOwnProfile && viewer?.moderationRole ? (
           <div className="account-sections-stack">
             <ModerationQueuePanel viewer={viewer} />
@@ -2094,14 +2110,30 @@ export function DiscoveryPage({
                         <button
                           className="button-secondary account-sections-stack__manage"
                           onClick={() => {
-                            closeProfileEdit();
-                            closeManageAccount();
-                            setReviewingModeration(true);
-                          }}
-                          type="button"
+                          closeProfileEdit();
+                          closeManageAccount();
+                          closeLaunchDashboard();
+                          setReviewingModeration(true);
+                        }}
+                        type="button"
                         >
                           <Flag size={14} strokeWidth={2} />
                           <span>Review Reports</span>
+                        </button>
+                      ) : null}
+                      {viewer?.moderationRole ? (
+                        <button
+                          className="button-secondary account-sections-stack__manage"
+                          onClick={() => {
+                            closeProfileEdit();
+                            closeManageAccount();
+                            closeModerationReview();
+                            setReviewingLaunchDashboard(true);
+                          }}
+                          type="button"
+                        >
+                          <BarChart3 size={14} strokeWidth={2} />
+                          <span>Launch Dashboard</span>
                         </button>
                       ) : null}
                     </div>

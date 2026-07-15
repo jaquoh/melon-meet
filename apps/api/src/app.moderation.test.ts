@@ -5,7 +5,8 @@ import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "./app";
-import { createSession, hashOpaqueToken } from "./lib/auth";
+import { createSession, hashOpaqueToken, verifyPassword } from "./lib/auth";
+import { writeAuditLogEvent } from "./lib/audit-log";
 import { firstRow } from "./lib/db";
 import type { AppBindings } from "./types/env";
 import { CURRENT_POLICY_VERSIONS } from "../../../packages/shared/src";
@@ -532,6 +533,146 @@ describe("moderation authorization", () => {
       action: "moderation_admin_action_taken",
       target_id: "user-target",
     });
+  });
+
+  it("allows admins to bootstrap a local-only smoke account and returns a generated password", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, {
+      displayName: "Admin",
+      email: "admin@example.com",
+      id: "user-admin",
+    });
+    const adminCookie = await makeSessionCookie(env.DB, "user-admin");
+
+    const response = await requestJson("/api/admin/smoke-account", {
+      body: {
+        displayName: "Smoke Tester",
+        email: "smoke-prod@melonmeet.local",
+      },
+      cookie: adminCookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as {
+      account: { created: boolean; displayName: string; email: string };
+      generatedPassword: string;
+      ok: true;
+    };
+
+    expect(payload.ok).toBe(true);
+    expect(payload.account.email).toBe("smoke-prod@melonmeet.local");
+    expect(payload.account.displayName).toBe("Smoke Tester");
+    expect(payload.generatedPassword.length).toBeGreaterThanOrEqual(20);
+
+    const user = await firstRow<{
+      account_status: string;
+      display_name: string;
+      email_verified_at: string | null;
+      password_hash: string;
+    }>(
+      env.DB,
+      `SELECT password_hash, display_name, email_verified_at, account_status
+       FROM users
+       WHERE email = ?`,
+      "smoke-prod@melonmeet.local",
+    );
+    expect(user?.display_name).toBe("Smoke Tester");
+    expect(user?.account_status).toBe("active");
+    expect(user?.email_verified_at).toBeTruthy();
+    await expect(verifyPassword(payload.generatedPassword, user?.password_hash ?? "")).resolves.toBe(true);
+  });
+
+  it("blocks support reviewers from bootstrapping smoke accounts", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, {
+      displayName: "Reviewer",
+      email: "reviewer@example.com",
+      id: "user-reviewer",
+    });
+    const reviewerCookie = await makeSessionCookie(env.DB, "user-reviewer");
+
+    const response = await requestJson("/api/admin/smoke-account", {
+      body: {
+        email: "smoke-review@melonmeet.local",
+      },
+      cookie: reviewerCookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "You do not have moderation access.",
+    });
+  });
+
+  it("returns launch dashboard metrics for moderation viewers", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, { displayName: "Admin", email: "admin@example.com", id: "user-admin" });
+    await insertUser(env.DB, { displayName: "Member", email: "member@example.com", id: "user-member" });
+    await insertUser(env.DB, {
+      displayName: "Suspended",
+      email: "suspended@example.com",
+      id: "user-suspended",
+      status: "suspended",
+    });
+    await insertGroup(env.DB, { id: "group-dashboard", name: "Dashboard Crew", ownerUserId: "user-admin", slug: "dashboard-crew", visibility: "private" });
+    await insertGroupMember(env.DB, { groupId: "group-dashboard", role: "owner", userId: "user-admin" });
+    await insertMeeting(env.DB, { groupId: "group-dashboard", id: "meeting-dashboard", ownerUserId: "user-admin", title: "Dashboard Session" });
+    await insertProfileReport(env.DB, {
+      id: "report-dashboard",
+      reporterUserId: "user-member",
+      targetUserId: "user-suspended",
+    });
+    await writeAuditLogEvent(env.DB, {
+      action: "group_created",
+      actorUserId: "user-admin",
+      summary: "Created dashboard crew",
+      targetId: "group-dashboard",
+      targetType: "group",
+    });
+    const adminCookie = await makeSessionCookie(env.DB, "user-admin");
+
+    const response = await requestJson("/api/admin/launch-dashboard", {
+      cookie: adminCookie,
+      env,
+    });
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as {
+      recentAuditEvents: Array<{ action: string }>;
+      summary: {
+        activeUsers: number;
+        groupsTotal: number;
+        openReports: number;
+        sessionsUpcoming: number;
+        suspendedUsers: number;
+        usersTotal: number;
+      };
+      timeline: Array<{ date: string; reportsCreated: number; signups: number }>;
+    };
+
+    expect(payload.summary.usersTotal).toBeGreaterThanOrEqual(3);
+    expect(payload.summary.activeUsers).toBeGreaterThanOrEqual(2);
+    expect(payload.summary.suspendedUsers).toBeGreaterThanOrEqual(1);
+    expect(payload.summary.groupsTotal).toBeGreaterThanOrEqual(1);
+    expect(payload.summary.sessionsUpcoming).toBeGreaterThanOrEqual(1);
+    expect(payload.summary.openReports).toBeGreaterThanOrEqual(1);
+    expect(payload.timeline.length).toBe(14);
+    expect(payload.recentAuditEvents.some((event) => event.action === "group_created")).toBe(true);
   });
 });
 

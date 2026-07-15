@@ -296,6 +296,11 @@ export const moderationActionSchema = z.object({
   action: moderationActionTypeSchema,
 });
 
+export const smokeAccountBootstrapSchema = z.object({
+  displayName: z.string().trim().min(2).max(60).optional().nullable(),
+  email: z.string().email(),
+});
+
 export type AuthInput = z.infer<typeof authSchema>;
 export type PolicyAcceptanceVersions = z.infer<typeof policyAcceptanceVersionsSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
@@ -312,6 +317,7 @@ export type MapQueryInput = z.infer<typeof mapQuerySchema>;
 export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 export type ModerationReportUpdateInput = z.infer<typeof moderationReportUpdateSchema>;
 export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
+export type SmokeAccountBootstrapInput = z.infer<typeof smokeAccountBootstrapSchema>;
 export type ModerationActionType = z.infer<typeof moderationActionTypeSchema>;
 export type ModerationRole = z.infer<typeof moderationRoleSchema>;
 export type ModerationReportStatus = z.infer<typeof moderationReportStatusSchema>;

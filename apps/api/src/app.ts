@@ -23,6 +23,7 @@ import {
   profileUpdateSchema,
   reportCreateSchema,
   roleUpdateSchema,
+  smokeAccountBootstrapSchema,
   signupSchema,
   type MeetingSummary,
   type ModerationRole,
@@ -779,12 +780,53 @@ function applyModerationRoleToViewer(env: AppEnv["Bindings"], viewer: ViewerSumm
   };
 }
 
+function dateKey(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function dayKeysForTrailingDays(days: number) {
+  const dates: string[] = [];
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const current = new Date(end);
+    current.setUTCDate(end.getUTCDate() - offset);
+    dates.push(dateKey(current));
+  }
+  return dates;
+}
+
+function buildPasswordCandidate(length = 24) {
+  return generateOpaqueToken().slice(0, length);
+}
+
+function isLocalOnlySmokeEmail(email: string) {
+  return email.trim().toLowerCase().endsWith("@melonmeet.local");
+}
+
 async function requireModerationViewer(c: Context<AppEnv>, minimumRole: ModerationRole = "support_reviewer") {
   const viewer = await requireViewer(c);
   const role = viewer.moderationRole;
   const allowed = minimumRole === "support_reviewer" ? role === "support_reviewer" || role === "admin" : role === "admin";
   assertOrThrow(allowed, 403, "You do not have moderation access.");
   return viewer;
+}
+
+async function dayCountMap(
+  db: D1Database,
+  table: string,
+  createdAtColumn: string,
+  earliestDateKey: string,
+) {
+  const rows = await allRows<{ count: number; day: string }>(
+    db,
+    `SELECT substr(${createdAtColumn}, 1, 10) AS day, COUNT(*) AS count
+     FROM ${table}
+     WHERE substr(${createdAtColumn}, 1, 10) >= ?
+     GROUP BY substr(${createdAtColumn}, 1, 10)`,
+    earliestDateKey,
+  );
+  return new Map(rows.map((row) => [row.day, Number(row.count)]));
 }
 
 function reportTargetPath(targetType: ReportTargetType, targetId: string) {
@@ -3054,6 +3096,269 @@ export function createApp() {
 
     return c.json({
       report: await mapModerationReportSummary(c.env.DB, c.env, updatedReport),
+    });
+  });
+
+  app.get("/api/admin/launch-dashboard", async (c) => {
+    const viewer = await requireModerationViewer(c);
+    const now = new Date();
+    const nowValue = nowIso();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+    const sevenDaysAgoIso = sevenDaysAgo.toISOString();
+    const timelineDays = dayKeysForTrailingDays(14);
+    const earliestTimelineDay = timelineDays[0] ?? dateKey(now);
+
+    const [userCounts, sessionCount, groupCounts, meetingCounts, reportCounts, venueCount, pendingMembershipRequests, activeInviteLinks] = await Promise.all([
+      firstRow<{
+        active_users: number;
+        deletion_pending_users: number;
+        suspended_users: number;
+        users_created_last_7d: number;
+        users_total: number;
+        users_verified: number;
+      }>(
+        c.env.DB,
+        `SELECT
+           COUNT(*) AS users_total,
+           SUM(CASE WHEN account_status = 'active' THEN 1 ELSE 0 END) AS active_users,
+           SUM(CASE WHEN account_status = 'suspended' THEN 1 ELSE 0 END) AS suspended_users,
+           SUM(CASE WHEN account_status = 'deletion-pending' THEN 1 ELSE 0 END) AS deletion_pending_users,
+           SUM(CASE WHEN email_verified_at IS NOT NULL THEN 1 ELSE 0 END) AS users_verified,
+           SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS users_created_last_7d
+         FROM users
+         WHERE deleted_at IS NULL`,
+        sevenDaysAgoIso,
+      ),
+      firstRow<{ active_sessions: number }>(
+        c.env.DB,
+        `SELECT COUNT(*) AS active_sessions
+         FROM sessions
+         WHERE expires_at > ?`,
+        nowValue,
+      ),
+      firstRow<{
+        groups_private: number;
+        groups_public: number;
+        groups_total: number;
+      }>(
+        c.env.DB,
+        `SELECT
+           COUNT(*) AS groups_total,
+           SUM(CASE WHEN visibility = 'public' THEN 1 ELSE 0 END) AS groups_public,
+           SUM(CASE WHEN visibility = 'private' THEN 1 ELSE 0 END) AS groups_private
+         FROM app_groups`,
+      ),
+      firstRow<{
+        meetings_created_last_7d: number;
+        sessions_total: number;
+        sessions_upcoming: number;
+      }>(
+        c.env.DB,
+        `SELECT
+           COUNT(*) AS sessions_total,
+           SUM(CASE WHEN ends_at > ? AND status = 'active' THEN 1 ELSE 0 END) AS sessions_upcoming,
+           SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS meetings_created_last_7d
+         FROM meetings`,
+        nowValue,
+        sevenDaysAgoIso,
+      ),
+      firstRow<{
+        open_reports: number;
+        reports_created_last_7d: number;
+        reports_total: number;
+        triaged_reports: number;
+      }>(
+        c.env.DB,
+        `SELECT
+           COUNT(*) AS reports_total,
+           SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_reports,
+           SUM(CASE WHEN status = 'triaged' THEN 1 ELSE 0 END) AS triaged_reports,
+           SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS reports_created_last_7d
+         FROM content_reports`,
+        sevenDaysAgoIso,
+      ),
+      firstRow<{ venues_total: number }>(c.env.DB, "SELECT COUNT(*) AS venues_total FROM venues"),
+      firstRow<{ pending_membership_requests: number }>(
+        c.env.DB,
+        `SELECT COUNT(*) AS pending_membership_requests
+         FROM group_membership_requests
+         WHERE status = 'pending'`,
+      ),
+      firstRow<{ active_invite_links: number }>(
+        c.env.DB,
+        `SELECT COUNT(*) AS active_invite_links
+         FROM group_invite_links
+         WHERE expires_at IS NULL OR expires_at > ?`,
+        nowValue,
+      ),
+    ]);
+
+    const [signupCounts, meetingCountsByDay, reportCountsByDay, recentAuditEvents] = await Promise.all([
+      dayCountMap(c.env.DB, "users", "created_at", earliestTimelineDay),
+      dayCountMap(c.env.DB, "meetings", "created_at", earliestTimelineDay),
+      dayCountMap(c.env.DB, "content_reports", "created_at", earliestTimelineDay),
+      allRows<{
+        action: string;
+        actor_display_name: string | null;
+        actor_email: string | null;
+        created_at: string;
+        id: string;
+        summary: string;
+        target_id: string;
+        target_type: string;
+      }>(
+        c.env.DB,
+        `SELECT
+           a.id,
+           a.action,
+           a.summary,
+           a.target_type,
+           a.target_id,
+           a.created_at,
+           u.display_name AS actor_display_name,
+           u.email AS actor_email
+         FROM audit_log_events a
+         LEFT JOIN users u ON u.id = a.actor_user_id
+         ORDER BY a.created_at DESC
+         LIMIT 12`,
+      ),
+    ]);
+
+    return c.json({
+      environmentName: c.env.ENVIRONMENT_NAME ?? "unknown",
+      generatedAt: nowValue,
+      recentAuditEvents: recentAuditEvents.map((event) => ({
+        action: event.action,
+        actorDisplayName: event.actor_display_name,
+        actorEmail: event.actor_email,
+        createdAt: event.created_at,
+        id: event.id,
+        summary: event.summary,
+        targetId: event.target_id,
+        targetType: event.target_type,
+      })),
+      summary: {
+        activeInviteLinks: Number(activeInviteLinks?.active_invite_links ?? 0),
+        activeSessions: Number(sessionCount?.active_sessions ?? 0),
+        activeUsers: Number(userCounts?.active_users ?? 0),
+        deletionPendingUsers: Number(userCounts?.deletion_pending_users ?? 0),
+        groupsPrivate: Number(groupCounts?.groups_private ?? 0),
+        groupsPublic: Number(groupCounts?.groups_public ?? 0),
+        groupsTotal: Number(groupCounts?.groups_total ?? 0),
+        meetingsCreatedLast7Days: Number(meetingCounts?.meetings_created_last_7d ?? 0),
+        openReports: Number(reportCounts?.open_reports ?? 0),
+        pendingMembershipRequests: Number(pendingMembershipRequests?.pending_membership_requests ?? 0),
+        reportsCreatedLast7Days: Number(reportCounts?.reports_created_last_7d ?? 0),
+        reportsTotal: Number(reportCounts?.reports_total ?? 0),
+        sessionsTotal: Number(meetingCounts?.sessions_total ?? 0),
+        sessionsUpcoming: Number(meetingCounts?.sessions_upcoming ?? 0),
+        suspendedUsers: Number(userCounts?.suspended_users ?? 0),
+        triagedReports: Number(reportCounts?.triaged_reports ?? 0),
+        usersCreatedLast7Days: Number(userCounts?.users_created_last_7d ?? 0),
+        usersTotal: Number(userCounts?.users_total ?? 0),
+        usersVerified: Number(userCounts?.users_verified ?? 0),
+        venuesTotal: Number(venueCount?.venues_total ?? 0),
+      },
+      timeline: timelineDays.map((day) => ({
+        date: day,
+        meetingsCreated: meetingCountsByDay.get(day) ?? 0,
+        reportsCreated: reportCountsByDay.get(day) ?? 0,
+        signups: signupCounts.get(day) ?? 0,
+      })),
+      viewerModerationRole: viewer.moderationRole,
+    });
+  });
+
+  app.post("/api/admin/smoke-account", zValidator("json", smokeAccountBootstrapSchema), async (c) => {
+    const viewer = await requireModerationViewer(c, "admin");
+    assertTrustedWriteOrigin(c);
+    const input = c.req.valid("json");
+    const email = input.email.trim().toLowerCase();
+    assertOrThrow(isLocalOnlySmokeEmail(email), 400, "Smoke accounts must use a @melonmeet.local email.");
+
+    const displayName = input.displayName?.trim() || "Smoke Test Operator";
+    const existing = await firstRow<{ id: string }>(
+      c.env.DB,
+      "SELECT id FROM users WHERE email = ?",
+      email,
+    );
+
+    const generatedPassword = buildPasswordCandidate();
+    const passwordHash = await hashPassword(generatedPassword);
+    const timestamp = nowIso();
+    let userId = existing?.id ?? crypto.randomUUID();
+
+    if (existing) {
+      await runStatement(
+        c.env.DB,
+        `UPDATE users
+         SET password_hash = ?,
+             display_name = ?,
+             bio = 'Internal smoke-test account for launch verification.',
+             home_area = '',
+             avatar_url = NULL,
+             is_profile_public = 0,
+             show_email_publicly = 0,
+             playing_level = '',
+             email_verified_at = ?,
+             account_status = 'active',
+             deletion_requested_at = NULL,
+             deleted_at = NULL,
+             updated_at = ?
+         WHERE id = ?`,
+        passwordHash,
+        displayName,
+        timestamp,
+        timestamp,
+        userId,
+      );
+    } else {
+      await runStatement(
+        c.env.DB,
+        `INSERT INTO users (
+           id, email, password_hash, display_name, bio, home_area, avatar_url,
+           is_profile_public, show_email_publicly, playing_level, email_verified_at,
+           account_status, deletion_requested_at, deleted_at, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, 'Internal smoke-test account for launch verification.', '', NULL, 0, 0, '', ?, 'active', NULL, NULL, ?, ?)`,
+        userId,
+        email,
+        passwordHash,
+        displayName,
+        timestamp,
+        timestamp,
+        timestamp,
+      );
+    }
+
+    await revokeAllSessionsForUser(c.env.DB, userId);
+    logSecurityEvent(c, "admin_smoke_account_bootstrapped", "warn", {
+      actorUserId: viewer.id,
+      smokeAccountEmail: maskEmailAddress(email),
+      smokeAccountUserId: userId,
+    });
+    await writeAuditLogEvent(c.env.DB, {
+      action: "admin_smoke_account_bootstrapped",
+      actorUserId: viewer.id,
+      metadata: {
+        requestId: c.get("requestId"),
+        smokeAccountEmail: email,
+        smokeAccountReset: Boolean(existing),
+      },
+      summary: "Admin bootstrapped a smoke-test account.",
+      targetId: userId,
+      targetType: "user",
+    });
+
+    return c.json({
+      account: {
+        created: !existing,
+        displayName,
+        email,
+        userId,
+      },
+      generatedPassword,
+      ok: true,
     });
   });
 

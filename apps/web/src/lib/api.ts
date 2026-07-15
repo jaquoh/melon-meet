@@ -93,6 +93,61 @@ export interface ModerationReportsResponse {
   viewerModerationRole: ModerationRole;
 }
 
+export interface LaunchDashboardResponse {
+  environmentName: string;
+  generatedAt: string;
+  recentAuditEvents: Array<{
+    action: string;
+    actorDisplayName: string | null;
+    actorEmail: string | null;
+    createdAt: string;
+    id: string;
+    summary: string;
+    targetId: string;
+    targetType: string;
+  }>;
+  summary: {
+    activeInviteLinks: number;
+    activeSessions: number;
+    activeUsers: number;
+    deletionPendingUsers: number;
+    groupsPrivate: number;
+    groupsPublic: number;
+    groupsTotal: number;
+    meetingsCreatedLast7Days: number;
+    openReports: number;
+    pendingMembershipRequests: number;
+    reportsCreatedLast7Days: number;
+    reportsTotal: number;
+    sessionsTotal: number;
+    sessionsUpcoming: number;
+    suspendedUsers: number;
+    triagedReports: number;
+    usersCreatedLast7Days: number;
+    usersTotal: number;
+    usersVerified: number;
+    venuesTotal: number;
+  };
+  timeline: Array<{
+    date: string;
+    meetingsCreated: number;
+    reportsCreated: number;
+    signups: number;
+  }>;
+  viewerModerationRole: ModerationRole | null;
+}
+
+export interface SmokeAccountBootstrapResponse {
+  account: {
+    created: boolean;
+    displayName: string;
+    email: string;
+    userId: string;
+  };
+  generatedPassword: string;
+  ok: true;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     credentials: "include",
@@ -251,6 +306,20 @@ export function updateModerationReport(
 export function executeModerationAction(reportId: string, action: ModerationActionType) {
   return request<{ report: ModerationReportSummary }>(`/api/moderation/reports/${reportId}/actions`, {
     body: JSON.stringify({ action }),
+    method: "POST",
+  });
+}
+
+export function getLaunchDashboard() {
+  return request<LaunchDashboardResponse>("/api/admin/launch-dashboard");
+}
+
+export function bootstrapSmokeAccount(email: string, displayName?: string) {
+  return request<SmokeAccountBootstrapResponse>("/api/admin/smoke-account", {
+    body: JSON.stringify({
+      displayName: displayName?.trim() || null,
+      email,
+    }),
     method: "POST",
   });
 }

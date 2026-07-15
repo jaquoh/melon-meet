@@ -4408,6 +4408,106 @@ img {
   gap: 0.95rem;
 }
 
+.launch-dashboard,
+.launch-dashboard__section {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.launch-dashboard__header,
+.launch-dashboard__event-card,
+.launch-dashboard__timeline-row,
+.launch-dashboard__smoke-result {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.launch-dashboard__summary-grid,
+.launch-dashboard__event-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.launch-dashboard__summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.launch-dashboard__metric-card,
+.launch-dashboard__event-card,
+.launch-dashboard__smoke-panel,
+.launch-dashboard__smoke-result {
+  padding: 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--panel-muted) 84%, transparent);
+}
+
+.launch-dashboard__metric-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.launch-dashboard__metric-card strong {
+  font-family: "Nunito", "Public Sans", sans-serif;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.launch-dashboard__timeline {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.launch-dashboard__timeline-date,
+.launch-dashboard__timeline-values,
+.launch-dashboard__secret {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.launch-dashboard__timeline-date,
+.launch-dashboard__timeline-values {
+  color: var(--muted);
+}
+
+.launch-dashboard__timeline-bars {
+  flex: 1 1 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 12rem;
+}
+
+.launch-dashboard__timeline-bar {
+  height: 0.38rem;
+  min-width: 0.3rem;
+  border-radius: 999px;
+}
+
+.launch-dashboard__timeline-bar--signups {
+  background: color-mix(in srgb, var(--success) 72%, white);
+}
+
+.launch-dashboard__timeline-bar--meetings {
+  background: color-mix(in srgb, var(--accent) 68%, white);
+}
+
+.launch-dashboard__timeline-bar--reports {
+  background: color-mix(in srgb, var(--danger) 78%, white);
+}
+
+.launch-dashboard__secret {
+  margin: 0;
+  padding: 0.82rem 0.9rem;
+  border-radius: 0.82rem;
+  background: color-mix(in srgb, var(--panel) 82%, var(--accent-soft));
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .invite-link-panel,
 .invite-link-list {
   display: grid;
