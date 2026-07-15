@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { GroupSummary, MeetingSummary, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
+import type { GroupSummary, MeetingSummary, NotificationPreferences, VenueSummary, ViewerSummary } from "../../../../packages/shared/src";
 import type { ThemeMode } from "../App";
 import { CopyTextButton } from "../components/CopyTextButton";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
@@ -57,6 +57,7 @@ import {
   deleteProfile,
   logOutOtherSessions,
   resendVerificationEmail,
+  updateNotificationPreferences,
   updateProfile,
   updateGroup,
   updateMeeting,
@@ -260,6 +261,8 @@ export function DiscoveryPage({
   const [emailVerificationStatus, setEmailVerificationStatus] = useState<{ devVerificationUrl?: string | null; kind: "error" | "success"; message: string } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [sessionStatus, setSessionStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
+  const [notificationPreferencesStatus, setNotificationPreferencesStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
+  const [notificationPreferencesDraft, setNotificationPreferencesDraft] = useState<NotificationPreferences | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileFormValues | null>(null);
   const [mapSelectionRevision, setMapSelectionRevision] = useState(0);
   const [isClearingSelection, setIsClearingSelection] = useState(false);
@@ -758,6 +761,8 @@ export function DiscoveryPage({
     setDeleteAccountStatus(null);
     setEmailVerificationStatus(null);
     setDeleteConfirmation("");
+    setNotificationPreferencesDraft(null);
+    setNotificationPreferencesStatus(null);
     setSessionStatus(null);
   }
 
@@ -944,6 +949,24 @@ export function DiscoveryPage({
       closeProfileEdit();
       await queryClient.invalidateQueries({ queryKey: ["profile", selectedProfileId] });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+
+  const updateNotificationPreferencesMutation = useMutation({
+    mutationFn: (payload: NotificationPreferences) => updateNotificationPreferences(payload),
+    onSuccess: async () => {
+      setNotificationPreferencesStatus({
+        kind: "success",
+        message: "Your notification email settings have been updated.",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["profile", selectedProfileId] });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (error: Error) => {
+      setNotificationPreferencesStatus({
+        kind: "error",
+        message: error.message,
+      });
     },
   });
 
@@ -1139,6 +1162,7 @@ export function DiscoveryPage({
   const isOwnProfile = Boolean(selectedProfileId && viewer?.id === selectedProfileId);
   const createdSessionsHeading = isOwnProfile ? t("profile.ownCreatedSessions") : t("profile.createdSessions");
   const activeProfileDraft = profileDraft ?? (selectedProfileDetail ? createProfileDraft(selectedProfileDetail) : null);
+  const activeNotificationPreferences = notificationPreferencesDraft ?? selectedProfileDetail?.notificationPreferences ?? null;
   const selectedTitle =
     selectedMeetingDetail?.title ??
     selectedMeetingCluster?.title ??
@@ -1640,6 +1664,134 @@ export function DiscoveryPage({
               </div>
             </section>
 
+            <section className="account-section is-open">
+              <div className="account-section__trigger">
+                <span className="account-section__headline">
+                  <Mail size={16} strokeWidth={2} />
+                  <span>Notification emails</span>
+                </span>
+              </div>
+              <div className="account-section__panel">
+                <p className="panel-caption">Email preferences</p>
+                <p className="muted-copy">
+                  Choose which operational emails you want to receive. Critical security and account-access emails can still be sent even if you turn optional categories off.
+                </p>
+                {activeNotificationPreferences ? (
+                  <div className="account-preferences-grid">
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.moderationAndAccountEmails}
+                        label="Moderation report confirmations and outcomes"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            moderationAndAccountEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">Report received and report reviewed emails.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.groupMembershipRequestEmails}
+                        label="Group membership request alerts"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            groupMembershipRequestEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For owners and admins when someone asks to join a group.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.groupMemberLeaveEmails}
+                        label="Group member leave alerts"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            groupMemberLeaveEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For owners and admins when a member leaves a group.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionCancellationEmails}
+                        label="Session cancellation emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionCancellationEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For attendees when a joined session gets cancelled.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionSpotClaimEmails}
+                        label="Spot claimed emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionSpotClaimEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For session owners when someone claims a spot.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionSpotFilledEmails}
+                        label="Session full emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionSpotFilledEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For session owners when a claim fills the last open spot.</span>
+                    </div>
+                    <div className="stack-sm">
+                      <FilterCheckbox
+                        checked={activeNotificationPreferences.sessionSpotReleaseEmails}
+                        label="Spot released emails"
+                        onChange={(checked) =>
+                          setNotificationPreferencesDraft((current) => ({
+                            ...(current ?? activeNotificationPreferences),
+                            sessionSpotReleaseEmails: checked,
+                          }))}
+                      />
+                      <span className="field-hint">For session owners when someone releases a claimed spot.</span>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="form-actions">
+                  <button
+                    className="button-secondary"
+                    disabled={!activeNotificationPreferences || updateNotificationPreferencesMutation.isPending}
+                    onClick={async () => {
+                      if (!activeNotificationPreferences) {
+                        return;
+                      }
+                      setNotificationPreferencesStatus(null);
+                      await updateNotificationPreferencesMutation.mutateAsync(activeNotificationPreferences);
+                    }}
+                    type="button"
+                  >
+                    <Mail size={14} strokeWidth={2} />
+                    {updateNotificationPreferencesMutation.isPending ? "Saving" : "Save notification settings"}
+                  </button>
+                </div>
+                {notificationPreferencesStatus ? (
+                  <p
+                    className="empty-state"
+                    style={notificationPreferencesStatus.kind === "error" ? { color: "var(--danger)", borderStyle: "solid" } : undefined}
+                  >
+                    {notificationPreferencesStatus.message}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
             <section className={`account-section ${changingEmail ? "is-open" : ""}`.trim()}>
               <button aria-expanded={changingEmail} className="account-section__trigger" onClick={toggleEmailSection} type="button">
                 <span className="account-section__headline">
@@ -1857,6 +2009,7 @@ export function DiscoveryPage({
                           closeProfileEdit();
                           closeModerationReview();
                           resetAccountManagementState();
+                          setNotificationPreferencesDraft(selectedProfileDetail.notificationPreferences);
                           setManagingAccount(true);
                         }}
                         type="button"

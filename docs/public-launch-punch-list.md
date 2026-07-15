@@ -38,7 +38,7 @@ Related files:
 
 ### 2. Finish the minimum launch trust UX
 
-- [ ] Build or finish the account settings surface for launch-critical account actions.
+- [x] Build or finish the account settings surface for launch-critical account actions.
 - [x] Show verified-email state clearly in-product.
 - [x] Add destructive-action confirmations for account deletion and other high-risk actions.
   Current scope: account deletion flow
@@ -58,6 +58,10 @@ Related files:
   - membership join request
   - member left group
   - session cancelled
+  - session owner: spot claimed
+  - session owner: session became full
+  - session owner: spot released
+- [x] Add account-level notification email switches for live optional notification categories.
 
 ### 4. Prepare the real launch environment
 

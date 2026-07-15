@@ -39,6 +39,17 @@ export const moderationActionTypeSchema = z.enum([
   "remove_meeting_post",
   "revoke_group_invite_links",
 ]);
+export const notificationPreferencesSchema = z.object({
+  groupMemberLeaveEmails: z.boolean().default(true),
+  groupMembershipRequestEmails: z.boolean().default(true),
+  moderationAndAccountEmails: z.boolean().default(true),
+  sessionCancellationEmails: z.boolean().default(true),
+  sessionSpotClaimEmails: z.boolean().default(true),
+  sessionSpotFilledEmails: z.boolean().default(true),
+  sessionSpotReleaseEmails: z.boolean().default(true),
+});
+export const DEFAULT_NOTIFICATION_PREFERENCES = notificationPreferencesSchema.parse({});
+export const notificationPreferencesUpdateSchema = notificationPreferencesSchema;
 
 function isPrivateIpv4Host(hostname: string) {
   const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
@@ -300,6 +311,8 @@ export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
 export type ModerationActionType = z.infer<typeof moderationActionTypeSchema>;
 export type ModerationRole = z.infer<typeof moderationRoleSchema>;
 export type ModerationReportStatus = z.infer<typeof moderationReportStatusSchema>;
+export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
+export type NotificationPreferencesUpdateInput = z.infer<typeof notificationPreferencesUpdateSchema>;
 export type ReportReason = z.infer<typeof reportReasonSchema>;
 export type ReportTargetType = z.infer<typeof reportTargetTypeSchema>;
 
@@ -315,6 +328,7 @@ export interface ViewerSummary {
   isProfilePublic: boolean;
   showEmailPublicly: boolean;
   moderationRole: ModerationRole | null;
+  notificationPreferences: NotificationPreferences;
 }
 
 export interface ModerationReportSummary {

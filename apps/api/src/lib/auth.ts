@@ -1,6 +1,6 @@
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
-import type { ViewerSummary } from "../../../../packages/shared/src";
+import { DEFAULT_NOTIFICATION_PREFERENCES, type ViewerSummary } from "../../../../packages/shared/src";
 import { firstRow, runStatement } from "./db";
 import type { AppEnv } from "../types/env";
 
@@ -190,6 +190,13 @@ export async function resolveSessionViewer(
     avatar_url: string | null;
     is_profile_public: number;
     show_email_publicly: number;
+    notification_moderation_and_account_emails: number;
+    notification_group_membership_request_emails: number;
+    notification_group_member_leave_emails: number;
+    notification_session_cancellation_emails: number;
+    notification_session_spot_claim_emails: number;
+    notification_session_spot_release_emails: number;
+    notification_session_spot_filled_emails: number;
   }>(
     db,
     `SELECT
@@ -204,7 +211,14 @@ export async function resolveSessionViewer(
        users.playing_level,
        users.avatar_url,
        users.is_profile_public,
-       users.show_email_publicly
+       users.show_email_publicly,
+       users.notification_moderation_and_account_emails,
+       users.notification_group_membership_request_emails,
+       users.notification_group_member_leave_emails,
+       users.notification_session_cancellation_emails,
+       users.notification_session_spot_claim_emails,
+       users.notification_session_spot_release_emails,
+       users.notification_session_spot_filled_emails
      FROM sessions
      JOIN users ON users.id = sessions.user_id
      WHERE sessions.token_hash = ?
@@ -229,6 +243,15 @@ export async function resolveSessionViewer(
       homeArea: row.home_area,
       id: row.id,
       moderationRole: null,
+      notificationPreferences: {
+        groupMemberLeaveEmails: Boolean(row.notification_group_member_leave_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMemberLeaveEmails),
+        groupMembershipRequestEmails: Boolean(row.notification_group_membership_request_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMembershipRequestEmails),
+        moderationAndAccountEmails: Boolean(row.notification_moderation_and_account_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.moderationAndAccountEmails),
+        sessionCancellationEmails: Boolean(row.notification_session_cancellation_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionCancellationEmails),
+        sessionSpotClaimEmails: Boolean(row.notification_session_spot_claim_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotClaimEmails),
+        sessionSpotFilledEmails: Boolean(row.notification_session_spot_filled_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotFilledEmails),
+        sessionSpotReleaseEmails: Boolean(row.notification_session_spot_release_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotReleaseEmails),
+      },
       playingLevel: row.playing_level,
       isProfilePublic: Boolean(row.is_profile_public),
       showEmailPublicly: Boolean(row.show_email_publicly),

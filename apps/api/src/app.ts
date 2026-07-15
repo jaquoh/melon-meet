@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   authSchema,
   CURRENT_POLICY_VERSIONS,
+  DEFAULT_NOTIFICATION_PREFERENCES,
   friendRequestSchema,
   groupCreateSchema,
   groupPostSchema,
@@ -17,6 +18,7 @@ import {
   meetingUpdateSchema,
   moderationActionSchema,
   moderationReportUpdateSchema,
+  notificationPreferencesUpdateSchema,
   postSchema,
   profileUpdateSchema,
   reportCreateSchema,
@@ -26,6 +28,7 @@ import {
   type ModerationRole,
   type ModerationActionType,
   type ModerationReportStatus,
+  type NotificationPreferences,
   type ReportTargetType,
   type VenueSummary,
   type ViewerSummary,
@@ -145,6 +148,13 @@ type ViewerRow = {
   home_area: string;
   id: string;
   is_profile_public?: number | boolean;
+  notification_group_member_leave_emails?: number | boolean;
+  notification_group_membership_request_emails?: number | boolean;
+  notification_moderation_and_account_emails?: number | boolean;
+  notification_session_cancellation_emails?: number | boolean;
+  notification_session_spot_claim_emails?: number | boolean;
+  notification_session_spot_filled_emails?: number | boolean;
+  notification_session_spot_release_emails?: number | boolean;
   playing_level?: string | null;
   show_email_publicly?: number | boolean;
 };
@@ -595,6 +605,18 @@ async function executeModerationAction(
   await runStatement(db, "DELETE FROM group_invite_links WHERE group_id = ?", report.target_id);
 }
 
+function mapNotificationPreferences(row: ViewerRow): NotificationPreferences {
+  return {
+    groupMemberLeaveEmails: Boolean(row.notification_group_member_leave_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMemberLeaveEmails),
+    groupMembershipRequestEmails: Boolean(row.notification_group_membership_request_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupMembershipRequestEmails),
+    moderationAndAccountEmails: Boolean(row.notification_moderation_and_account_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.moderationAndAccountEmails),
+    sessionCancellationEmails: Boolean(row.notification_session_cancellation_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionCancellationEmails),
+    sessionSpotClaimEmails: Boolean(row.notification_session_spot_claim_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotClaimEmails),
+    sessionSpotFilledEmails: Boolean(row.notification_session_spot_filled_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotFilledEmails),
+    sessionSpotReleaseEmails: Boolean(row.notification_session_spot_release_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.sessionSpotReleaseEmails),
+  };
+}
+
 function mapViewerSummary(row: ViewerRow) {
   return {
     avatarUrl: row.avatar_url,
@@ -606,6 +628,7 @@ function mapViewerSummary(row: ViewerRow) {
     id: row.id,
     isProfilePublic: Boolean(row.is_profile_public),
     moderationRole: null,
+    notificationPreferences: mapNotificationPreferences(row),
     playingLevel: row.playing_level?.trim() ?? "",
     showEmailPublicly: Boolean(row.show_email_publicly),
   };
@@ -840,70 +863,32 @@ async function sendTransactionalEmail(
   });
 }
 
-async function sendReportCreatedEmails(
-  c: Context<AppEnv>,
-  {
-    note,
-    reason,
-    reporterDisplayName,
-    reporterEmail,
-    targetId,
-    targetType,
-  }: {
-    note: string | null;
-    reason: string;
-    reporterDisplayName: string;
-    reporterEmail: string;
-    targetId: string;
-    targetType: ReportTargetType;
-  },
-) {
-  const targetLabel = await resolveModerationReportTargetLabel(c.env.DB, targetType, targetId);
-  const targetUrl = buildAppUrl(c, reportTargetPath(targetType, targetId));
-  const normalizedReason = reason.replaceAll("_", " ");
-  const safeTargetLabel = escapeHtml(targetLabel);
-  const safeReason = escapeHtml(normalizedReason);
-  const safeTargetUrl = escapeHtml(targetUrl);
-  const moderationRecipients = [...new Set([
-    ...parseEmailList(c.env.MODERATION_REVIEWER_EMAILS),
-    ...parseEmailList(c.env.MODERATION_ADMIN_EMAILS),
-  ])];
-
-  await sendTransactionalEmail(c, {
-    html: `<p>Thanks for sending a report to Melon Meet.</p><p>We recorded your report about <strong>${safeTargetLabel}</strong> for <strong>${safeReason}</strong>.</p><p>Our moderation team will review it and follow up if there is anything else you need to know.</p><p>You can still revisit the related page here: <a href="${safeTargetUrl}">${safeTargetUrl}</a></p>`,
-    subject: "We received your Melon Meet report",
-    text: `Thanks for sending a report to Melon Meet.\n\nWe recorded your report about ${targetLabel} for ${normalizedReason}.\n\nOur moderation team will review it and follow up if there is anything else you need to know.\n\nRelated page: ${targetUrl}`,
-    to: reporterEmail,
-  });
-
-  if (moderationRecipients.length === 0) {
-    return;
-  }
-
-  await sendTransactionalEmail(c, {
-    html: `<p>A new Melon Meet report needs review.</p><p><strong>Target:</strong> ${safeTargetLabel}<br /><strong>Reason:</strong> ${safeReason}<br /><strong>Reporter:</strong> ${escapeHtml(reporterDisplayName)} (${escapeHtml(reporterEmail)})</p>${note ? `<p><strong>Reporter note:</strong> ${escapeHtml(note)}</p>` : ""}<p>Open the moderation queue to review the report.</p>`,
-    subject: `New Melon Meet report: ${targetLabel}`,
-    text: `A new Melon Meet report needs review.\n\nTarget: ${targetLabel}\nReason: ${normalizedReason}\nReporter: ${reporterDisplayName} (${reporterEmail})${note ? `\nReporter note: ${note}` : ""}\n\nOpen the moderation queue to review the report.`,
-    to: moderationRecipients,
-  });
-}
-
 async function sendReportReviewedEmail(
   c: Context<AppEnv>,
   {
     reporterEmail,
+    reporterUserId,
     resolution,
     status,
     targetId,
     targetType,
   }: {
     reporterEmail: string;
+    reporterUserId: string;
     resolution: string | null;
     status: ModerationReportStatus;
     targetId: string;
     targetType: ReportTargetType;
   },
 ) {
+  const reporterSettings = await firstRow<{ notification_moderation_and_account_emails: number }>(
+    c.env.DB,
+    "SELECT notification_moderation_and_account_emails FROM users WHERE id = ?",
+    reporterUserId,
+  );
+  if (reporterSettings && !reporterSettings.notification_moderation_and_account_emails) {
+    return;
+  }
   const targetLabel = await resolveModerationReportTargetLabel(c.env.DB, targetType, targetId);
   const safeTargetLabel = escapeHtml(targetLabel);
   const reviewSummary =
@@ -936,6 +921,58 @@ async function sendAccountSuspendedEmail(
   });
 }
 
+async function sendReportCreatedEmails(
+  c: Context<AppEnv>,
+  {
+    note,
+    reason,
+    reporterDisplayName,
+    reporterEmail,
+    reporterWantsModerationEmails = true,
+    targetId,
+    targetType,
+  }: {
+    note: string | null;
+    reason: string;
+    reporterDisplayName: string;
+    reporterEmail: string;
+    reporterWantsModerationEmails?: boolean;
+    targetId: string;
+    targetType: ReportTargetType;
+  },
+) {
+  const targetLabel = await resolveModerationReportTargetLabel(c.env.DB, targetType, targetId);
+  const targetUrl = buildAppUrl(c, reportTargetPath(targetType, targetId));
+  const normalizedReason = reason.replaceAll("_", " ");
+  const safeTargetLabel = escapeHtml(targetLabel);
+  const safeReason = escapeHtml(normalizedReason);
+  const safeTargetUrl = escapeHtml(targetUrl);
+  const moderationRecipients = [...new Set([
+    ...parseEmailList(c.env.MODERATION_REVIEWER_EMAILS),
+    ...parseEmailList(c.env.MODERATION_ADMIN_EMAILS),
+  ])];
+
+  if (reporterWantsModerationEmails) {
+    await sendTransactionalEmail(c, {
+      html: `<p>Thanks for sending a report to Melon Meet.</p><p>We recorded your report about <strong>${safeTargetLabel}</strong> for <strong>${safeReason}</strong>.</p><p>Our moderation team will review it and follow up if there is anything else you need to know.</p><p>You can still revisit the related page here: <a href="${safeTargetUrl}">${safeTargetUrl}</a></p>`,
+      subject: "We received your Melon Meet report",
+      text: `Thanks for sending a report to Melon Meet.\n\nWe recorded your report about ${targetLabel} for ${normalizedReason}.\n\nOur moderation team will review it and follow up if there is anything else you need to know.\n\nRelated page: ${targetUrl}`,
+      to: reporterEmail,
+    });
+  }
+
+  if (moderationRecipients.length === 0) {
+    return;
+  }
+
+  await sendTransactionalEmail(c, {
+    html: `<p>A new Melon Meet report needs review.</p><p><strong>Target:</strong> ${safeTargetLabel}<br /><strong>Reason:</strong> ${safeReason}<br /><strong>Reporter:</strong> ${escapeHtml(reporterDisplayName)} (${escapeHtml(reporterEmail)})</p>${note ? `<p><strong>Reporter note:</strong> ${escapeHtml(note)}</p>` : ""}<p>Open the moderation queue to review the report.</p>`,
+    subject: `New Melon Meet report: ${targetLabel}`,
+    text: `A new Melon Meet report needs review.\n\nTarget: ${targetLabel}\nReason: ${normalizedReason}\nReporter: ${reporterDisplayName} (${reporterEmail})${note ? `\nReporter note: ${note}` : ""}\n\nOpen the moderation queue to review the report.`,
+    to: moderationRecipients,
+  });
+}
+
 function shouldSendReportReviewedEmail(previousStatus: ModerationReportStatus, nextStatus: ModerationReportStatus) {
   if (previousStatus === nextStatus) {
     return false;
@@ -944,9 +981,22 @@ function shouldSendReportReviewedEmail(previousStatus: ModerationReportStatus, n
 }
 
 async function listGroupOwnerAdminRecipients(db: D1Database, groupId: string, excludeUserId?: string) {
-  return allRows<{ display_name: string; email: string; id: string; role: GroupRole }>(
+  return allRows<{
+    display_name: string;
+    email: string;
+    id: string;
+    notification_group_member_leave_emails: number;
+    notification_group_membership_request_emails: number;
+    role: GroupRole;
+  }>(
     db,
-    `SELECT u.id, u.email, u.display_name, gm.role
+    `SELECT
+       u.id,
+       u.email,
+       u.display_name,
+       u.notification_group_membership_request_emails,
+       u.notification_group_member_leave_emails,
+       gm.role
      FROM app_group_members gm
      JOIN users u ON u.id = gm.user_id
      WHERE gm.group_id = ?
@@ -960,14 +1010,55 @@ async function listGroupOwnerAdminRecipients(db: D1Database, groupId: string, ex
 }
 
 async function listMeetingAttendeeRecipients(db: D1Database, meetingId: string, excludeUserId?: string) {
-  return allRows<{ display_name: string; email: string; id: string }>(
+  return allRows<{
+    display_name: string;
+    email: string;
+    id: string;
+    notification_session_cancellation_emails: number;
+  }>(
     db,
-    `SELECT u.id, u.email, u.display_name
+    `SELECT
+       u.id,
+       u.email,
+       u.display_name,
+       u.notification_session_cancellation_emails
      FROM meeting_claims mc
      JOIN users u ON u.id = mc.user_id
      WHERE mc.meeting_id = ?
        AND (? IS NULL OR u.id != ?)
      ORDER BY u.display_name`,
+    meetingId,
+    excludeUserId ?? null,
+    excludeUserId ?? null,
+  );
+}
+
+async function getMeetingOwnerRecipient(db: D1Database, meetingId: string, excludeUserId?: string) {
+  return firstRow<{
+    display_name: string;
+    email: string;
+    group_name: string;
+    id: string;
+    notification_session_spot_claim_emails: number;
+    notification_session_spot_filled_emails: number;
+    notification_session_spot_release_emails: number;
+    title: string;
+  }>(
+    db,
+    `SELECT
+       u.id,
+       u.email,
+       u.display_name,
+       u.notification_session_spot_claim_emails,
+       u.notification_session_spot_filled_emails,
+       u.notification_session_spot_release_emails,
+       m.title,
+       g.name AS group_name
+     FROM meetings m
+     JOIN users u ON u.id = m.owner_user_id
+     JOIN app_groups g ON g.id = m.group_id
+     WHERE m.id = ?
+       AND (? IS NULL OR u.id != ?)`,
     meetingId,
     excludeUserId ?? null,
     excludeUserId ?? null,
@@ -991,7 +1082,8 @@ async function sendMembershipRequestNotificationEmail(
   },
 ) {
   const group = await getGroupRecord(c.env.DB, groupId);
-  const recipients = await listGroupOwnerAdminRecipients(c.env.DB, groupId, requesterId);
+  const recipients = (await listGroupOwnerAdminRecipients(c.env.DB, groupId, requesterId))
+    .filter((recipient) => Boolean(recipient.notification_group_membership_request_emails));
   if (recipients.length === 0) {
     return;
   }
@@ -1020,7 +1112,8 @@ async function sendGroupMemberLeftNotificationEmail(
   },
 ) {
   const group = await getGroupRecord(c.env.DB, groupId);
-  const recipients = await listGroupOwnerAdminRecipients(c.env.DB, groupId, memberId);
+  const recipients = (await listGroupOwnerAdminRecipients(c.env.DB, groupId, memberId))
+    .filter((recipient) => Boolean(recipient.notification_group_member_leave_emails));
   if (recipients.length === 0) {
     return;
   }
@@ -1054,7 +1147,8 @@ async function sendMeetingCancelledNotificationEmail(
   );
   assertOrThrow(meeting, 404, "Meeting not found.");
 
-  const recipients = await listMeetingAttendeeRecipients(c.env.DB, meetingId, actorId);
+  const recipients = (await listMeetingAttendeeRecipients(c.env.DB, meetingId, actorId))
+    .filter((recipient) => Boolean(recipient.notification_session_cancellation_emails));
   if (recipients.length === 0) {
     return;
   }
@@ -1065,6 +1159,79 @@ async function sendMeetingCancelledNotificationEmail(
     subject: `Cancelled: ${meeting.title}`,
     text: `A Melon Meet session you joined has been cancelled.\n\nSession: ${meeting.title}\nGroup: ${meeting.group_name}\nStarts: ${meeting.starts_at}\nLocation: ${meeting.location_name}\n\nOpen the session here: ${meetingUrl}`,
     to: recipients.map((recipient) => recipient.email),
+  });
+}
+
+async function sendMeetingSpotClaimNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    actorId,
+    claimerDisplayName,
+    meetingId,
+    meetingJustFilled,
+  }: {
+    actorId: string;
+    claimerDisplayName: string;
+    meetingId: string;
+    meetingJustFilled: boolean;
+  },
+) {
+  const owner = await getMeetingOwnerRecipient(c.env.DB, meetingId, actorId);
+  if (!owner) {
+    return;
+  }
+
+  const wantsClaimEmail = Boolean(owner.notification_session_spot_claim_emails);
+  const wantsFilledEmail = Boolean(owner.notification_session_spot_filled_emails);
+  if (!wantsClaimEmail && !(meetingJustFilled && wantsFilledEmail)) {
+    return;
+  }
+
+  const meetingUrl = buildAppUrl(c, `/sessions/${meetingId}`);
+  const subject =
+    meetingJustFilled && wantsFilledEmail
+      ? `${owner.title} is now full`
+      : `New spot claimed for ${owner.title}`;
+  const text =
+    meetingJustFilled && wantsFilledEmail
+      ? `${claimerDisplayName} claimed a spot in ${owner.title}, and the session is now full.\n\nGroup: ${owner.group_name}\nSession: ${owner.title}\n\nOpen the session here: ${meetingUrl}`
+      : `${claimerDisplayName} claimed a spot in ${owner.title}.\n\nGroup: ${owner.group_name}\nSession: ${owner.title}\n\nOpen the session here: ${meetingUrl}`;
+  const html =
+    meetingJustFilled && wantsFilledEmail
+      ? `<p>${escapeHtml(claimerDisplayName)} claimed a spot in <strong>${escapeHtml(owner.title)}</strong>, and the session is now full.</p><p><strong>Group:</strong> ${escapeHtml(owner.group_name)}</p><p>Open the session here: <a href="${escapeHtml(meetingUrl)}">${escapeHtml(meetingUrl)}</a></p>`
+      : `<p>${escapeHtml(claimerDisplayName)} claimed a spot in <strong>${escapeHtml(owner.title)}</strong>.</p><p><strong>Group:</strong> ${escapeHtml(owner.group_name)}</p><p>Open the session here: <a href="${escapeHtml(meetingUrl)}">${escapeHtml(meetingUrl)}</a></p>`;
+
+  await sendTransactionalEmail(c, {
+    html,
+    subject,
+    text,
+    to: owner.email,
+  });
+}
+
+async function sendMeetingSpotReleasedNotificationEmail(
+  c: Context<AppEnv>,
+  {
+    actorId,
+    meetingId,
+    releaserDisplayName,
+  }: {
+    actorId: string;
+    meetingId: string;
+    releaserDisplayName: string;
+  },
+) {
+  const owner = await getMeetingOwnerRecipient(c.env.DB, meetingId, actorId);
+  if (!owner || !owner.notification_session_spot_release_emails) {
+    return;
+  }
+
+  const meetingUrl = buildAppUrl(c, `/sessions/${meetingId}`);
+  await sendTransactionalEmail(c, {
+    html: `<p>${escapeHtml(releaserDisplayName)} released their spot in <strong>${escapeHtml(owner.title)}</strong>.</p><p><strong>Group:</strong> ${escapeHtml(owner.group_name)}</p><p>Open the session here: <a href="${escapeHtml(meetingUrl)}">${escapeHtml(meetingUrl)}</a></p>`,
+    subject: `Spot released for ${owner.title}`,
+    text: `${releaserDisplayName} released their spot in ${owner.title}.\n\nGroup: ${owner.group_name}\nSession: ${owner.title}\n\nOpen the session here: ${meetingUrl}`,
+    to: owner.email,
   });
 }
 
@@ -1913,6 +2080,8 @@ export function createApp() {
         homeArea: "",
         id: userId,
         isProfilePublic: false,
+        moderationRole: null,
+        notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
         playingLevel: "",
         showEmailPublicly: false,
       },
@@ -1938,12 +2107,26 @@ export function createApp() {
       home_area: string;
       id: string;
       is_profile_public: number;
+      notification_group_member_leave_emails: number;
+      notification_group_membership_request_emails: number;
+      notification_moderation_and_account_emails: number;
+      notification_session_cancellation_emails: number;
+      notification_session_spot_claim_emails: number;
+      notification_session_spot_filled_emails: number;
+      notification_session_spot_release_emails: number;
       password_hash: string;
       playing_level: string;
       show_email_publicly: number;
     }>(
       c.env.DB,
-      `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly, account_status
+      `SELECT id, email, email_verified_at, password_hash, display_name, bio, home_area, avatar_url, is_profile_public, playing_level, show_email_publicly, account_status,
+              notification_moderation_and_account_emails,
+              notification_group_membership_request_emails,
+              notification_group_member_leave_emails,
+              notification_session_cancellation_emails,
+              notification_session_spot_claim_emails,
+              notification_session_spot_release_emails,
+              notification_session_spot_filled_emails
        FROM users
        WHERE email = ?`,
       normalizedEmail,
@@ -2324,6 +2507,7 @@ export function createApp() {
       reason,
       reporterDisplayName: viewer.displayName,
       reporterEmail: viewer.email,
+      reporterWantsModerationEmails: viewer.notificationPreferences.moderationAndAccountEmails,
       targetId,
       targetType,
     });
@@ -2508,6 +2692,7 @@ export function createApp() {
     if (shouldSendReportReviewedEmail(existing.status, updatedReport.status)) {
       await sendReportReviewedEmail(c, {
         reporterEmail: updatedReport.reporter_email,
+        reporterUserId: updatedReport.reporter_id,
         resolution: updatedReport.resolution,
         status: updatedReport.status,
         targetId: updatedReport.target_id,
@@ -2629,6 +2814,7 @@ export function createApp() {
 
     await sendReportReviewedEmail(c, {
       reporterEmail: updatedReport.reporter_email,
+      reporterUserId: updatedReport.reporter_id,
       resolution: updatedReport.resolution,
       status: updatedReport.status,
       targetId: updatedReport.target_id,
@@ -2729,8 +2915,15 @@ export function createApp() {
   app.get("/api/profiles/:id", async (c) => {
     const row = await firstRow<ViewerRow>(
       c.env.DB,
-      `SELECT id, email, email_verified_at, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly
-             , playing_level
+      `SELECT id, email, email_verified_at, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly,
+              playing_level,
+              notification_moderation_and_account_emails,
+              notification_group_membership_request_emails,
+              notification_group_member_leave_emails,
+              notification_session_cancellation_emails,
+              notification_session_spot_claim_emails,
+              notification_session_spot_release_emails,
+              notification_session_spot_filled_emails
        FROM users
        WHERE id = ?`,
       c.req.param("id"),
@@ -2832,12 +3025,17 @@ export function createApp() {
             viewer?.id === row.id || profile.showEmailPublicly
               ? profile.email
               : "",
+          notificationPreferences:
+            viewer?.id === row.id
+              ? profile.notificationPreferences
+              : DEFAULT_NOTIFICATION_PREFERENCES,
         }
         : {
           ...profile,
           bio: "",
           email: "",
           homeArea: "",
+          notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
           playingLevel: "",
         },
       profileIsPrivate: !canViewProfile,
@@ -2885,6 +3083,42 @@ export function createApp() {
         isProfilePublic: input.isProfilePublic,
         playingLevel: input.playingLevel ?? "",
         showEmailPublicly: input.showEmailPublicly,
+      },
+    });
+  });
+
+  app.patch("/api/me/notification-preferences", zValidator("json", notificationPreferencesUpdateSchema), async (c) => {
+    const viewer = await requireViewer(c);
+    assertTrustedWriteOrigin(c);
+    const input = c.req.valid("json");
+    const updatedAt = nowIso();
+    await runStatement(
+      c.env.DB,
+      `UPDATE users
+       SET notification_moderation_and_account_emails = ?,
+           notification_group_membership_request_emails = ?,
+           notification_group_member_leave_emails = ?,
+           notification_session_cancellation_emails = ?,
+           notification_session_spot_claim_emails = ?,
+           notification_session_spot_release_emails = ?,
+           notification_session_spot_filled_emails = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      input.moderationAndAccountEmails ? 1 : 0,
+      input.groupMembershipRequestEmails ? 1 : 0,
+      input.groupMemberLeaveEmails ? 1 : 0,
+      input.sessionCancellationEmails ? 1 : 0,
+      input.sessionSpotClaimEmails ? 1 : 0,
+      input.sessionSpotReleaseEmails ? 1 : 0,
+      input.sessionSpotFilledEmails ? 1 : 0,
+      updatedAt,
+      viewer.id,
+    );
+
+    return c.json({
+      viewer: {
+        ...viewer,
+        notificationPreferences: input,
       },
     });
   });
@@ -4139,7 +4373,7 @@ export function createApp() {
     assertOrThrow(new Date(meeting.endsAt).getTime() > Date.now(), 400, "Past meetings cannot be claimed.");
     assertOrThrow(meeting.openSpots > 0 || meeting.viewerHasClaimed, 409, "This meeting is already full.");
 
-    await runStatement(
+    const claimResult = await runStatement(
       c.env.DB,
       `INSERT OR IGNORE INTO meeting_claims (id, meeting_id, user_id, created_at)
        VALUES (?, ?, ?, ?)`,
@@ -4148,6 +4382,14 @@ export function createApp() {
       viewer.id,
       nowIso(),
     );
+    if ((claimResult.meta?.changes ?? 0) > 0) {
+      await sendMeetingSpotClaimNotificationEmail(c, {
+        actorId: viewer.id,
+        claimerDisplayName: viewer.displayName,
+        meetingId: meeting.id,
+        meetingJustFilled: meeting.openSpots === 1,
+      });
+    }
     return c.json({ ok: true });
   });
 
@@ -4155,12 +4397,19 @@ export function createApp() {
     const viewer = await requireVerifiedViewer(c);
     assertTrustedWriteOrigin(c);
     await getMeetingDetail(c.env.DB, c.req.param("id"), viewer.id);
-    await runStatement(
+    const releaseResult = await runStatement(
       c.env.DB,
       "DELETE FROM meeting_claims WHERE meeting_id = ? AND user_id = ?",
       c.req.param("id"),
       viewer.id,
     );
+    if ((releaseResult.meta?.changes ?? 0) > 0) {
+      await sendMeetingSpotReleasedNotificationEmail(c, {
+        actorId: viewer.id,
+        meetingId: c.req.param("id"),
+        releaserDisplayName: viewer.displayName,
+      });
+    }
     return c.json({ ok: true });
   });
 

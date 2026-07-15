@@ -151,7 +151,7 @@ Done means:
 
 Checklist:
 
-- [ ] Build or finish the account settings area.
+- [x] Build or finish the account settings area.
 - [x] Show verified-email state in the product.
 - [x] Add clear privacy and visibility explanations.
 - [x] Add destructive-action confirmations.
@@ -170,9 +170,9 @@ Checklist:
   - report reviewed / result / thanks
 - [ ] Add session lifecycle emails.
   Cover:
-  - session owner: spot claimed
-  - session owner: spot claimed and session became full
-  - session owner: spot released
+  - [x] session owner: spot claimed
+  - [x] session owner: spot claimed and session became full
+  - [x] session owner: spot released
   - session attendees: session changed
   - [x] session attendees: session cancelled
   - session attendees: session pinboard update
@@ -220,7 +220,7 @@ Current phase:
 
 Current session target:
 
-- [x] Ship the first group and session lifecycle notification emails.
+- [x] Add notification settings plus session-owner lifecycle emails.
 
 Blocked by:
 

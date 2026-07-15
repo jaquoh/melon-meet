@@ -4403,6 +4403,11 @@ img {
   margin-top: 0.95rem;
 }
 
+.account-preferences-grid {
+  display: grid;
+  gap: 0.95rem;
+}
+
 .account-sections-stack__signout {
   width: 100%;
   justify-content: center;

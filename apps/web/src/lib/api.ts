@@ -1,4 +1,5 @@
 import type {
+  NotificationPreferences,
   PolicyAcceptanceVersions,
   FriendSummary,
   GroupPost,
@@ -427,6 +428,13 @@ export function getProfile(profileId: string) {
 
 export function updateProfile(profileId: string, payload: Record<string, unknown>) {
   return request<{ profile: ViewerSummary }>(`/api/profiles/${profileId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH",
+  });
+}
+
+export function updateNotificationPreferences(payload: NotificationPreferences) {
+  return request<{ viewer: ViewerSummary }>("/api/me/notification-preferences", {
     body: JSON.stringify(payload),
     method: "PATCH",
   });

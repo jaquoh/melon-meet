@@ -108,11 +108,21 @@ async function insertUser(
     displayName,
     email,
     id,
+    notificationPreferences,
     status = "active",
   }: {
     displayName: string;
     email: string;
     id: string;
+    notificationPreferences?: Partial<{
+      groupMemberLeaveEmails: boolean;
+      groupMembershipRequestEmails: boolean;
+      moderationAndAccountEmails: boolean;
+      sessionCancellationEmails: boolean;
+      sessionSpotClaimEmails: boolean;
+      sessionSpotFilledEmails: boolean;
+      sessionSpotReleaseEmails: boolean;
+    }>;
     status?: "active" | "deletion-pending" | "suspended";
   },
 ) {
@@ -121,10 +131,33 @@ async function insertUser(
        id, email, password_hash, display_name, bio, home_area, avatar_url,
        created_at, updated_at, is_profile_public, show_email_publicly,
        playing_level, email_verified_at, account_status,
+       notification_moderation_and_account_emails,
+       notification_group_membership_request_emails,
+       notification_group_member_leave_emails,
+       notification_session_cancellation_emails,
+       notification_session_spot_claim_emails,
+       notification_session_spot_release_emails,
+       notification_session_spot_filled_emails,
        deletion_requested_at, deleted_at
-     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, NULL, NULL)`,
+     ) VALUES (?, ?, ?, ?, '', '', NULL, ?, ?, 0, 0, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
   )
-    .bind(id, email, "test-password-hash", displayName, FIXED_NOW, FIXED_NOW, FIXED_NOW, status)
+    .bind(
+      id,
+      email,
+      "test-password-hash",
+      displayName,
+      FIXED_NOW,
+      FIXED_NOW,
+      FIXED_NOW,
+      status,
+      notificationPreferences?.moderationAndAccountEmails === false ? 0 : 1,
+      notificationPreferences?.groupMembershipRequestEmails === false ? 0 : 1,
+      notificationPreferences?.groupMemberLeaveEmails === false ? 0 : 1,
+      notificationPreferences?.sessionCancellationEmails === false ? 0 : 1,
+      notificationPreferences?.sessionSpotClaimEmails === false ? 0 : 1,
+      notificationPreferences?.sessionSpotReleaseEmails === false ? 0 : 1,
+      notificationPreferences?.sessionSpotFilledEmails === false ? 0 : 1,
+    )
     .run();
 }
 
@@ -763,6 +796,193 @@ describe("group and session notification emails", () => {
     expect(payload.subject).toBe("Cancelled: Thursday Sunset Rally");
     expect(payload.text).toContain("Session: Thursday Sunset Rally");
     expect(payload.text).toContain("Location: Beach Court");
+  });
+
+  it("lets a signed-in user save notification preferences", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+
+    await insertUser(env.DB, { displayName: "Prefs User", email: "prefs@example.com", id: "user-prefs" });
+    const cookie = await makeSessionCookie(env.DB, "user-prefs");
+
+    const response = await requestJson("/api/me/notification-preferences", {
+      body: {
+        groupMemberLeaveEmails: false,
+        groupMembershipRequestEmails: true,
+        moderationAndAccountEmails: false,
+        sessionCancellationEmails: true,
+        sessionSpotClaimEmails: false,
+        sessionSpotFilledEmails: false,
+        sessionSpotReleaseEmails: true,
+      },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      viewer: {
+        notificationPreferences: {
+          groupMemberLeaveEmails: false,
+          moderationAndAccountEmails: false,
+          sessionSpotClaimEmails: false,
+          sessionSpotFilledEmails: false,
+        },
+      },
+    });
+
+    const row = await firstRow<{
+      notification_group_member_leave_emails: number;
+      notification_moderation_and_account_emails: number;
+      notification_session_spot_claim_emails: number;
+      notification_session_spot_filled_emails: number;
+    }>(
+      env.DB,
+      `SELECT
+         notification_group_member_leave_emails,
+         notification_moderation_and_account_emails,
+         notification_session_spot_claim_emails,
+         notification_session_spot_filled_emails
+       FROM users
+       WHERE id = ?`,
+      "user-prefs",
+    );
+
+    expect(row).toMatchObject({
+      notification_group_member_leave_emails: 0,
+      notification_moderation_and_account_emails: 0,
+      notification_session_spot_claim_emails: 0,
+      notification_session_spot_filled_emails: 0,
+    });
+  });
+});
+
+describe("session owner notification emails", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("emails the session owner when someone claims a spot, and uses the full-session email when the last spot is taken", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Owner",
+      email: "owner@example.com",
+      id: "user-owner",
+      notificationPreferences: {
+        sessionSpotClaimEmails: true,
+        sessionSpotFilledEmails: true,
+      },
+    });
+    await insertUser(env.DB, { displayName: "Claimer", email: "claimer@example.com", id: "user-claimer" });
+    await insertUser(env.DB, { displayName: "Existing", email: "existing@example.com", id: "user-existing" });
+    await insertGroup(env.DB, { id: "group-4", name: "After Work", ownerUserId: "user-owner", slug: "after-work", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-4", role: "owner", userId: "user-owner" });
+    await insertMeeting(env.DB, { groupId: "group-4", id: "meeting-2", ownerUserId: "user-owner", title: "Evening Ladder" });
+    await env.DB.prepare("UPDATE meetings SET capacity = ? WHERE id = ?").bind(2, "meeting-2").run();
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-2", userId: "user-existing" });
+    const cookie = await makeSessionCookie(env.DB, "user-claimer");
+
+    const response = await requestJson("/api/meetings/meeting-2/claim", {
+      cookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toBe("owner@example.com");
+    expect(payload.subject).toBe("Evening Ladder is now full");
+    expect(payload.text).toContain("Claimer claimed a spot");
+    expect(payload.text).toContain("now full");
+  });
+
+  it("does not send spot-claim emails when the owner disables them", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Owner",
+      email: "owner@example.com",
+      id: "user-owner",
+      notificationPreferences: {
+        sessionSpotClaimEmails: false,
+        sessionSpotFilledEmails: false,
+      },
+    });
+    await insertUser(env.DB, { displayName: "Claimer", email: "claimer@example.com", id: "user-claimer" });
+    await insertGroup(env.DB, { id: "group-5", name: "Open Gym", ownerUserId: "user-owner", slug: "open-gym", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-5", role: "owner", userId: "user-owner" });
+    await insertMeeting(env.DB, { groupId: "group-5", id: "meeting-3", ownerUserId: "user-owner", title: "Saturday Open Gym" });
+    const cookie = await makeSessionCookie(env.DB, "user-claimer");
+
+    const response = await requestJson("/api/meetings/meeting-3/claim", {
+      cookie,
+      env,
+      method: "POST",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it("emails the session owner when someone releases a claimed spot and the owner kept that switch on", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      RESEND_API_KEY: "test-resend-key",
+    };
+    const fetchSpy = mockEmailDelivery();
+
+    await insertUser(env.DB, {
+      displayName: "Owner",
+      email: "owner@example.com",
+      id: "user-owner",
+      notificationPreferences: {
+        sessionSpotReleaseEmails: true,
+      },
+    });
+    await insertUser(env.DB, { displayName: "Releaser", email: "releaser@example.com", id: "user-releaser" });
+    await insertGroup(env.DB, { id: "group-6", name: "Lunch Crew", ownerUserId: "user-owner", slug: "lunch-crew", visibility: "public" });
+    await insertGroupMember(env.DB, { groupId: "group-6", role: "owner", userId: "user-owner" });
+    await insertMeeting(env.DB, { groupId: "group-6", id: "meeting-4", ownerUserId: "user-owner", title: "Midday Rally" });
+    await insertMeetingClaim(env.DB, { meetingId: "meeting-4", userId: "user-releaser" });
+    const cookie = await makeSessionCookie(env.DB, "user-releaser");
+
+    const response = await requestJson("/api/meetings/meeting-4/claim", {
+      cookie,
+      env,
+      method: "DELETE",
+      origin: APP_BASE_URL,
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const payload = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    expect(payload.to).toBe("owner@example.com");
+    expect(payload.subject).toBe("Spot released for Midday Rally");
+    expect(payload.text).toContain("Releaser released their spot");
   });
 });
 
