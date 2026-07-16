@@ -11,6 +11,7 @@ export interface MeetingSeriesRow {
   description: string | null;
   activity_label: string | null;
   hero_image_url: string | null;
+  image_urls_json: string;
   venue_id: string | null;
   location_name: string;
   location_address: string;
@@ -57,6 +58,7 @@ async function upsertOccurrence(
        description,
        activity_label,
        hero_image_url,
+       image_urls_json,
        venue_id,
        location_name,
        location_address,
@@ -71,7 +73,7 @@ async function upsertOccurrence(
        status,
        created_at,
        updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
      ON CONFLICT(series_id, occurrence_date) DO UPDATE SET
        group_id = excluded.group_id,
        owner_user_id = excluded.owner_user_id,
@@ -80,6 +82,7 @@ async function upsertOccurrence(
        description = excluded.description,
        activity_label = excluded.activity_label,
        hero_image_url = excluded.hero_image_url,
+       image_urls_json = excluded.image_urls_json,
        venue_id = excluded.venue_id,
        location_name = excluded.location_name,
        location_address = excluded.location_address,
@@ -100,6 +103,7 @@ async function upsertOccurrence(
     series.description,
     series.activity_label,
     series.hero_image_url,
+    series.image_urls_json,
     series.venue_id,
     series.location_name,
     series.location_address,

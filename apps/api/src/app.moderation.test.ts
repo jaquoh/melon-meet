@@ -1537,6 +1537,101 @@ describe("local dev trusted origins", () => {
   });
 });
 
+describe("entity image galleries", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("lets owners save ordered galleries on their profile, group, and session", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = createTestEnv(db as unknown as D1Database);
+    await insertUser(env.DB, {
+      displayName: "Gallery Owner",
+      email: "gallery@example.com",
+      id: "user-gallery-owner",
+    });
+    await insertGroup(env.DB, {
+      id: "group-gallery",
+      name: "Gallery Group",
+      ownerUserId: "user-gallery-owner",
+      slug: "gallery-group",
+    });
+    await insertGroupMember(env.DB, {
+      groupId: "group-gallery",
+      role: "owner",
+      userId: "user-gallery-owner",
+    });
+    await insertMeeting(env.DB, {
+      groupId: "group-gallery",
+      id: "meeting-gallery",
+      ownerUserId: "user-gallery-owner",
+      title: "Gallery Session",
+    });
+    const cookie = await makeSessionCookie(env.DB, "user-gallery-owner");
+    const imageUrls = [
+      "https://images.example.com/first.jpg",
+      "https://images.example.com/second.jpg",
+    ];
+
+    const profileResponse = await requestJson("/api/profiles/user-gallery-owner", {
+      body: {
+        avatarUrl: imageUrls[0],
+        bio: "Gallery profile",
+        displayName: "Gallery Owner",
+        homeArea: "Berlin",
+        imageUrls,
+        isProfilePublic: true,
+        playingLevel: "3.5",
+        showEmailPublicly: false,
+      },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(profileResponse.status).toBe(200);
+    await expect(profileResponse.json()).resolves.toMatchObject({ profile: { imageUrls } });
+
+    const groupResponse = await requestJson("/api/groups/group-gallery", {
+      body: { heroImageUrl: imageUrls[0], imageUrls },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(groupResponse.status).toBe(200);
+    const groupDetail = await requestJson("/api/groups/group-gallery", { cookie, env });
+    await expect(groupDetail.json()).resolves.toMatchObject({ group: { imageUrls } });
+
+    const meetingResponse = await requestJson("/api/meetings/meeting-gallery", {
+      body: { heroImageUrl: imageUrls[0], imageUrls },
+      cookie,
+      env,
+      method: "PATCH",
+    });
+    expect(meetingResponse.status).toBe(200);
+    const meetingDetail = await requestJson("/api/meetings/meeting-gallery", { cookie, env });
+    await expect(meetingDetail.json()).resolves.toMatchObject({ meeting: { imageUrls } });
+
+    const stored = await env.DB.prepare(
+      `SELECT
+         (SELECT image_urls_json FROM users WHERE id = ?) AS profile_images,
+         (SELECT image_urls_json FROM app_groups WHERE id = ?) AS group_images,
+         (SELECT image_urls_json FROM meetings WHERE id = ?) AS meeting_images`,
+    ).bind("user-gallery-owner", "group-gallery", "meeting-gallery").first<{
+      group_images: string;
+      meeting_images: string;
+      profile_images: string;
+    }>();
+    expect(stored).toEqual({
+      group_images: JSON.stringify(imageUrls),
+      meeting_images: JSON.stringify(imageUrls),
+      profile_images: JSON.stringify(imageUrls),
+    });
+  });
+});
+
 const venueAdminPayload = {
   accessType: "bookable",
   address: "Teststraße 1, 10115 Berlin",

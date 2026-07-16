@@ -28,6 +28,19 @@ function toArrayBuffer(bytes: Uint8Array) {
   return copy.buffer;
 }
 
+function parseImageUrls(primaryUrl: string | null, value: string | null) {
+  let parsed: unknown = [];
+  try {
+    parsed = JSON.parse(value ?? "[]");
+  } catch {
+    parsed = [];
+  }
+  const candidates = [primaryUrl, ...(Array.isArray(parsed) ? parsed : [])];
+  return candidates.filter(
+    (entry, index): entry is string => typeof entry === "string" && entry.length > 0 && candidates.indexOf(entry) === index,
+  );
+}
+
 async function sha256(value: string) {
   const input = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", input);
@@ -188,6 +201,7 @@ export async function resolveSessionViewer(
     home_area: string;
     playing_level: string;
     avatar_url: string | null;
+    image_urls_json: string | null;
     is_profile_public: number;
     show_email_publicly: number;
     notification_moderation_and_account_emails: number;
@@ -214,6 +228,7 @@ export async function resolveSessionViewer(
        users.home_area,
        users.playing_level,
        users.avatar_url,
+       users.image_urls_json,
        users.is_profile_public,
        users.show_email_publicly,
        users.notification_moderation_and_account_emails,
@@ -250,6 +265,7 @@ export async function resolveSessionViewer(
       emailVerified: Boolean(row.email_verified_at),
       homeArea: row.home_area,
       id: row.id,
+      imageUrls: parseImageUrls(row.avatar_url, row.image_urls_json),
       moderationRole: null,
       notificationPreferences: {
         groupArchivedEmails: Boolean(row.notification_group_archived_emails ?? DEFAULT_NOTIFICATION_PREFERENCES.groupArchivedEmails),

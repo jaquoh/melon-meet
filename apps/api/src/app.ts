@@ -147,6 +147,7 @@ const moderationReportListQuerySchema = z.object({
 
 type ViewerRow = {
   avatar_url: string | null;
+  image_urls_json?: string | null;
   bio: string;
   display_name: string;
   email: string;
@@ -249,6 +250,23 @@ function parseJsonArray(value: string | null | undefined) {
   }
 }
 
+function orderedImageUrls(primaryUrl: string | null | undefined, value: string | null | undefined) {
+  const candidates = [
+    primaryUrl?.trim() || null,
+    ...parseJsonArray(value).filter((entry): entry is string => typeof entry === "string"),
+  ];
+  return candidates.filter((entry, index): entry is string => Boolean(entry) && candidates.indexOf(entry) === index);
+}
+
+function serializeImageUrls(imageUrls: string[] | undefined, primaryUrl: string | null | undefined) {
+  if (imageUrls === undefined) {
+    return undefined;
+  }
+  const primary = primaryUrl?.trim() || null;
+  const ordered = imageUrls.length > 0 ? imageUrls : primary ? [primary] : [];
+  return JSON.stringify(orderedImageUrls(primary, JSON.stringify(ordered)));
+}
+
 function parseVenueFacts(value: string | null | undefined): VenueSummary["facts"] {
   const fallback: VenueSummary["facts"] = {
     areaNotes: [],
@@ -281,6 +299,16 @@ function parseVenueFacts(value: string | null | undefined): VenueSummary["facts"
 }
 
 function mapVenueSummary(venue: VenueRow): VenueSummary {
+  const imageGallery = parseJsonArray(venue.image_gallery_json).filter(
+    (entry): entry is VenueSummary["imageGallery"][number] =>
+      Boolean(entry) &&
+      typeof entry === "object" &&
+      typeof (entry as { url?: unknown }).url === "string" &&
+      typeof (entry as { sourceUrl?: unknown }).sourceUrl === "string" &&
+      typeof (entry as { credit?: unknown }).credit === "string" &&
+      typeof (entry as { license?: unknown }).license === "string" &&
+      ((entry as { rightsStatus?: unknown }).rightsStatus === "usable" || (entry as { rightsStatus?: unknown }).rightsStatus === "requires_permission"),
+  );
   return {
     accessType: venue.access_type,
     address: venue.address,
@@ -294,15 +322,10 @@ function mapVenueSummary(venue: VenueRow): VenueSummary {
     googleMapsUrl: venue.google_maps_url ?? buildGoogleMapsUrl(venue.address, Number(venue.latitude), Number(venue.longitude)),
     heroImageUrl: venue.hero_image_url,
     id: venue.id,
-    imageGallery: parseJsonArray(venue.image_gallery_json).filter(
-      (entry): entry is VenueSummary["imageGallery"][number] =>
-        Boolean(entry) &&
-        typeof entry === "object" &&
-        typeof (entry as { url?: unknown }).url === "string" &&
-        typeof (entry as { sourceUrl?: unknown }).sourceUrl === "string" &&
-        typeof (entry as { credit?: unknown }).credit === "string" &&
-        typeof (entry as { license?: unknown }).license === "string" &&
-        ((entry as { rightsStatus?: unknown }).rightsStatus === "usable" || (entry as { rightsStatus?: unknown }).rightsStatus === "requires_permission"),
+    imageGallery,
+    imageUrls: orderedImageUrls(
+      venue.hero_image_url,
+      JSON.stringify(imageGallery.filter((image) => image.rightsStatus === "usable").map((image) => image.url)),
     ),
     indoorCourtCount: Number(venue.indoor_court_count ?? 0),
     latitude: Number(venue.latitude),
@@ -684,6 +707,7 @@ function mapViewerSummary(row: ViewerRow) {
     emailVerified: Boolean(row.email_verified_at),
     homeArea: row.home_area,
     id: row.id,
+    imageUrls: orderedImageUrls(row.avatar_url, row.image_urls_json),
     isProfilePublic: Boolean(row.is_profile_public),
     moderationRole: null,
     notificationPreferences: mapNotificationPreferences(row),
@@ -1798,6 +1822,7 @@ async function getGroupRecord(db: D1Database, groupId: string) {
     created_at: string;
     description: string;
     hero_image_url: string | null;
+    image_urls_json: string | null;
     id: string;
     messenger_url: string | null;
     name: string;
@@ -1807,7 +1832,7 @@ async function getGroupRecord(db: D1Database, groupId: string) {
     visibility: GroupVisibility;
   }>(
     db,
-    `SELECT id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, archived_at, created_at, updated_at
+    `SELECT id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, image_urls_json, archived_at, created_at, updated_at
      FROM app_groups
      WHERE id = ?`,
     groupId,
@@ -1835,6 +1860,7 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
     activity_label: string | null;
     description: string;
     hero_image_url: string | null;
+    image_urls_json: string | null;
     id: string;
     member_count: number;
     messenger_url: string | null;
@@ -1855,6 +1881,7 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
        g.activity_label,
        g.messenger_url,
        g.hero_image_url,
+       g.image_urls_json,
        g.owner_user_id,
        COALESCE((SELECT COUNT(*) FROM app_group_members gm WHERE gm.group_id = g.id), 0) AS member_count,
        COALESCE((
@@ -1893,6 +1920,7 @@ async function listGroupSummaries(db: D1Database, viewerId: string | null) {
     description: row.description,
     heroImageUrl: row.hero_image_url,
     id: row.id,
+    imageUrls: orderedImageUrls(row.hero_image_url, row.image_urls_json),
     memberCount: Number(row.member_count),
     messengerUrl: row.messenger_url,
     name: row.name,
@@ -1922,6 +1950,10 @@ function mapMeetingRow(row: Record<string, unknown>): MeetingSummary {
     groupVisibility: row.group_visibility as "public" | "private",
     heroImageUrl: (row.hero_image_url as string | null) ?? null,
     id: String(row.id),
+    imageUrls: orderedImageUrls(
+      (row.hero_image_url as string | null) ?? null,
+      (row.image_urls_json as string | null) ?? null,
+    ),
     latitude: Number(row.latitude),
     locationAddress: String(row.location_address),
     locationName: String(row.location_name),
@@ -1954,6 +1986,7 @@ async function upsertSeriesOccurrenceOverride(
     endsAt: string;
     groupId: string;
     heroImageUrl: string | null;
+    imageUrlsJson: string;
     latitude: number;
     locationAddress: string;
     locationName: string;
@@ -1981,6 +2014,7 @@ async function upsertSeriesOccurrenceOverride(
        description,
        activity_label,
        hero_image_url,
+       image_urls_json,
        venue_id,
        location_name,
        location_address,
@@ -1996,7 +2030,7 @@ async function upsertSeriesOccurrenceOverride(
        created_at,
        updated_at,
        archived_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
      ON CONFLICT(series_id, occurrence_date) DO UPDATE SET
        group_id = excluded.group_id,
        owner_user_id = excluded.owner_user_id,
@@ -2005,6 +2039,7 @@ async function upsertSeriesOccurrenceOverride(
        description = excluded.description,
        activity_label = excluded.activity_label,
        hero_image_url = excluded.hero_image_url,
+       image_urls_json = excluded.image_urls_json,
        venue_id = excluded.venue_id,
        location_name = excluded.location_name,
        location_address = excluded.location_address,
@@ -2027,6 +2062,7 @@ async function upsertSeriesOccurrenceOverride(
     occurrence.description,
     occurrence.activityLabel,
     occurrence.heroImageUrl,
+    occurrence.imageUrlsJson,
     occurrence.venueId,
     occurrence.locationName,
     occurrence.locationAddress,
@@ -2074,6 +2110,7 @@ async function listAccessibleMeetings(
        m.description,
        m.activity_label,
        m.hero_image_url,
+       m.image_urls_json,
        m.location_name,
        m.location_address,
        m.latitude,
@@ -2379,6 +2416,7 @@ export function createApp() {
         emailVerified: false,
         homeArea: "",
         id: userId,
+        imageUrls: [],
         isProfilePublic: false,
         moderationRole: null,
         notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
@@ -3486,7 +3524,7 @@ export function createApp() {
   app.get("/api/profiles/:id", async (c) => {
     const row = await firstRow<ViewerRow>(
       c.env.DB,
-      `SELECT id, email, email_verified_at, display_name, bio, home_area, avatar_url, is_profile_public, show_email_publicly,
+      `SELECT id, email, email_verified_at, display_name, bio, home_area, avatar_url, image_urls_json, is_profile_public, show_email_publicly,
               playing_level,
               notification_moderation_and_account_emails,
               notification_group_membership_request_emails,
@@ -3632,6 +3670,7 @@ export function createApp() {
            bio = ?,
            home_area = ?,
            avatar_url = ?,
+           image_urls_json = ?,
            is_profile_public = ?,
            playing_level = ?,
            show_email_publicly = ?,
@@ -3641,6 +3680,7 @@ export function createApp() {
       input.bio ?? "",
       input.homeArea ?? "",
       normalizeOptionalText(input.avatarUrl ?? null),
+      serializeImageUrls(input.imageUrls, normalizeOptionalText(input.avatarUrl ?? null)),
       input.isProfilePublic ? 1 : 0,
       input.playingLevel ?? "",
       input.showEmailPublicly ? 1 : 0,
@@ -3655,6 +3695,10 @@ export function createApp() {
         bio: input.bio ?? "",
         displayName: input.displayName,
         homeArea: input.homeArea ?? "",
+        imageUrls: orderedImageUrls(
+          normalizeOptionalText(input.avatarUrl ?? null),
+          serializeImageUrls(input.imageUrls, normalizeOptionalText(input.avatarUrl ?? null)),
+        ),
         isProfilePublic: input.isProfilePublic,
         playingLevel: input.playingLevel ?? "",
         showEmailPublicly: input.showEmailPublicly,
@@ -3846,8 +3890,8 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `INSERT INTO app_groups (
-         id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         id, owner_user_id, name, slug, description, visibility, activity_label, messenger_url, hero_image_url, image_urls_json, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       groupId,
       viewer.id,
       input.name,
@@ -3857,6 +3901,7 @@ export function createApp() {
       normalizeOptionalText(input.activityLabel ?? null),
       normalizeOptionalText(input.messengerUrl ?? null),
       normalizeOptionalText(input.heroImageUrl ?? null),
+      serializeImageUrls(input.imageUrls, normalizeOptionalText(input.heroImageUrl ?? null)),
       createdAt,
       createdAt,
     );
@@ -3958,6 +4003,7 @@ export function createApp() {
         description: group.description,
         heroImageUrl: group.hero_image_url,
         id: group.id,
+        imageUrls: orderedImageUrls(group.hero_image_url, group.image_urls_json),
         messengerUrl: group.messenger_url,
         name: group.name,
         ownerUserId: group.owner_user_id,
@@ -4025,7 +4071,8 @@ export function createApp() {
            visibility = COALESCE(?, visibility),
            activity_label = COALESCE(?, activity_label),
            messenger_url = CASE WHEN ? THEN messenger_url ELSE ? END,
-           hero_image_url = COALESCE(?, hero_image_url),
+           hero_image_url = CASE WHEN ? THEN hero_image_url ELSE ? END,
+           image_urls_json = CASE WHEN ? THEN image_urls_json ELSE ? END,
            updated_at = ?
        WHERE id = ?`,
       input.name ?? null,
@@ -4035,7 +4082,15 @@ export function createApp() {
       input.activityLabel === undefined ? null : normalizeOptionalText(input.activityLabel ?? null),
       input.messengerUrl === undefined ? 1 : 0,
       input.messengerUrl === undefined ? null : normalizeOptionalText(input.messengerUrl ?? null),
+      input.heroImageUrl === undefined ? 1 : 0,
       input.heroImageUrl === undefined ? null : normalizeOptionalText(input.heroImageUrl ?? null),
+      input.imageUrls === undefined ? 1 : 0,
+      input.imageUrls === undefined
+        ? null
+        : serializeImageUrls(
+            input.imageUrls,
+            input.heroImageUrl === undefined ? group.hero_image_url : normalizeOptionalText(input.heroImageUrl ?? null),
+          ),
       nowIso(),
       group.id,
     );
@@ -4665,10 +4720,10 @@ export function createApp() {
       await runStatement(
         c.env.DB,
         `INSERT INTO meeting_series (
-           id, group_id, owner_user_id, short_name, title, description, activity_label, hero_image_url, venue_id, location_name,
+           id, group_id, owner_user_id, short_name, title, description, activity_label, hero_image_url, image_urls_json, venue_id, location_name,
            location_address, latitude, longitude, pricing, cost_per_person, capacity, timezone, weekday, start_time_local,
            duration_minutes, start_date, until_date, status, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
         seriesId,
         group.id,
         viewer.id,
@@ -4677,6 +4732,7 @@ export function createApp() {
         normalizeOptionalText(input.description ?? null),
         groupActivity,
         normalizeOptionalText(input.heroImageUrl ?? null),
+        serializeImageUrls(input.imageUrls, normalizeOptionalText(input.heroImageUrl ?? null)),
         normalizeOptionalText(input.venueId ?? null),
         input.locationName,
         input.locationAddress,
@@ -4715,10 +4771,10 @@ export function createApp() {
     await runStatement(
       c.env.DB,
       `INSERT INTO meetings (
-         id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, venue_id,
+         id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, image_urls_json, venue_id,
          location_name, location_address, latitude, longitude, pricing, cost_per_person, capacity, starts_at, ends_at,
          occurrence_date, status, created_at, updated_at
-       ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+       ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
       meetingId,
       group.id,
       viewer.id,
@@ -4727,6 +4783,7 @@ export function createApp() {
       normalizeOptionalText(input.description ?? null),
       groupActivity,
       normalizeOptionalText(input.heroImageUrl ?? null),
+      serializeImageUrls(input.imageUrls, normalizeOptionalText(input.heroImageUrl ?? null)),
       normalizeOptionalText(input.venueId ?? null),
       input.locationName,
       input.locationAddress,
@@ -4857,6 +4914,7 @@ export function createApp() {
       ends_at: string;
       group_id: string;
       hero_image_url: string | null;
+      image_urls_json: string;
       id: string;
       latitude: number;
       location_address: string;
@@ -4872,7 +4930,7 @@ export function createApp() {
       venue_id: string | null;
     }>(
       c.env.DB,
-      `SELECT id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, venue_id,
+      `SELECT id, group_id, owner_user_id, series_id, short_name, title, description, activity_label, hero_image_url, image_urls_json, venue_id,
               location_name, location_address, latitude, longitude, pricing, cost_per_person, capacity, starts_at, ends_at
        FROM meetings
        WHERE id = ?`,
@@ -4920,6 +4978,7 @@ export function createApp() {
              description = ?,
              activity_label = ?,
              hero_image_url = ?,
+             image_urls_json = ?,
              venue_id = ?,
              location_name = ?,
              location_address = ?,
@@ -4940,6 +4999,12 @@ export function createApp() {
         input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
         input.activityLabel === undefined ? meetingRow.activity_label : normalizeOptionalText(input.activityLabel),
         input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+        input.imageUrls === undefined
+          ? meetingRow.image_urls_json
+          : serializeImageUrls(
+              input.imageUrls,
+              input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+            ),
         input.venueId === undefined ? meetingRow.venue_id : normalizeOptionalText(input.venueId),
         input.locationName ?? meetingRow.location_name,
         input.locationAddress ?? meetingRow.location_address,
@@ -4970,6 +5035,12 @@ export function createApp() {
             endsAt: slot.endsAt,
             groupId: meetingRow.group_id,
             heroImageUrl: input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+            imageUrlsJson: input.imageUrls === undefined
+              ? meetingRow.image_urls_json
+              : serializeImageUrls(
+                  input.imageUrls,
+                  input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+                ) ?? "[]",
             latitude: input.latitude ?? meetingRow.latitude,
             locationAddress: input.locationAddress ?? meetingRow.location_address,
             locationName: input.locationName ?? meetingRow.location_name,
@@ -5046,6 +5117,7 @@ export function createApp() {
            description = ?,
            activity_label = ?,
            hero_image_url = ?,
+           image_urls_json = ?,
            venue_id = ?,
            location_name = ?,
            location_address = ?,
@@ -5064,6 +5136,12 @@ export function createApp() {
       input.description === undefined ? meetingRow.description : normalizeOptionalText(input.description),
       input.activityLabel === undefined ? meetingRow.activity_label : normalizeOptionalText(input.activityLabel),
       input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+      input.imageUrls === undefined
+        ? meetingRow.image_urls_json
+        : serializeImageUrls(
+            input.imageUrls,
+            input.heroImageUrl === undefined ? meetingRow.hero_image_url : normalizeOptionalText(input.heroImageUrl),
+          ),
       input.venueId === undefined ? meetingRow.venue_id : normalizeOptionalText(input.venueId),
       input.locationName ?? meetingRow.location_name,
       input.locationAddress ?? meetingRow.location_address,

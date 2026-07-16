@@ -140,6 +140,80 @@ describe("public URL validation", () => {
     ).toBe(true);
   });
 
+  it("accepts ordered image galleries for profiles, groups, and meetings", () => {
+    const imageUrls = [
+      "https://images.example.com/one.jpg",
+      "https://images.example.com/two.jpg#crop",
+    ];
+
+    expect(profileUpdateSchema.parse({
+      avatarUrl: imageUrls[0],
+      bio: "",
+      displayName: "Melon Demo",
+      homeArea: "",
+      imageUrls,
+      isProfilePublic: true,
+      playingLevel: "",
+      showEmailPublicly: false,
+    }).imageUrls).toEqual([
+      "https://images.example.com/one.jpg",
+      "https://images.example.com/two.jpg",
+    ]);
+
+    expect(groupCreateSchema.safeParse({
+      activityLabel: "Beach volleyball",
+      description: "Friendly beach volleyball group in Berlin.",
+      heroImageUrl: imageUrls[0],
+      imageUrls,
+      messengerUrl: null,
+      name: "Melon Crew",
+      slug: "melon-crew",
+      visibility: "public",
+    }).success).toBe(true);
+
+    expect(meetingCreateSchema.safeParse({
+      activityLabel: "Beach volleyball",
+      capacity: 12,
+      costPerPerson: null,
+      description: "",
+      endsAt: "2026-05-11T18:00:00.000Z",
+      groupId: "7f18fd0c-4d1d-46cc-b4e8-826bb254cde4",
+      heroImageUrl: imageUrls[0],
+      imageUrls,
+      latitude: 52.52,
+      locationAddress: "Berlin",
+      locationName: "Beach court",
+      longitude: 13.405,
+      pricing: "free",
+      recurrence: { type: "once" },
+      shortName: "Open Play",
+      startsAt: "2026-05-11T16:00:00.000Z",
+      title: "After work beach session",
+      venueId: null,
+    }).success).toBe(true);
+  });
+
+  it("rejects private gallery URLs and galleries larger than twelve images", () => {
+    const baseProfile = {
+      avatarUrl: null,
+      bio: "",
+      displayName: "Melon Demo",
+      homeArea: "",
+      isProfilePublic: true,
+      playingLevel: "",
+      showEmailPublicly: false,
+    };
+
+    expect(profileUpdateSchema.safeParse({
+      ...baseProfile,
+      imageUrls: ["https://localhost/private.jpg"],
+    }).success).toBe(false);
+    expect(profileUpdateSchema.safeParse({
+      ...baseProfile,
+      imageUrls: Array.from({ length: 13 }, (_, index) => `https://images.example.com/${index}.jpg`),
+    }).success).toBe(false);
+  });
+
   it("requires the current policy versions on signup", () => {
     expect(
       signupSchema.safeParse({

@@ -116,6 +116,7 @@ export const publicHttpsUrlSchema = z.string().trim().min(1).transform((value, c
 
 const optionalPublicHttpsUrlSchema = publicHttpsUrlSchema.optional().or(z.literal("")).nullable();
 const nullablePublicHttpsUrlSchema = publicHttpsUrlSchema.or(z.literal("").transform(() => null)).nullable();
+export const imageUrlsSchema = z.array(publicHttpsUrlSchema).max(12).default([]);
 
 const venueFactsSchema = z.object({
   areaNotes: z.array(z.string().trim().min(1).max(240)).max(30),
@@ -208,6 +209,7 @@ export const profileUpdateSchema = z.object({
   homeArea: z.string().trim().max(120).default(""),
   playingLevel: z.string().trim().max(20).regex(playingLevelPattern, "Use values like 3, 3.5, 2-3, or 3.5-4.").default(""),
   avatarUrl: optionalPublicHttpsUrlSchema,
+  imageUrls: imageUrlsSchema,
   isProfilePublic: z.boolean().default(false),
   showEmailPublicly: z.boolean().default(false),
 });
@@ -225,6 +227,7 @@ export const groupCreateSchema = z.object({
   activityLabel: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
   messengerUrl: optionalPublicHttpsUrlSchema,
   heroImageUrl: optionalPublicHttpsUrlSchema,
+  imageUrls: imageUrlsSchema,
 });
 
 export const groupUpdateSchema = groupCreateSchema.partial().refine(
@@ -279,6 +282,7 @@ export const meetingCreateSchema = z
     costPerPerson: z.number().min(0).max(500).optional().nullable(),
     capacity: z.number().int().min(2).max(200),
     heroImageUrl: optionalPublicHttpsUrlSchema,
+    imageUrls: imageUrlsSchema,
     recurrence: recurrenceSchema,
   })
   .refine((value) => new Date(value.endsAt).getTime() > new Date(value.startsAt).getTime(), {
@@ -303,6 +307,7 @@ export const meetingUpdateSchema = z
     costPerPerson: z.number().min(0).max(500).optional().nullable(),
     capacity: z.number().int().min(2).max(200).optional(),
     heroImageUrl: optionalPublicHttpsUrlSchema,
+    imageUrls: imageUrlsSchema.optional(),
     applyToSeries: z.boolean().optional(),
     seriesDates: z
       .array(
@@ -405,6 +410,7 @@ export interface ViewerSummary {
   homeArea: string;
   playingLevel: string;
   avatarUrl: string | null;
+  imageUrls: string[];
   isProfilePublic: boolean;
   showEmailPublicly: boolean;
   moderationRole: ModerationRole | null;
@@ -447,6 +453,7 @@ export interface GroupSummary {
   publicSessionCount: number;
   messengerUrl: string | null;
   heroImageUrl: string | null;
+  imageUrls: string[];
   viewerRole: "owner" | "admin" | "member" | null;
 }
 
@@ -470,6 +477,7 @@ export interface MeetingSummary {
   claimedSpots: number;
   openSpots: number;
   heroImageUrl: string | null;
+  imageUrls: string[];
   startsAt: string;
   endsAt: string;
   status: "active" | "cancelled" | "archived";
@@ -494,6 +502,7 @@ export interface VenueSummary {
   bookingUrl: string | null;
   openingHoursText: string | null;
   heroImageUrl: string | null;
+  imageUrls: string[];
   courtCountTotal: number | null;
   indoorCourtCount: number;
   outdoorCourtCount: number;
