@@ -1610,7 +1610,7 @@ export function DiscoveryPage({
           fallback={<div className="detail-hero__fallback profile-avatar-fallback" aria-hidden="true">
             <User size={48} strokeWidth={1.8} />
           </div>}
-          imageUrls={selectedProfileDetail.imageUrls}
+          imageUrls={selectedProfileDetail.imageUrls ?? [selectedProfileDetail.avatarUrl]}
           onOpenFullscreen={(imageUrls, initialIndex) => setFullscreenImage({
             imageUrls,
             initialIndex,
@@ -2245,7 +2245,7 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrls: selectedMeetingDetail.imageUrls,
+        imageUrls: selectedMeetingDetail.imageUrls ?? [selectedMeetingDetail.heroImageUrl],
         quote: selectedMeetingDetail.description || t("common.noDescriptionYet"),
         title: selectedMeetingDetail.title,
       })}
@@ -2388,7 +2388,10 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrls: selectedVenueDetail.imageUrls,
+        imageUrls: selectedVenueDetail.imageUrls ?? [
+          selectedVenueDetail.heroImageUrl,
+          ...selectedVenueDetail.imageGallery.map((image) => image.url),
+        ],
         quote: selectedVenueDetail.description || t("common.noDescriptionYet"),
         title: selectedVenueDetail.name,
       })}
@@ -2449,7 +2452,7 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrls: selectedGroupDetail.imageUrls,
+        imageUrls: selectedGroupDetail.imageUrls ?? [selectedGroupDetail.heroImageUrl],
         quote: selectedGroupDetail.description || t("common.noDescriptionYet"),
         title: selectedGroupDetail.name,
       })}

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
-export function normalizeGalleryImages(imageUrls: Array<string | null | undefined>) {
-  const normalized = imageUrls.map((url) => url?.trim() ?? "").filter(Boolean);
+export function normalizeGalleryImages(imageUrls: Array<string | null | undefined> | null | undefined) {
+  const normalized = (imageUrls ?? []).map((url) => url?.trim() ?? "").filter(Boolean);
   return normalized.filter((url, index) => normalized.indexOf(url) === index);
 }
 
@@ -14,7 +14,7 @@ export function nextGalleryIndex(current: number, direction: -1 | 1, imageCount:
 interface ImageGalleryProps {
   className?: string;
   fallback?: ReactNode;
-  imageUrls: Array<string | null | undefined>;
+  imageUrls: Array<string | null | undefined> | null | undefined;
   onOpenFullscreen: (imageUrls: string[], initialIndex: number) => void;
   title: string;
 }

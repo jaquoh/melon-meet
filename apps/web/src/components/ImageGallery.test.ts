@@ -13,6 +13,7 @@ describe("image gallery navigation", () => {
       "https://images.example.com/one.jpg",
       "https://images.example.com/two.jpg",
     ]);
+    expect(normalizeGalleryImages(undefined)).toEqual([]);
   });
 
   it("wraps arrow navigation at both ends", () => {
