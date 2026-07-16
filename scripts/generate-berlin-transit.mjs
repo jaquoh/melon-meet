@@ -240,6 +240,222 @@ function stationFeature(stop, routeRefs, routeColors) {
   };
 }
 
+const CANONICAL_ROUTE_STATIONS = {
+  S2: [
+    "S Bernau Bhf",
+    "S Bernau-Friedenstal",
+    "S Zepernick",
+    "S Röntgental",
+    "S Buch (Berlin)",
+    "S Karow Bhf (Berlin)",
+    "S Blankenburg (Berlin)",
+    "S Pankow-Heinersdorf (Berlin)",
+    "S+U Pankow (Berlin)",
+    "S Bornholmer Str. (Berlin)",
+    "S+U Gesundbrunnen Bhf (Berlin)",
+    "S Humboldthain (Berlin)",
+    "S Nordbahnhof (Berlin)",
+    "S Oranienburger Str. (Berlin)",
+    "S+U Friedrichstr. Bhf (Berlin)",
+    "S+U Brandenburger Tor (Berlin)",
+    "S+U Potsdamer Platz Bhf (Berlin)",
+    "S Anhalter Bahnhof (Berlin)",
+    "S+U Yorckstr. (Berlin)",
+    "S Südkreuz Bhf (Berlin)",
+    "S Priesterweg (Berlin)",
+    "S Attilastr. (Berlin)",
+    "S Marienfelde (Berlin)",
+    "S Buckower Chaussee (Berlin)",
+    "S Schichauweg (Berlin)",
+    "S Lichtenrade (Berlin)",
+    "S Mahlow",
+    "S Blankenfelde (TF) Bhf",
+  ],
+  S25: [
+    "S Hennigsdorf Bhf",
+    "S Heiligensee (Berlin)",
+    "S Schulzendorf (Berlin)",
+    "S Tegel (Berlin)",
+    "S Eichborndamm (Berlin)",
+    "S+U Karl-Bonhoeffer-Nervenklinik (Berlin)",
+    "S Alt-Reinickendorf (Berlin)",
+    "S Schönholz (Berlin)",
+    "S Wollankstr. (Berlin)",
+    "S Bornholmer Str. (Berlin)",
+    "S+U Gesundbrunnen Bhf (Berlin)",
+    "S Humboldthain (Berlin)",
+    "S Nordbahnhof (Berlin)",
+    "S Oranienburger Str. (Berlin)",
+    "S+U Friedrichstr. Bhf (Berlin)",
+    "S+U Brandenburger Tor (Berlin)",
+    "S+U Potsdamer Platz Bhf (Berlin)",
+    "S Anhalter Bahnhof (Berlin)",
+    "S+U Yorckstr. (Berlin)",
+    "S Südkreuz Bhf (Berlin)",
+    "S Priesterweg (Berlin)",
+    "S Südende (Berlin)",
+    "S Lankwitz (Berlin)",
+    "S Lichterfelde Ost Bhf (Berlin)",
+    "S Osdorfer Str. (Berlin)",
+    "S Lichterfelde Süd (Berlin)",
+    "S Teltow Stadt",
+  ],
+  S41: [
+    "S+U Gesundbrunnen Bhf (Berlin)",
+    "S+U Schönhauser Allee (Berlin)",
+    "S Prenzlauer Allee (Berlin)",
+    "S Greifswalder Str. (Berlin)",
+    "S Landsberger Allee (Berlin)",
+    "S Storkower Str. (Berlin)",
+    "S+U Frankfurter Allee (Berlin)",
+    "S Ostkreuz Bhf (Berlin)",
+    "S Treptower Park (Berlin)",
+    "S Sonnenallee (Berlin)",
+    "S+U Neukölln (Berlin)",
+    "S+U Hermannstr. (Berlin)",
+    "S+U Tempelhof (Berlin)",
+    "S Südkreuz Bhf (Berlin)",
+    "S Schöneberg (Berlin)",
+    "S+U Innsbrucker Platz (Berlin)",
+    "S+U Bundesplatz (Berlin)",
+    "S+U Heidelberger Platz (Berlin)",
+    "S Hohenzollerndamm (Berlin)",
+    "S Halensee (Berlin)",
+    "S Westkreuz (Berlin)",
+    "S Messe Nord/ZOB (Berlin)",
+    "S Westend (Berlin)",
+    "S+U Jungfernheide Bhf (Berlin)",
+    "S Beusselstr. (Berlin)",
+    "S+U Westhafen (Berlin)",
+    "S+U Wedding (Berlin)",
+  ],
+};
+
+const CANONICAL_LINE_RULES = {
+  S2: {
+    requiredStations: ["S Bernau Bhf", "S Blankenfelde (TF) Bhf"],
+    rejectedStations: ["S Schöneweide Bhf (Berlin)", "S Wildau", "S Zeuthen"],
+  },
+  S25: {
+    requiredStations: ["S Hennigsdorf Bhf", "S Teltow Stadt"],
+    rejectedStations: ["S Schöneweide Bhf (Berlin)", "S Spindlersfeld (Berlin)"],
+  },
+  S41: {
+    closed: true,
+    requiredStations: ["S+U Gesundbrunnen Bhf (Berlin)", "S Ostkreuz Bhf (Berlin)", "S Südkreuz Bhf (Berlin)", "S Westkreuz (Berlin)"],
+    rejectedStations: ["S Bornholmer Str. (Berlin)", "S Schöneweide Bhf (Berlin)", "S Grünau (Berlin)"],
+  },
+};
+
+const STATION_TOUCH_TOLERANCE = 0.01;
+const REJECTED_STATION_TOUCH_TOLERANCE = 0.002;
+
+function featureLength(feature) {
+  let total = 0;
+  const coordinates = feature.geometry.coordinates;
+  for (let index = 1; index < coordinates.length; index += 1) {
+    const [prevLng, prevLat] = coordinates[index - 1];
+    const [lng, lat] = coordinates[index];
+    total += Math.hypot(lng - prevLng, lat - prevLat);
+  }
+  return total;
+}
+
+function coordinateDistance(left, right) {
+  return Math.hypot(left[0] - right[0], left[1] - right[1]);
+}
+
+function lineTouchesCoordinate(feature, coordinate, tolerance = STATION_TOUCH_TOLERANCE) {
+  return feature.geometry.coordinates.some((lineCoordinate) => coordinateDistance(lineCoordinate, coordinate) < tolerance);
+}
+
+function isClosedLine(feature) {
+  const coordinates = feature.geometry.coordinates;
+  const first = coordinates[0];
+  const last = coordinates.at(-1);
+  return Boolean(first && last && coordinateDistance(first, last) < 0.001);
+}
+
+function findStopCoordinateByName(stops, stationName) {
+  const stop = stops.find((candidate) => candidate.stop_name === stationName);
+  if (!stop) {
+    return null;
+  }
+  const lon = Number(stop.stop_lon);
+  const lat = Number(stop.stop_lat);
+  return Number.isFinite(lon) && Number.isFinite(lat) ? [lon, lat] : null;
+}
+
+function matchesCanonicalLineRule(feature, rule, stops) {
+  if (rule.closed && !isClosedLine(feature)) {
+    return false;
+  }
+
+  return (
+    rule.requiredStations.every((stationName) => {
+      const coordinate = findStopCoordinateByName(stops, stationName);
+      return coordinate && lineTouchesCoordinate(feature, coordinate);
+    }) &&
+    rule.rejectedStations.every((stationName) => {
+      const coordinate = findStopCoordinateByName(stops, stationName);
+      return !coordinate || !lineTouchesCoordinate(feature, coordinate, REJECTED_STATION_TOUCH_TOLERANCE);
+    })
+  );
+}
+
+function selectCanonicalLineFeatures(features, stops) {
+  const replacements = new Map();
+
+  for (const [ref, rule] of Object.entries(CANONICAL_LINE_RULES)) {
+    const candidates = features.filter(
+      (feature) => feature.geometry.type === "LineString" && feature.properties.ref === ref && matchesCanonicalLineRule(feature, rule, stops),
+    );
+    if (!candidates.length) {
+      console.warn(`No canonical ${ref} shape matched; keeping all generated ${ref} shapes.`);
+      continue;
+    }
+    replacements.set(
+      ref,
+      candidates.reduce((best, current) => (featureLength(current) > featureLength(best) ? current : best)),
+    );
+  }
+
+  return features.filter((feature) => {
+    if (feature.geometry.type !== "LineString" || !replacements.has(feature.properties.ref)) {
+      return true;
+    }
+    return feature === replacements.get(feature.properties.ref);
+  });
+}
+
+function applyCanonicalStationRefs(stationRefsByStopId, stops) {
+  const canonicalRefsByStationName = new Map(
+    Object.entries(CANONICAL_ROUTE_STATIONS).map(([ref, stationNames]) => [ref, new Set(stationNames)]),
+  );
+  const canonicalRefs = new Set(canonicalRefsByStationName.keys());
+
+  for (const stop of stops) {
+    const refs = stationRefsByStopId.get(stop.stop_id);
+    if (!refs) {
+      continue;
+    }
+    for (const ref of canonicalRefs) {
+      refs.delete(ref);
+    }
+  }
+
+  for (const stop of stops) {
+    for (const [ref, stationNames] of canonicalRefsByStationName) {
+      if (!stationNames.has(stop.stop_name)) {
+        continue;
+      }
+      const refs = stationRefsByStopId.get(stop.stop_id) ?? new Set();
+      refs.add(ref);
+      stationRefsByStopId.set(stop.stop_id, refs);
+    }
+  }
+}
+
 async function main() {
   await mkdir(cacheDir, { recursive: true });
   await mkdir(join(rootDir, "apps", "web", "public", "transit"), { recursive: true });
@@ -259,6 +475,16 @@ async function main() {
 
   const routes = parseCsv(zipEntry(gtfsPath, "routes.txt")).filter(isBerlinRailRoute);
   const routeById = new Map(routes.map((route) => [route.route_id, route]));
+  const routeByLabel = new Map(routes.map((route) => [routeLabel(route).replace(/\s+/g, "").toUpperCase(), route]));
+  const colorForLabel = (label) => {
+    const normalizedLabel = label.replace(/\s+/g, "").toUpperCase();
+    const route = routeByLabel.get(normalizedLabel);
+    return (
+      lineColorLookup.get(normalizedLabel) ??
+      normalizeColor(route?.route_color ?? "") ??
+      (normalizedLabel.startsWith("S") ? "#008A4B" : "#006CB7")
+    );
+  };
   const stops = parseCsv(zipEntry(gtfsPath, "stops.txt"));
   const stopById = new Map(stops.map((stop) => [stop.stop_id, stop]));
   const tripRouteById = new Map();
@@ -322,12 +548,14 @@ async function main() {
     }
     seenLineGeometries.add(key);
     const label = routeLabel(route).replace(/\s+/g, "").toUpperCase();
-    const color = lineColorLookup.get(label) ?? normalizeColor(route.route_color) ?? (label.startsWith("S") ? "#008A4B" : "#006CB7");
-    features.push(lineFeature(route, shapeId, sortedCoordinates, color));
+    features.push(lineFeature(route, shapeId, sortedCoordinates, colorForLabel(label)));
   }
 
+  const canonicalLineFeatures = selectCanonicalLineFeatures(features, stops);
+  features.length = 0;
+  features.push(...canonicalLineFeatures);
+
   const stationRefsByStopId = new Map();
-  const stationColorsByStopId = new Map();
 
   console.log("Reading selected U-Bahn/S-Bahn stop times...");
   await forEachZipCsvRow(gtfsPath, "stop_times.txt", async (row) => {
@@ -343,20 +571,19 @@ async function main() {
       return;
     }
     const refs = stationRefsByStopId.get(stop.stop_id) ?? new Set();
-    const colors = stationColorsByStopId.get(stop.stop_id) ?? new Set();
     const label = routeLabel(route).replace(/\s+/g, "").toUpperCase();
     refs.add(label);
-    colors.add(lineColorLookup.get(label) ?? normalizeColor(route.route_color) ?? (label.startsWith("S") ? "#008A4B" : "#006CB7"));
     stationRefsByStopId.set(stop.stop_id, refs);
-    stationColorsByStopId.set(stop.stop_id, colors);
   });
+
+  applyCanonicalStationRefs(stationRefsByStopId, stops);
 
   for (const [stopId, refs] of stationRefsByStopId) {
     const stop = stopById.get(stopId);
     if (!stop) {
       continue;
     }
-    features.push(stationFeature(stop, refs, stationColorsByStopId.get(stopId) ?? new Set()));
+    features.push(stationFeature(stop, refs, new Set([...refs].map(colorForLabel))));
   }
 
   const collection = {
