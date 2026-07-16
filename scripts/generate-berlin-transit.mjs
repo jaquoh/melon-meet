@@ -17,7 +17,36 @@ const rootDir = new URL("..", import.meta.url).pathname;
 const cacheDir = join(rootDir, ".cache", "transit");
 const outputPath = join(rootDir, "apps", "web", "public", "transit", "berlin-transit.geojson");
 
-function parseCsv(text) {
+const REFERENCE_MAP_ROUTE_REFS = new Set([
+  "S1",
+  "S2",
+  "S3",
+  "S5",
+  "S7",
+  "S8",
+  "S9",
+  "S15",
+  "S25",
+  "S26",
+  "S41",
+  "S42",
+  "S45",
+  "S46",
+  "S47",
+  "S75",
+  "S85",
+  "U1",
+  "U2",
+  "U3",
+  "U4",
+  "U5",
+  "U6",
+  "U7",
+  "U8",
+  "U9",
+]);
+
+function parseCsv(text, delimiter = ",") {
   const rows = [];
   let field = "";
   let row = [];
@@ -41,7 +70,7 @@ function parseCsv(text) {
 
     if (char === '"') {
       quoted = true;
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       row.push(field);
       field = "";
     } else if (char === "\n") {
@@ -173,7 +202,9 @@ function buildLineColorLookup(rows) {
   for (const row of rows) {
     const entries = Object.entries(row);
     const lineValue = entries.find(([key]) => /^(linie|line|name|route|kurzname|short)/i.test(key))?.[1];
-    const colorValue = entries.find(([key]) => /(farbe|color|colour|hex)/i.test(key))?.[1];
+    const colorValue =
+      entries.find(([key]) => /(^|_|-)(hex|background_hex)$/i.test(key))?.[1] ??
+      entries.find(([key]) => /(color|colour)/i.test(key))?.[1];
     const color = colorValue ? normalizeColor(colorValue) : null;
     if (lineValue && color) {
       lookup.set(lineValue.replace(/\s+/g, "").toUpperCase(), color);
@@ -188,7 +219,7 @@ function routeLabel(route) {
 
 function isBerlinRailRoute(route) {
   const label = routeLabel(route).replace(/\s+/g, "").toUpperCase();
-  return /^U\d/.test(label) || /^S\d/.test(label);
+  return REFERENCE_MAP_ROUTE_REFS.has(label);
 }
 
 function routeMode(route) {
@@ -329,6 +360,35 @@ const CANONICAL_ROUTE_STATIONS = {
     "S+U Westhafen (Berlin)",
     "S+U Wedding (Berlin)",
   ],
+  S42: [
+    "S+U Gesundbrunnen Bhf (Berlin)",
+    "S+U Wedding (Berlin)",
+    "S+U Westhafen (Berlin)",
+    "S Beusselstr. (Berlin)",
+    "S+U Jungfernheide Bhf (Berlin)",
+    "S Westend (Berlin)",
+    "S Messe Nord/ZOB (Berlin)",
+    "S Westkreuz (Berlin)",
+    "S Halensee (Berlin)",
+    "S Hohenzollerndamm (Berlin)",
+    "S+U Heidelberger Platz (Berlin)",
+    "S+U Bundesplatz (Berlin)",
+    "S+U Innsbrucker Platz (Berlin)",
+    "S Schöneberg (Berlin)",
+    "S Südkreuz Bhf (Berlin)",
+    "S+U Tempelhof (Berlin)",
+    "S+U Hermannstr. (Berlin)",
+    "S+U Neukölln (Berlin)",
+    "S Sonnenallee (Berlin)",
+    "S Treptower Park (Berlin)",
+    "S Ostkreuz Bhf (Berlin)",
+    "S+U Frankfurter Allee (Berlin)",
+    "S Storkower Str. (Berlin)",
+    "S Landsberger Allee (Berlin)",
+    "S Greifswalder Str. (Berlin)",
+    "S Prenzlauer Allee (Berlin)",
+    "S+U Schönhauser Allee (Berlin)",
+  ],
 };
 
 const CANONICAL_LINE_RULES = {
@@ -344,6 +404,11 @@ const CANONICAL_LINE_RULES = {
     closed: true,
     requiredStations: ["S+U Gesundbrunnen Bhf (Berlin)", "S Ostkreuz Bhf (Berlin)", "S Südkreuz Bhf (Berlin)", "S Westkreuz (Berlin)"],
     rejectedStations: ["S Bornholmer Str. (Berlin)", "S Schöneweide Bhf (Berlin)", "S Grünau (Berlin)"],
+  },
+  S42: {
+    closed: true,
+    requiredStations: ["S+U Gesundbrunnen Bhf (Berlin)", "S Ostkreuz Bhf (Berlin)", "S Südkreuz Bhf (Berlin)", "S Westkreuz (Berlin)"],
+    rejectedStations: ["S Baumschulenweg (Berlin)", "S Schöneweide Bhf (Berlin)", "S Grünau (Berlin)"],
   },
 };
 
@@ -471,7 +536,7 @@ async function main() {
   await download(LINE_COLORS_URL, lineColorsPath);
 
   const colorEntry = listZipEntries(lineColorsPath).find((entry) => entry.toLowerCase().endsWith(".csv"));
-  const lineColorLookup = colorEntry ? buildLineColorLookup(parseCsv(zipEntry(lineColorsPath, colorEntry))) : new Map();
+  const lineColorLookup = colorEntry ? buildLineColorLookup(parseCsv(zipEntry(lineColorsPath, colorEntry), ";")) : new Map();
 
   const routes = parseCsv(zipEntry(gtfsPath, "routes.txt")).filter(isBerlinRailRoute);
   const routeById = new Map(routes.map((route) => [route.route_id, route]));
