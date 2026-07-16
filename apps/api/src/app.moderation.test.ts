@@ -1649,8 +1649,14 @@ const venueAdminPayload = {
     surface: "Sand",
   },
   googleMapsUrl: "https://maps.example.com/test-venue",
-  heroImageUrl: null,
-  imageGallery: [],
+  heroImageUrl: "https://images.example.com/venue-cover.jpg",
+  imageGallery: [{
+    credit: "Venue source",
+    license: "Permission required",
+    rightsStatus: "requires_permission",
+    sourceUrl: "https://example.com/venue-source",
+    url: "https://images.example.com/venue-second.jpg",
+  }],
   indoorCourtCount: 1,
   latitude: 52.52,
   longitude: 13.405,
@@ -1707,7 +1713,15 @@ describe("venue administration", () => {
     });
     expect(createResponse.status).toBe(201);
     await expect(createResponse.json()).resolves.toMatchObject({
-      venue: { id: "venue-test-courts", isArchived: false, name: "Test Venue" },
+      venue: {
+        id: "venue-test-courts",
+        imageUrls: [
+          "https://images.example.com/venue-cover.jpg",
+          "https://images.example.com/venue-second.jpg",
+        ],
+        isArchived: false,
+        name: "Test Venue",
+      },
     });
 
     const updateResponse = await requestJson("/api/admin/venues/venue-test-courts", {

@@ -325,7 +325,7 @@ function mapVenueSummary(venue: VenueRow): VenueSummary {
     imageGallery,
     imageUrls: orderedImageUrls(
       venue.hero_image_url,
-      JSON.stringify(imageGallery.filter((image) => image.rightsStatus === "usable").map((image) => image.url)),
+      JSON.stringify(imageGallery.map((image) => image.url)),
     ),
     indoorCourtCount: Number(venue.indoor_court_count ?? 0),
     latitude: Number(venue.latitude),
