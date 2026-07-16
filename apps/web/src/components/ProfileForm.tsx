@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "../lib/i18n";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { FormInput } from "./FormInput";
+import { ImageUrlEditor } from "./ImageUrlEditor";
 
 const PLAYING_LEVEL_PARTIAL_PATTERN = /^\d*(?:\.\d*)?(?:-\d*(?:\.\d*)?)?$/;
 
@@ -10,6 +11,7 @@ export interface ProfileFormValues {
   bio: string;
   displayName: string;
   homeArea: string;
+  imageUrls: string[];
   isProfilePublic: boolean;
   playingLevel: string;
   showEmailPublicly: boolean;
@@ -28,6 +30,7 @@ export function ProfileForm({
     bio: string;
     displayName: string;
     homeArea: string;
+    imageUrls: string[];
     isProfilePublic: boolean;
     playingLevel: string;
     showEmailPublicly: boolean;
@@ -77,10 +80,11 @@ export function ProfileForm({
         <span className="field-hint">{t("forms.passwordHint")}</span>
       </label>
 
-      <label className="field-stack field-full">
-        <span className="field-label">{t("forms.avatarUrl")}</span>
-        <FormInput onChange={(avatarUrl) => onChange({ ...profile, avatarUrl })} type="url" value={profile.avatarUrl} />
-      </label>
+      <ImageUrlEditor
+        imageUrls={profile.imageUrls}
+        label="Profile images"
+        onChange={(imageUrls) => onChange({ ...profile, avatarUrl: imageUrls[0] ?? "", imageUrls })}
+      />
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.bio")}</span>

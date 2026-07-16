@@ -44,6 +44,7 @@ export interface GroupDetailResponse {
     description: string;
     heroImageUrl: string | null;
     id: string;
+    imageUrls: string[];
     messengerUrl: string | null;
     name: string;
     ownerUserId: string;
@@ -360,6 +361,7 @@ export function createGroup(payload: {
   activityLabel?: string | null;
   description: string;
   heroImageUrl?: string | null;
+  imageUrls: string[];
   messengerUrl?: string | null;
   name: string;
   slug: string;

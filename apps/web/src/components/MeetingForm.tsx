@@ -6,6 +6,7 @@ import { getVenues } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { FilterCheckbox } from "./FilterCheckbox";
 import { FormInput } from "./FormInput";
+import { ImageUrlEditor } from "./ImageUrlEditor";
 import { fromDateTimeLocalInput, toDateTimeLocalInput } from "../lib/format";
 
 interface MeetingFormProps {
@@ -51,7 +52,9 @@ export function MeetingForm({
   const [title, setTitle] = useState(initialMeeting?.title ?? "");
   const [description, setDescription] = useState(initialMeeting?.description ?? "");
   const [activityLabel, setActivityLabel] = useState(initialMeeting?.activityLabel ?? "Beach volleyball");
-  const [heroImageUrl, setHeroImageUrl] = useState(initialMeeting?.heroImageUrl ?? "");
+  const [imageUrls, setImageUrls] = useState(
+    initialMeeting?.imageUrls.length ? initialMeeting.imageUrls : initialMeeting?.heroImageUrl ? [initialMeeting.heroImageUrl] : [],
+  );
   const [selectedVenueId, setSelectedVenueId] = useState(initialMeeting?.venueId ?? initialLocation?.venueId ?? "other");
   const [startsAt, setStartsAt] = useState(
     initialMeeting ? toDateTimeLocalInput(initialMeeting.startsAt) : "",
@@ -153,7 +156,8 @@ export function MeetingForm({
             capacity: Number(capacity || 0),
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
-            heroImageUrl,
+            heroImageUrl: imageUrls[0] ?? null,
+            imageUrls,
             latitude: Number(latitude || 0),
             locationAddress,
             locationName,
@@ -178,7 +182,8 @@ export function MeetingForm({
             description,
             endsAt: fromDateTimeLocalInput(endsAt),
             groupId,
-            heroImageUrl,
+            heroImageUrl: imageUrls[0] ?? null,
+            imageUrls,
             latitude: Number(latitude || 0),
             locationAddress,
             locationName,
@@ -243,10 +248,7 @@ export function MeetingForm({
         <span className="field-hint">Set clear expectations about skill level, costs, equipment, and anything participants should know before joining.</span>
       </label>
 
-      <label className="field-stack field-full">
-        <span className="field-label">{t("forms.heroImageUrl")}</span>
-        <FormInput onChange={setHeroImageUrl} placeholder="https://..." type="url" value={heroImageUrl} />
-      </label>
+      <ImageUrlEditor imageUrls={imageUrls} label="Session images" onChange={setImageUrls} />
 
       <label className="field-stack">
         <span className="field-label">{t("forms.starts")}</span>

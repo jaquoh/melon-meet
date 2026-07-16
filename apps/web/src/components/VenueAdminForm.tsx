@@ -10,6 +10,7 @@ import {
 } from "../../../../packages/shared/src";
 import { createAdminVenue, setAdminVenueArchived, updateAdminVenue } from "../lib/api";
 import { queryClient } from "../lib/query-client";
+import { ImageUrlEditor } from "./ImageUrlEditor";
 
 const emptyVenue: VenueUpdateInput = {
   accessType: "public",
@@ -55,8 +56,17 @@ function nullableNumber(data: FormData, name: string) {
   return value === "" ? null : Number(value);
 }
 
-function venuePayload(data: FormData) {
+function venuePayload(data: FormData, imageUrls: string[], existingGallery: VenueUpdateInput["imageGallery"]) {
   const researchedDate = text(data, "researchedAt");
+  const imageGallery = imageUrls.slice(1).map((url) =>
+    existingGallery.find((image) => image.url === url) ?? {
+      credit: "Venue administrator",
+      license: "Provided by venue administrator",
+      rightsStatus: "usable" as const,
+      sourceUrl: url,
+      url,
+    },
+  );
   return venueUpdateSchema.parse({
     accessType: text(data, "accessType"),
     address: text(data, "address"),
@@ -74,8 +84,8 @@ function venuePayload(data: FormData) {
       surface: optionalText(data, "surface"),
     },
     googleMapsUrl: optionalText(data, "googleMapsUrl"),
-    heroImageUrl: optionalText(data, "heroImageUrl"),
-    imageGallery: JSON.parse(text(data, "imageGallery") || "[]"),
+    heroImageUrl: imageUrls[0] ?? null,
+    imageGallery,
     indoorCourtCount: Number(text(data, "indoorCourtCount")),
     latitude: Number(text(data, "latitude")),
     longitude: Number(text(data, "longitude")),
@@ -101,11 +111,16 @@ function mutationError(error: unknown) {
 
 export function VenueAdminForm({ onSaved, venue }: { onSaved: (venue: AdminVenueSummary) => void; venue: AdminVenueSummary | null }) {
   const initial = venue ?? emptyVenue;
+  const [imageUrls, setImageUrls] = useState(() =>
+    [initial.heroImageUrl, ...initial.imageGallery.map((image) => image.url)]
+      .filter((url): url is string => Boolean(url))
+      .filter((url, index, urls) => urls.indexOf(url) === index),
+  );
   const [status, setStatus] = useState<string | null>(null);
   const saveMutation = useMutation({
     mutationFn: async (form: HTMLFormElement) => {
       const data = new FormData(form);
-      const payload = venuePayload(data);
+      const payload = venuePayload(data, imageUrls, initial.imageGallery);
       return venue
         ? updateAdminVenue(venue.id, payload)
         : createAdminVenue(venueCreateSchema.parse({ ...payload, id: text(data, "id") }));
@@ -195,13 +210,13 @@ export function VenueAdminForm({ onSaved, venue }: { onSaved: (venue: AdminVenue
 
       <fieldset className="venue-admin-form__section form-grid form-grid--two">
         <legend>Details and links</legend>
-        {(["websiteUrl", "bookingUrl", "googleMapsUrl", "sourceUrl", "heroImageUrl"] as const).map((name) => <label className="field-stack" key={name}><span className="field-label">{name.replace(/([A-Z])/g, " $1")}</span><input className="field-input" defaultValue={initial[name] ?? ""} name={name} type="url" /></label>)}
+        {(["websiteUrl", "bookingUrl", "googleMapsUrl", "sourceUrl"] as const).map((name) => <label className="field-stack" key={name}><span className="field-label">{name.replace(/([A-Z])/g, " $1")}</span><input className="field-input" defaultValue={initial[name] ?? ""} name={name} type="url" /></label>)}
         <label className="field-stack"><span className="field-label">Opening hours</span><textarea className="field-input" defaultValue={initial.openingHoursText ?? ""} name="openingHoursText" rows={3} /></label>
         <label className="field-stack"><span className="field-label">Seasonality</span><textarea className="field-input" defaultValue={initial.seasonalityText ?? ""} name="seasonalityText" rows={3} /></label>
         <label className="field-stack"><span className="field-label">Amenities</span><textarea className="field-input" defaultValue={initial.amenities.join("\n")} name="amenities" rows={5} /><span className="field-hint">One item per line.</span></label>
         <label className="field-stack"><span className="field-label">Source URLs</span><textarea className="field-input" defaultValue={initial.sourceUrls.join("\n")} name="sourceUrls" rows={5} /><span className="field-hint">One HTTPS URL per line.</span></label>
         <label className="field-stack field-full"><span className="field-label">Duplicate and research notes</span><textarea className="field-input" defaultValue={initial.duplicateNotes ?? ""} name="duplicateNotes" rows={4} /></label>
-        <label className="field-stack field-full"><span className="field-label">Image gallery JSON</span><textarea className="field-input venue-admin-form__json" defaultValue={JSON.stringify(initial.imageGallery, null, 2)} name="imageGallery" rows={8} /><span className="field-hint">Advanced: keep this as a JSON array of image metadata.</span></label>
+        <ImageUrlEditor imageUrls={imageUrls} label="Venue images" maxImages={30} onChange={setImageUrls} />
       </fieldset>
     </form>
   );

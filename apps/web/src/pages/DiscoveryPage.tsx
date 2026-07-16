@@ -33,6 +33,7 @@ import { EventTimeline } from "../components/EventTimeline";
 import { FilterCheckbox } from "../components/FilterCheckbox";
 import { FormInput } from "../components/FormInput";
 import { GroupForm } from "../components/GroupForm";
+import { FullscreenImageGallery, ImageGallery } from "../components/ImageGallery";
 import { LaunchDashboardPanel } from "../components/LaunchDashboardPanel";
 import { MeetingForm } from "../components/MeetingForm";
 import { ModerationQueuePanel } from "../components/ModerationQueuePanel";
@@ -77,7 +78,8 @@ type ItemMode = "groups" | "sessions" | "venues";
 type TimePreset = "all-sessions" | "custom" | "next-week" | "this-month" | "this-week" | "today" | "tomorrow";
 type EditingTarget = null | { kind: "group" } | { kind: "meeting"; mode: "series" | "single" };
 type FullscreenImageTarget = null | {
-  imageUrl: string;
+  imageUrls: string[];
+  initialIndex: number;
   quote: string;
   title: string;
 };
@@ -509,6 +511,7 @@ export function DiscoveryPage({
       bio: profile.bio,
       displayName: profile.displayName,
       homeArea: profile.homeArea,
+      imageUrls: profile.imageUrls,
       isProfilePublic: profile.isProfilePublic,
       playingLevel: profile.playingLevel ?? "",
       showEmailPublicly: profile.showEmailPublicly,
@@ -1442,36 +1445,21 @@ export function DiscoveryPage({
   ) : null;
 
   function renderImagePane({
-    imageUrl,
+    imageUrls,
     quote,
     title,
   }: {
-    imageUrl?: string | null;
+    imageUrls: Array<string | null | undefined>;
     quote: string;
     title: string;
   }) {
-    const normalizedImageUrl = imageUrl?.trim() || null;
-    const className = `detail-hero__media info-panel__hero ${normalizedImageUrl ? "has-image" : ""}`.trim();
-
-    if (!normalizedImageUrl) {
-      return (
-        <div className={className} key={`${title}:empty`}>
-          <div className="detail-hero__fallback" aria-hidden="true" />
-        </div>
-      );
-    }
-
     return (
-      <button
-        aria-label={`Open image for ${title}`}
-        className={`${className} detail-hero__media--button`}
-        key={`${title}:${normalizedImageUrl}`}
-        onClick={() => setFullscreenImage({ imageUrl: normalizedImageUrl, quote, title })}
-        type="button"
-      >
-        <img alt={title} className="detail-hero__image" src={normalizedImageUrl} />
-        <div className="detail-hero__fallback" aria-hidden="true" />
-      </button>
+      <ImageGallery
+        imageUrls={imageUrls}
+        key={title}
+        onOpenFullscreen={(normalizedUrls, initialIndex) => setFullscreenImage({ imageUrls: normalizedUrls, initialIndex, quote, title })}
+        title={title}
+      />
     );
   }
 
@@ -1518,6 +1506,7 @@ export function DiscoveryPage({
         endsAt: slot.endsAt,
         groupId: selectedMeetingDetail.groupId,
         heroImageUrl: basePayload.heroImageUrl,
+        imageUrls: basePayload.imageUrls,
         latitude: basePayload.latitude,
         locationAddress: basePayload.locationAddress,
         locationName: basePayload.locationName,
@@ -1546,6 +1535,7 @@ export function DiscoveryPage({
             activityLabel: selectedGroupDetail.activityLabel,
             description: selectedGroupDetail.description,
             heroImageUrl: selectedGroupDetail.heroImageUrl,
+            imageUrls: selectedGroupDetail.imageUrls,
             messengerUrl: selectedGroupDetail.messengerUrl,
             name: selectedGroupDetail.name,
             slug: selectedGroupDetail.slug,
@@ -1616,14 +1606,19 @@ export function DiscoveryPage({
             {selectedProfileAttending.length > 0 ? <span className="mini-chip">{`${selectedProfileAttending.length} ${t("discovery.attending")}`}</span> : null}
           </div>
         </div>
-        <div className={`detail-hero__media info-panel__hero ${selectedProfileDetail.avatarUrl ? "has-image" : ""}`.trim()}>
-          {selectedProfileDetail.avatarUrl ? (
-            <img alt={selectedProfileDetail.displayName} className="detail-hero__image" src={selectedProfileDetail.avatarUrl} />
-          ) : null}
-          <div className="detail-hero__fallback profile-avatar-fallback" aria-hidden={Boolean(selectedProfileDetail.avatarUrl)}>
+        <ImageGallery
+          fallback={<div className="detail-hero__fallback profile-avatar-fallback" aria-hidden="true">
             <User size={48} strokeWidth={1.8} />
-          </div>
-        </div>
+          </div>}
+          imageUrls={selectedProfileDetail.imageUrls}
+          onOpenFullscreen={(imageUrls, initialIndex) => setFullscreenImage({
+            imageUrls,
+            initialIndex,
+            quote: selectedProfileDetail.bio || t("profile.noBioYet"),
+            title: selectedProfileDetail.displayName,
+          })}
+          title={selectedProfileDetail.displayName}
+        />
         {editingProfile && isOwnProfile ? (
           activeProfileDraft ? (
             <>
@@ -2250,7 +2245,7 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrl: selectedMeetingDetail.heroImageUrl,
+        imageUrls: selectedMeetingDetail.imageUrls,
         quote: selectedMeetingDetail.description || t("common.noDescriptionYet"),
         title: selectedMeetingDetail.title,
       })}
@@ -2393,7 +2388,7 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrl: selectedVenueDetail.heroImageUrl,
+        imageUrls: selectedVenueDetail.imageUrls,
         quote: selectedVenueDetail.description || t("common.noDescriptionYet"),
         title: selectedVenueDetail.name,
       })}
@@ -2454,7 +2449,7 @@ export function DiscoveryPage({
         </div>
       </div>
       {renderImagePane({
-        imageUrl: selectedGroupDetail.heroImageUrl,
+        imageUrls: selectedGroupDetail.imageUrls,
         quote: selectedGroupDetail.description || t("common.noDescriptionYet"),
         title: selectedGroupDetail.name,
       })}
@@ -3053,21 +3048,13 @@ export function DiscoveryPage({
       onLogOut={onLogOut}
       overlay={
         fullscreenImage ? (
-          <div className="fullscreen-image-view">
-            <div className="fullscreen-image-view__scroller">
-              <img alt={fullscreenImage.title} className="fullscreen-image-view__image" src={fullscreenImage.imageUrl} />
-            </div>
-            <h2 className="fullscreen-image-view__title">{fullscreenImage.title}</h2>
-            <p className="fullscreen-image-view__quote">{fullscreenImage.quote}</p>
-            <button
-              aria-label={t("discovery.viewImageClose")}
-              className="button-secondary workspace-panel-close-square fullscreen-image-view__close"
-              onClick={() => setFullscreenImage(null)}
-              type="button"
-            >
-              <X size={16} strokeWidth={2} />
-            </button>
-          </div>
+          <FullscreenImageGallery
+            imageUrls={fullscreenImage.imageUrls}
+            initialIndex={fullscreenImage.initialIndex}
+            onClose={() => setFullscreenImage(null)}
+            quote={fullscreenImage.quote}
+            title={fullscreenImage.title}
+          />
         ) : null
       }
       profileLinkState={headerProfileLinkState()}

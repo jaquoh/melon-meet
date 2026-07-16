@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../lib/i18n";
 import { FormInput } from "./FormInput";
+import { ImageUrlEditor } from "./ImageUrlEditor";
 
 interface GroupFormProps {
   formId?: string;
@@ -8,6 +9,7 @@ interface GroupFormProps {
     activityLabel?: string | null;
     description: string;
     heroImageUrl?: string | null;
+    imageUrls?: string[];
     messengerUrl?: string | null;
     name: string;
     slug: string;
@@ -17,6 +19,7 @@ interface GroupFormProps {
     activityLabel?: string | null;
     description: string;
     heroImageUrl?: string | null;
+    imageUrls: string[];
     messengerUrl?: string | null;
     name: string;
     slug: string;
@@ -30,7 +33,9 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
   const [slug, setSlug] = useState(initialValues?.slug ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [activityLabel, setActivityLabel] = useState(initialValues?.activityLabel ?? "Beach volleyball");
-  const [heroImageUrl, setHeroImageUrl] = useState(initialValues?.heroImageUrl ?? "");
+  const [imageUrls, setImageUrls] = useState(
+    initialValues?.imageUrls?.length ? initialValues.imageUrls : initialValues?.heroImageUrl ? [initialValues.heroImageUrl] : [],
+  );
   const [messengerUrl, setMessengerUrl] = useState(initialValues?.messengerUrl ?? "");
   const [visibility, setVisibility] = useState<"public" | "private">(
     initialValues?.visibility ?? "public",
@@ -44,7 +49,8 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
       await onSubmit({
         activityLabel,
         description,
-        heroImageUrl,
+        heroImageUrl: imageUrls[0] ?? null,
+        imageUrls,
         messengerUrl,
         name,
         slug,
@@ -88,10 +94,7 @@ export function GroupForm({ formId, initialValues, onSubmit }: GroupFormProps) {
         <textarea className="field-area" onChange={(event) => setDescription(event.target.value)} required value={description} />
       </label>
 
-      <label className="field-stack field-full">
-        <span className="field-label">{t("forms.heroImageUrl")}</span>
-        <FormInput onChange={setHeroImageUrl} placeholder="https://..." type="url" value={heroImageUrl} />
-      </label>
+      <ImageUrlEditor imageUrls={imageUrls} label="Group images" onChange={setImageUrls} />
 
       <label className="field-stack field-full">
         <span className="field-label">{t("forms.messengerUrl")}</span>
