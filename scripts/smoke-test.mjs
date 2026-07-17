@@ -1,8 +1,8 @@
 const targetEnv = process.argv.find((arg) => arg.startsWith("--env="))?.slice("--env=".length) ?? "staging";
 
 const baseUrlByEnv = {
-  production: process.env.SMOKE_BASE_URL_PRODUCTION ?? process.env.SMOKE_BASE_URL,
-  staging: process.env.SMOKE_BASE_URL_STAGING ?? process.env.SMOKE_BASE_URL,
+  production: process.env.SMOKE_BASE_URL_PRODUCTION ?? process.env.SMOKE_BASE_URL ?? "https://melon-meet.jacobspostfach.workers.dev",
+  staging: process.env.SMOKE_BASE_URL_STAGING ?? process.env.SMOKE_BASE_URL ?? "https://melon-meet-staging.jacobspostfach.workers.dev",
 };
 
 const emailByEnv = {
