@@ -1,6 +1,6 @@
 # Melon Meet Invite-Only Cohort Launch Runbook
 
-Last updated: 2026-07-15
+Last updated: 2026-07-17
 
 Purpose: run the first invite-only cohort launch with a short, practical checklist instead of relying on memory.
 
@@ -13,10 +13,10 @@ Related docs:
 
 ## Current Baseline
 
-As of 2026-07-15:
+As of 2026-07-17:
 
-- staging deploy works and passed anonymous plus authenticated smoke checks
-- production deploy works and passed anonymous smoke checks
+- staging deploy works and passed anonymous plus authenticated smoke checks after the security-header release
+- production deploy works and passed anonymous smoke checks after the security-header release
 - production URL is `https://melon-meet.jacobspostfach.workers.dev`
 - staging URL is `https://melon-meet-staging.jacobspostfach.workers.dev`
 - private-group invite generation and acceptance are live
@@ -24,9 +24,11 @@ As of 2026-07-15:
 
 Still open before a real cohort launch:
 
+- configure Turnstile in staging and production so signup is available
+- configure staging email delivery
 - configure authenticated production smoke credentials
 - confirm the support inbox owner and moderation owner rotation
-- curate the first real venues/groups/sessions you actually want users to see
+- create the first real groups and sessions; production currently has 57 venues but no groups or scheduled meetings
 
 ## Cohort Definition
 
@@ -45,6 +47,7 @@ Do not expand beyond the first cohort until the first review window is complete.
 
 Complete these before sending any invite links:
 
+- [ ] Confirm signup works with Turnstile and verification email delivery in staging, then production.
 - [ ] Confirm production smoke credentials exist and run `npm run smoke:production` with authenticated checks.
 - [ ] Confirm support inbox ownership is explicit:
   - owner name

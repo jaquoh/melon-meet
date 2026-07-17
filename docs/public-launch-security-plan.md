@@ -191,11 +191,9 @@ What is clearly not public-launch ready yet:
   - invite-link acceptance
   - archived group/session behavior
 
-- [ ] Add stronger security headers.
-  Add or evaluate:
-  - `Content-Security-Policy`
-  - `Strict-Transport-Security`
-  - tighter `Permissions-Policy`
+- [x] Add stronger security headers.
+  Current scope: CSP, HSTS, frame restrictions, MIME-sniffing protection, referrer policy, and permissions policy cover API and static responses.
+  Optional follow-up:
   - `Cross-Origin-Resource-Policy` where appropriate
 
 ## Priority 2: Trust, Privacy, and Compliance Work

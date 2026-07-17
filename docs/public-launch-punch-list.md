@@ -1,6 +1,6 @@
 # Melon Meet Public Launch Punch List
 
-Last updated: 2026-07-15
+Last updated: 2026-07-17
 
 Purpose: keep the next launch steps short, current, and execution-focused.
 
@@ -81,15 +81,18 @@ Related files:
 
 ### 4. Prepare the real launch environment
 
-- [ ] Verify staging and production Cloudflare resources, Wrangler config, and required secrets.
-- Current repo audit on 2026-07-15:
-  - production and staging D1 IDs are present in `wrangler.jsonc`
-  - production moderation allowlists are set
-  - staging moderation allowlists are now set to `jacob@melonmeet.com`
-  - remote Wrangler commands still need working Cloudflare auth, such as `CLOUDFLARE_API_TOKEN` in non-interactive runs
+- [x] Verify staging and production Cloudflare resources and Wrangler access.
+  - both configured D1 IDs are present in the active Cloudflare account
+  - remote D1 reads and Worker deploys succeeded on 2026-07-17
+  - staging and production received the static-response security headers release
+- [ ] Configure the remaining required secrets and vars.
+  - both environments still need `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`; signup is unavailable until these exist
+  - staging still needs `RESEND_API_KEY`; production already has it
 - [ ] Configure moderation operator allowlists, support inbox ownership, and smoke-test credentials.
-  - staging now has a working authenticated smoke path using the seeded demo account
+  - staging authenticated smoke passed with the seeded demo account on 2026-07-17
+  - production still needs a dedicated verified smoke account and credentials
 - [ ] Curate the initial venue/group/session dataset for the first cohort.
+  - production currently has 57 active venues, 0 active groups, and 0 scheduled meetings
 - [x] Decide whether any local/demo messaging still appears in production-facing copy and remove it if so.
   - app audit on 2026-07-15 found no public demo-account messaging left in production UX; only dev-conditional reset/verify shortcuts remained, and those labels were softened
 
@@ -102,7 +105,7 @@ Related files:
   - staging now has migrations applied, a live deploy, moderation allowlists, and passing anonymous plus authenticated smoke checks
 - [x] Run the production deploy path and `npm run smoke:production`.
   - production deployed at `https://melon-meet.jacobspostfach.workers.dev`
-  - anonymous production smoke checks passed on 2026-07-15
+  - anonymous production smoke checks passed after the 2026-07-17 security-header release
   - authenticated production smoke is still pending until `SMOKE_EMAIL_PRODUCTION` / `SMOKE_PASSWORD_PRODUCTION` are configured
 - [ ] Launch to a small invite-only cohort first.
 - Launch guidance now lives in [invite-only-cohort-launch-runbook.md](/Users/jbot/IdeaProjects/melon-meet/docs/invite-only-cohort-launch-runbook.md).
