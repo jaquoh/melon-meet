@@ -28,6 +28,12 @@ function readWranglerConfig() {
   }
 }
 
+function validateAssetConfig(config) {
+  if (config.assets?.run_worker_first !== true) {
+    fail("assets.run_worker_first must be true so Worker security headers protect static responses");
+  }
+}
+
 function validateProductionConfig(config) {
   const productionDb = config.d1_databases?.[0];
   if (!productionDb?.database_id || String(productionDb.database_id).includes("REPLACE_WITH")) {
@@ -60,6 +66,7 @@ function validateStagingConfig(config) {
 }
 
 const wranglerConfig = readWranglerConfig();
+validateAssetConfig(wranglerConfig);
 
 if (targetEnv === "staging") {
   validateStagingConfig(wranglerConfig);
