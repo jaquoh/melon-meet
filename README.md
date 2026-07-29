@@ -105,7 +105,7 @@ Public signup now supports Cloudflare Turnstile.
 Configure the site key as a Wrangler var and the secret as a Wrangler secret:
 
 ```bash
-npx wrangler secret put TURNSTILE_SECRET_KEY --config wrangler.jsonc
+npx wrangler secret put TURNSTILE_SECRET --config wrangler.jsonc
 ```
 
 Add `TURNSTILE_SITE_KEY` to the `vars` section in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:17).

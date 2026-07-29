@@ -766,7 +766,7 @@ function isTrustedLocalDevOriginPair(requestOrigin: string, targetOrigin: string
 }
 
 function turnstileConfigured(c: Context<AppEnv>) {
-  return Boolean(c.env.TURNSTILE_SECRET_KEY && c.env.TURNSTILE_SITE_KEY);
+  return Boolean(c.env.TURNSTILE_SECRET && c.env.TURNSTILE_SITE_KEY);
 }
 
 function requestOriginFromHeaders(c: Context<AppEnv>) {
@@ -1774,27 +1774,39 @@ async function verifySignupTurnstile(c: Context<AppEnv>, token: string | null | 
   }
   assertOrThrow(normalizedToken, 400, "Complete the signup verification challenge and try again.");
 
-  const payload = new URLSearchParams();
-  payload.set("secret", c.env.TURNSTILE_SECRET_KEY as string);
-  payload.set("response", normalizedToken);
-  payload.set("remoteip", getClientAddress(c));
-
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    body: payload,
-    method: "POST",
+  const payload = new URLSearchParams({
+    remoteip: getClientAddress(c),
+    response: normalizedToken,
+    secret: c.env.TURNSTILE_SECRET as string,
   });
-  assertOrThrow(response.ok, 502, "Signup verification is temporarily unavailable.");
 
-  const result = await response.json() as {
+  let result: {
     "error-codes"?: string[];
     success?: boolean;
   };
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      body: payload,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`Turnstile siteverify returned ${response.status}.`);
+    }
+    result = await response.json() as typeof result;
+  } catch {
+    logSecurityEvent(c, "signup_turnstile_unavailable", "warn");
+    assertOrThrow(false, 403, "Complete the signup verification challenge and try again.");
+    return;
+  }
   if (!result.success) {
     logSecurityEvent(c, "signup_turnstile_failed", "warn", {
       errorCodes: result["error-codes"] ?? [],
     });
   }
-  assertOrThrow(result.success, 403, "Complete the signup verification challenge and try again.");
+  assertOrThrow(result.success === true, 403, "Complete the signup verification challenge and try again.");
 }
 
 async function getGroupRole(

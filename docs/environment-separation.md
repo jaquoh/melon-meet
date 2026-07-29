@@ -65,7 +65,7 @@ Required config:
 Recommended staging secrets:
 
 - `RESEND_API_KEY`
-- `TURNSTILE_SECRET_KEY`
+- `TURNSTILE_SECRET`
 - `ALERT_WEBHOOK_URL`
 
 Recommended staging vars review:
@@ -111,7 +111,7 @@ npm run smoke:production
 2. Review staging-specific vars and allowlists in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc:31).
 3. Configure staging secrets:
    - `RESEND_API_KEY`
-   - `TURNSTILE_SECRET_KEY`
+   - `TURNSTILE_SECRET`
    - `ALERT_WEBHOOK_URL`
 4. Configure staging `TURNSTILE_SITE_KEY`.
 5. Deploy staging once with `npm run deploy:staging`.

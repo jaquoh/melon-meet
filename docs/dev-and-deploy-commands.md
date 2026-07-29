@@ -65,7 +65,7 @@ Before first staging deploy:
 - make sure the staging D1 database ID is correct in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc)
 - configure staging secrets:
   - `RESEND_API_KEY`
-  - `TURNSTILE_SECRET_KEY`
+  - `TURNSTILE_SECRET`
   - `ALERT_WEBHOOK_URL` if used
 - configure staging vars such as `TURNSTILE_SITE_KEY`
 - set staging moderation allowlists in `MODERATION_ADMIN_EMAILS` and `MODERATION_REVIEWER_EMAILS`
@@ -74,7 +74,7 @@ Example secret commands:
 
 ```bash
 npx wrangler secret put RESEND_API_KEY --env staging --config wrangler.jsonc
-npx wrangler secret put TURNSTILE_SECRET_KEY --env staging --config wrangler.jsonc
+npx wrangler secret put TURNSTILE_SECRET --env staging --config wrangler.jsonc
 npx wrangler secret put ALERT_WEBHOOK_URL --env staging --config wrangler.jsonc
 ```
 
@@ -108,7 +108,7 @@ Before first production deploy:
 - make sure the production D1 database ID is correct in [wrangler.jsonc](/Users/jbot/IdeaProjects/melon-meet/wrangler.jsonc)
 - configure production secrets:
   - `RESEND_API_KEY`
-  - `TURNSTILE_SECRET_KEY`
+  - `TURNSTILE_SECRET`
   - `ALERT_WEBHOOK_URL` if used
 - configure production vars such as `TURNSTILE_SITE_KEY`
 - make sure Wrangler auth is available for headless remote commands through `CLOUDFLARE_API_TOKEN` when not using an interactive local shell
@@ -117,7 +117,7 @@ Example secret commands:
 
 ```bash
 npx wrangler secret put RESEND_API_KEY --config wrangler.jsonc
-npx wrangler secret put TURNSTILE_SECRET_KEY --config wrangler.jsonc
+npx wrangler secret put TURNSTILE_SECRET --config wrangler.jsonc
 npx wrangler secret put ALERT_WEBHOOK_URL --config wrangler.jsonc
 ```
 

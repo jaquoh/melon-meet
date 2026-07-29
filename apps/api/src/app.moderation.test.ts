@@ -91,7 +91,7 @@ function createTestEnv(db: D1Database): AppBindings {
     MODERATION_ADMIN_EMAILS: "admin@example.com",
     MODERATION_REVIEWER_EMAILS: "reviewer@example.com",
     RESEND_API_KEY: undefined,
-    TURNSTILE_SECRET_KEY: undefined,
+    TURNSTILE_SECRET: undefined,
     TURNSTILE_SITE_KEY: undefined,
   };
 }
@@ -1500,6 +1500,83 @@ describe("signup policy acceptance tracking", () => {
         policy_version: CURRENT_POLICY_VERSIONS.terms,
       },
     ]);
+  });
+
+  it("verifies signup with the TURNSTILE_SECRET binding before creating the account", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      TURNSTILE_SECRET: "test-turnstile-secret",
+      TURNSTILE_SITE_KEY: "test-site-key",
+    };
+    const siteverifyRequests: Array<{ body: string; url: string }> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      siteverifyRequests.push({
+        body: String(init?.body ?? ""),
+        url: String(input),
+      });
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      });
+    });
+
+    const response = await requestJson("/api/auth/signup", {
+      baseUrl: LOCAL_BASE_URL,
+      body: {
+        acceptedAgeMinimum: true,
+        acceptedPolicyVersions: CURRENT_POLICY_VERSIONS,
+        email: "turnstile@example.com",
+        password: "melonmelon",
+        turnstileToken: "verified-browser-token",
+      },
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    expect(siteverifyRequests).toHaveLength(1);
+    expect(siteverifyRequests[0]?.url).toBe("https://challenges.cloudflare.com/turnstile/v0/siteverify");
+    expect(new URLSearchParams(siteverifyRequests[0]?.body)).toEqual(
+      new URLSearchParams({
+        remoteip: "unknown-ip",
+        response: "verified-browser-token",
+        secret: "test-turnstile-secret",
+      }),
+    );
+  });
+
+  it("fails closed when Turnstile siteverify does not return a successful response", async () => {
+    const db = new SqliteD1Database();
+    db.applyMigrations();
+    const env = {
+      ...createTestEnv(db as unknown as D1Database),
+      TURNSTILE_SECRET: "test-turnstile-secret",
+      TURNSTILE_SITE_KEY: "test-site-key",
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("unavailable", { status: 503 }));
+
+    const response = await requestJson("/api/auth/signup", {
+      baseUrl: LOCAL_BASE_URL,
+      body: {
+        acceptedAgeMinimum: true,
+        acceptedPolicyVersions: CURRENT_POLICY_VERSIONS,
+        email: "blocked@example.com",
+        password: "melonmelon",
+        turnstileToken: "unverifiable-browser-token",
+      },
+      env,
+      method: "POST",
+    });
+
+    expect(response.status).toBe(403);
+    const user = await firstRow<{ id: string }>(
+      env.DB,
+      "SELECT id FROM users WHERE email = ?",
+      "blocked@example.com",
+    );
+    expect(user).toBeNull();
   });
 });
 

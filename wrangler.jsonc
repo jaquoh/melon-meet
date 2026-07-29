@@ -24,7 +24,8 @@
     "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
     "ENVIRONMENT_NAME": "production",
     "MODERATION_ADMIN_EMAILS": "jacobspostfach+melonmeet@googlemail.com",
-    "MODERATION_REVIEWER_EMAILS": "jacobspostfach+melonmeet@googlemail.com"
+    "MODERATION_REVIEWER_EMAILS": "jacobspostfach+melonmeet@googlemail.com",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAEAzAkeKMWsuLRW7"
   },
   "triggers": {
     "crons": ["17 3 * * *"]
@@ -47,7 +48,8 @@
         "EMAIL_REPLY_TO_ADDRESS": "hello@melonmeet.com",
         "ENVIRONMENT_NAME": "staging",
         "MODERATION_ADMIN_EMAILS": "jacobspostfach+melonmeet@googlemail.com",
-        "MODERATION_REVIEWER_EMAILS": "jacobspostfach+melonmeet@googlemail.com"
+        "MODERATION_REVIEWER_EMAILS": "jacobspostfach+melonmeet@googlemail.com",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAEAzAkeKMWsuLRW7"
       }
     }
   }

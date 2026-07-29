@@ -7,6 +7,7 @@ declare global {
       render: (
         container: HTMLElement,
         options: {
+          action?: string;
           callback: (token: string) => void;
           "error-callback"?: () => void;
           "expired-callback"?: () => void;
@@ -74,6 +75,7 @@ export function TurnstileWidget({
         }
         containerRef.current.innerHTML = "";
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
+          action: "turnstile-spin-v2",
           callback: (token) => onTokenChange(token),
           "error-callback": () => onTokenChange(null),
           "expired-callback": () => onTokenChange(null),
@@ -96,5 +98,12 @@ export function TurnstileWidget({
     };
   }, [onTokenChange, siteKey, theme]);
 
-  return <div className="turnstile-widget" ref={containerRef} />;
+  return (
+    <div
+      className="cf-turnstile turnstile-widget"
+      data-action="turnstile-spin-v2"
+      data-sitekey={siteKey}
+      ref={containerRef}
+    />
+  );
 }

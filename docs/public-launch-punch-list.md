@@ -86,7 +86,7 @@ Related files:
   - remote D1 reads and Worker deploys succeeded on 2026-07-17
   - staging and production received the static-response security headers release
 - [ ] Configure the remaining required secrets and vars.
-  - both environments still need `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`; signup is unavailable until these exist
+  - staging and production have the `TURNSTILE_SECRET` binding and shared `TURNSTILE_SITE_KEY`
   - staging still needs `RESEND_API_KEY`; production already has it
 - [ ] Configure moderation operator allowlists, support inbox ownership, and smoke-test credentials.
   - staging authenticated smoke passed with the seeded demo account on 2026-07-17

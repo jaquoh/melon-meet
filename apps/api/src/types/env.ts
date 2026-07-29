@@ -12,7 +12,7 @@ export interface AppBindings {
   MODERATION_ADMIN_EMAILS?: string;
   MODERATION_REVIEWER_EMAILS?: string;
   RESEND_API_KEY?: string;
-  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SECRET?: string;
   TURNSTILE_SITE_KEY?: string;
 }
 

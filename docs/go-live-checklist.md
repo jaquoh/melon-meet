@@ -13,7 +13,7 @@ For the actual small-cohort rollout procedure, use [invite-only-cohort-launch-ru
 - Review `/Users/jbot/IdeaProjects/melon-meet/docs/production-deploy-runbook.md`.
 - Configure required Wrangler secrets and vars for the target environments:
   - `RESEND_API_KEY`
-  - `TURNSTILE_SECRET_KEY`
+  - `TURNSTILE_SECRET`
   - `TURNSTILE_SITE_KEY`
   - `ALERT_WEBHOOK_URL` if used
   - moderation operator allowlists
