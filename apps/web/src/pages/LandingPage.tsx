@@ -13,6 +13,7 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { getPublicConfig, logIn, signUp } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { queryClient } from "../lib/query-client";
+import { getLandingAuthPanelToggleState, type LandingAuthMode } from "./landing-auth-state";
 
 export function LandingPage({
   theme,
@@ -26,7 +27,7 @@ export function LandingPage({
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<LandingAuthMode>("login");
   const [showAuthPanel, setShowAuthPanel] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +44,13 @@ export function LandingPage({
   const turnstileSiteKey = publicConfigQuery.data?.turnstileSiteKey ?? null;
   const policyVersions = publicConfigQuery.data?.policyVersions ?? null;
   const infoLinkState = { infoReturnTo: `${location.pathname}${location.search}` };
+  const toggleAuthPanel = () => {
+    const nextState = getLandingAuthPanelToggleState(showAuthPanel);
+    setShowAuthPanel(nextState.showAuthPanel);
+    setMode(nextState.mode);
+    setSignupGuardMessage("");
+    setSignupTurnstileToken(null);
+  };
   const renderHeaderControls = () => (
     <div className="landing-shell__right-header">
       <div className="landing-shell__right-header-left">
@@ -65,7 +73,7 @@ export function LandingPage({
         <button
           aria-label={showAuthPanel ? t("landing.closeAuth") : t("common.signIn")}
           className="landing-header-button landing-header-button--label landing-header-button--auth landing-header-button--edge"
-          onClick={() => setShowAuthPanel((current) => !current)}
+          onClick={toggleAuthPanel}
           type="button"
         >
           {showAuthPanel ? <X size={16} strokeWidth={2} /> : <LogIn size={16} strokeWidth={2} />}
@@ -150,37 +158,41 @@ export function LandingPage({
             {renderHeaderControls()}
 
             {viewer ? null : showAuthPanel ? (
-              <div className="landing-shell__right-body">
+              <div className={`landing-shell__right-body ${mode === "signup" ? "landing-shell__right-body--signup" : ""}`.trim()}>
                 <div className="stack-sm">
                   <p className="eyebrow">{t("landing.participationEyebrow")}</p>
                   <p className="landing-hero__text typewriter-title">{t("landing.participationTitle")}</p>
-                  <p className="landing-hero__text">{t("landing.participationText")}</p>
+                  <p className="landing-participation-copy">
+                    {t("landing.participationText")} Melon Meet helps people coordinate sessions, but organisers, venues, and participants act independently. Check the session details, use your own judgment, and arrange transport, payments, and personal safety directly with the group.
+                  </p>
                 </div>
 
-                <div className="mode-switch">
-                  <button
-                    className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
-                    onClick={() => {
-                      setMode("login");
-                      setSignupGuardMessage("");
-                      setSignupTurnstileToken(null);
-                    }}
-                    type="button"
-                  >
-                    {t("common.signIn")}
-                  </button>
-                  <button
-                    className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
-                    onClick={() => {
-                      setMode("signup");
-                      setSignupGuardMessage("");
-                      setSignupTurnstileToken(null);
-                      setSignupTurnstileRenderNonce((current) => current + 1);
-                    }}
-                    type="button"
-                  >
-                    {t("common.signUp")}
-                  </button>
+                <div className="landing-auth-mode-switch">
+                  <div className="mode-switch">
+                    <button
+                      className={`mode-switch__button ${mode === "login" ? "is-active" : ""}`}
+                      onClick={() => {
+                        setMode("login");
+                        setSignupGuardMessage("");
+                        setSignupTurnstileToken(null);
+                      }}
+                      type="button"
+                    >
+                      {t("common.signIn")}
+                    </button>
+                    <button
+                      className={`mode-switch__button ${mode === "signup" ? "is-active" : ""}`}
+                      onClick={() => {
+                        setMode("signup");
+                        setSignupGuardMessage("");
+                        setSignupTurnstileToken(null);
+                        setSignupTurnstileRenderNonce((current) => current + 1);
+                      }}
+                      type="button"
+                    >
+                      {t("common.signUp")}
+                    </button>
+                  </div>
                 </div>
 
                 <form
@@ -278,12 +290,6 @@ export function LandingPage({
                   {authMutation.error ? (
                     <p className="empty-state" style={{ color: "var(--danger)", borderStyle: "solid" }}>
                       {authMutation.error.message}
-                    </p>
-                  ) : null}
-
-                  {mode === "signup" ? (
-                    <p className="muted-copy">
-                      Melon Meet helps people coordinate sessions, but organisers, venues, and participants act independently. Check the session details, use your own judgment, and arrange transport, payments, and personal safety directly with the group.
                     </p>
                   ) : null}
 

@@ -1406,6 +1406,7 @@ img {
 
 :root[data-theme="dark"] .landing-brand-lockup__meta,
 :root[data-theme="dark"] .landing-entry-button__copy,
+:root[data-theme="dark"] .landing-participation-copy,
 :root[data-theme="dark"] .landing-hero__text,
 :root[data-theme="dark"] .landing-shell__right-body .eyebrow,
 :root[data-theme="dark"] .landing-shell__right-body .field-label {
@@ -1912,10 +1913,23 @@ img {
   z-index: 1;
   grid-column: 1;
   width: 100%;
+}
+
+.landing-entry-button__copy,
+.landing-participation-copy {
   color: color-mix(in srgb, var(--text) 60%, #88655d);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.92rem;
   line-height: 1.55;
+}
+
+.landing-entry-button__copy {
+  font-size: 0.92rem;
+}
+
+.landing-participation-copy {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
 .landing-entry-button__arrow {
@@ -1977,6 +1991,20 @@ img {
   gap: 1rem;
   padding: 1rem 1.1rem 1.2rem;
   border-top: 1px solid rgba(159, 120, 109, 0.22);
+}
+
+.landing-shell__right-body--signup {
+  padding-bottom: clamp(3.5rem, 7vh, 5rem);
+}
+
+.landing-auth-mode-switch {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 10;
+}
+
+.landing-auth-mode-switch .mode-switch {
+  width: 100%;
 }
 
 .landing-info-content {
